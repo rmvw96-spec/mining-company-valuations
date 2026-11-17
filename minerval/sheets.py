@@ -75,10 +75,11 @@ class GoogleSheet:
 
     def __init__(self, sheet_id: str, credentials: str | None = None, oauth: bool = False):
         import gspread
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
         if oauth:
-            gc = gspread.oauth(credentials_filename=credentials) if credentials else gspread.oauth()
+            gc = gspread.oauth(credentials_filename=credentials, scopes=scopes) if credentials else gspread.oauth(scopes)
         else:
-            gc = gspread.service_account(filename=credentials) if credentials else gspread.service_account()
+            gc = gspread.service_account(filename=credentials, scopes=scopes) if credentials else gspread.service_account(scopes)
         self.book = gc.open_by_key(sheet_id)
 
     def read(self, tab: str, rng: str, formulas: bool = False) -> list[list]:
