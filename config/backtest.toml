@@ -1,0 +1,54 @@
+# Backtest settings. The portfolio itself is private/portfolio.csv (config/portfolio.example.csv
+# is used when that file doesn't exist). Months are "YYYY-MM"; each value is the month-end price.
+
+# Benchmarks and extra price series downloaded with the portfolio.
+benchmarks = ["GC=F", "SI=F", "HG=F", "GDX", "GDXJ", "COPX", "SPY", "SGDM", "^TNX", "GLD", "SLV", "PSLV"]
+# Older series used to reach back to 2000: CAD futures before Yahoo's CAD rate starts (Sep 2003),
+# Toronto lines before the US listings, and the Philadelphia gold-miner index (XAU).
+long_history = ["CADUSD=X", "6C=F", "IMG.TO", "AGI.TO", "TECK-B.TO", "SEA.TO", "^XAU", "^HUI", "K.TO",
+                "FXC", "^GSPTSE", "SKE", "PPTA"]
+
+# Before a physical trust existed, its price is spliced onto the metal's futures price.
+proxies = { PHYS = "GC=F", COP = "HG=F" }
+
+# Recent windows, measured back from the latest month.
+window_years = [1, 3, 5]
+long_cycle_start = "2010-12"        # yearly-rebalanced test from here to now
+rebalance_months = 12
+
+# Named episodes for the long-cycle test (start, end).
+episodes = [
+  ["2011-08 to 2015-12 (gold bear market)", "2011-08", "2015-12"],
+  ["2020-01 to 2020-03 (Covid crash)", "2020-01", "2020-03"],
+  ["2022-03 to 2022-09 (Fed hiking)", "2022-03", "2022-09"],
+  ["2026-01 to 2026-11 (fall from record highs)", "2026-01", "2026-11"],
+]
+
+# Buy-and-hold over the 2008-2011 cycle (start, end). Holdings not yet listed give their weight to the rest.
+cycle_2008 = [["2008-02", "2011-08"], ["2008-02", "2011-04"], ["2008-10", "2011-04"]]
+cycle_2008_low = "2008-10"
+
+# Since-2000 test, yearly rebalanced. Toronto lines extend these holdings before their US listings:
+since_2000_start = "2000-08"
+since_2000_toronto = { DPM = "DPM.TO", LUN = "LUN.TO", SKE = "SKE.TO" }
+since_2000_splice = { IAG = "IMG.TO", TECK = "TECK-B.TO", SA = "SEA.TO" }
+since_2000_episodes = [
+  ["Aug 2000 to Feb 2008 (first leg of the 2000s bull market)", "2000-08", "2008-02"],
+  ["Feb 2008 to Oct 2008 (financial crisis)", "2008-02", "2008-10"],
+  ["Oct 2008 to Apr 2011 (recovery to silver's peak)", "2008-10", "2011-04"],
+  ["Aug 2011 to Dec 2015 (gold bear market)", "2011-08", "2015-12"],
+  ["Dec 2015 to Jul 2020 (recovery)", "2015-12", "2020-07"],
+  ["Mar 2022 to Sep 2022 (Fed hiking)", "2022-03", "2022-09"],
+  ["Sep 2022 to Jan 2026 (run to record highs)", "2022-09", "2026-01"],
+  ["Jan 2026 to Nov 2026 (fall from record highs)", "2026-01", "2026-11"],
+]
+since_2000_halves = [["Aug 2000 to Dec 2010", "2000-08", "2010-12"], ["Dec 2010 to Nov 2026", "2010-12", "2026-11"]]
+
+# Benchmarks shown beside the portfolio, with their labels.
+[benchmark_labels]
+GDX = "Gold miners fund (GDX)"
+COPX = "Copper miners fund (COPX)"
+"GC=F" = "Gold"
+"SI=F" = "Silver"
+"HG=F" = "Copper"
+SPY = "S&P 500 (SPY)"

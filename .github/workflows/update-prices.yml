@@ -1,0 +1,28 @@
+# Runs the daily price update on GitHub's servers. It only runs when started by hand
+# (Actions tab > Update prices > Run workflow) until you uncomment the schedule below.
+# Needs two repository secrets (Settings > Secrets and variables > Actions):
+#   GOOGLE_SERVICE_ACCOUNT_JSON   the whole contents of the service account's key file
+#   MINERVAL_SHEET_ID             the Google Sheet's ID
+# Yahoo sometimes rate-limits cloud servers; if runs fail with "No price", run it from your computer instead.
+name: Update prices
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "40 21 * * 1-5"    # 21:40 UTC on weekdays: 4:40 pm New York in winter, 5:40 pm in summer
+jobs:
+  prices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Update the Sheet
+        env:
+          MINERVAL_SHEET_ID: ${{ secrets.MINERVAL_SHEET_ID }}
+          KEY_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          printf '%s' "$KEY_JSON" > "$RUNNER_TEMP/key.json"
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/key.json" python -m minerval prices
+          cat out/prices/report.txt >> "$GITHUB_STEP_SUMMARY"

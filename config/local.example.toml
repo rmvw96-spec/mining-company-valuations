@@ -1,0 +1,11 @@
+# Copy this file to private/local.toml and fill it in. private/ is not committed to git.
+# Environment variables MINERVAL_SHEET_ID and GOOGLE_APPLICATION_CREDENTIALS override these.
+
+# The ID in the Google Sheet's address: docs.google.com/spreadsheets/d/<THIS PART>/edit
+sheet_id = ""
+
+# Path to the service account's key file (see README, "Google Sheets setup").
+credentials = "private/service_account.json"
+
+# Uncomment to sign in as yourself in a browser instead of using a service account.
+# auth = "oauth"
