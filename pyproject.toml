@@ -1,0 +1,20 @@
+[project]
+name = "minerval"
+version = "0.1.0"
+description = "Look-through valuations of Sprott miner ETFs, kept current in a Google Sheet"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "pandas>=2.1",
+    "numpy>=1.26",
+    "gspread>=6.0",       # Google Sheets
+    "google-auth>=2.23",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+# Run from the repo root as `uv run python -m minerval <command>`; nothing is built or installed.
+[tool.uv]
+package = false

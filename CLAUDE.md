@@ -4,7 +4,7 @@ README.md explains the project for people; this file is how Claude should run an
 
 ## Ground rules
 
-- Run everything from the repo root as `python3 -m minerval <command>`. `python3 -m pytest tests` must pass before any commit.
+- Run everything from the repo root as `uv run python -m minerval <command>`. `uv run python -m pytest tests` must pass before any commit.
 - Never commit `private/`, `cache/`, `out/` or `data/derived/` (they're in .gitignore), or any credentials.
   The repo is public: no personal amounts, account details or names in committed files.
 - Ask the user before every `git push`.
@@ -29,7 +29,7 @@ Reports go to `out/<command>/report.txt`.
 
 ## Routine price update (Google Sheet)
 
-1. `python3 -m minerval prices`. It reads the Sheet ID and credentials from `private/local.toml`
+1. `uv run python -m minerval prices`. It reads the Sheet ID and credentials from `private/local.toml`
    (or `MINERVAL_SHEET_ID` / `GOOGLE_APPLICATION_CREDENTIALS`).
 2. Read `out/prices/report.txt` and deal with what it flags:
    - **No price**: the row keeps its old price. Check whether the symbol changed (rename, delisting, takeover).
@@ -42,15 +42,15 @@ Reports go to `out/<command>/report.txt`.
 
 ## Earnings-season refresh
 
-1. `python3 -m minerval prices --shares`, and check every share-count change over 10% (acquisitions paid
+1. `uv run python -m minerval prices --shares`, and check every share-count change over 10% (acquisitions paid
    in shares, financings, consolidations, or a US listing quoted in a different unit than the share count).
-2. `python3 -m minerval refresh`. If `fetch` reports a ticker not found or a name mismatch, fix it in
+2. `uv run python -m minerval refresh`. If `fetch` reports a ticker not found or a name mismatch, fix it in
    `config/symbol_overrides.csv` and rerun.
-3. `python3 -m minerval financials --dry-run`. Look at `out/financials/report.txt`: holdings in the data
+3. `uv run python -m minerval financials --dry-run`. Look at `out/financials/report.txt`: holdings in the data
    but not on the Sheet need rows added first (README, "When Sprott's holdings change").
 4. Check the companies with large changes and any new "Op. cash flow corrected" notes against company
    reports. Put verified replacements in `config/corrections.csv` (value in US$ millions, with source).
-5. `python3 -m minerval financials`.
+5. `uv run python -m minerval financials`.
 6. The Summary and Stress test & downside tabs are snapshots. If the user wants them current, the figures
    are in `data/derived/fund_multiples.csv` and `stress_funds.csv`.
 
@@ -102,7 +102,7 @@ because XLOOKUP ignores case.
   `engine="workbook"`. Load `guide(items=["topic.sheets"])` before the first edit.
 - Price update: `readCells` Holdings!R1:V1 (check the headers match `price_headers` in settings.toml) and
   Holdings!P1:P<last row>; save the result to `work/symbols.json` (the saved tool-result file works too), then
-  `python3 -m minerval prices --claude work/symbols.json --base <revision> --payload-dir work/prices`.
+  `uv run python -m minerval prices --claude work/symbols.json --base <revision> --payload-dir work/prices`.
   Send each `payload_prices_N.json` as one `applyEdits`, in order, setting each `base` to the revision the
   previous call returned. Then check Holdings!D1:H6 and R1:V6 (D = R × V × U) and PNAV inputs C12:D20.
 - With `--claude` the FX table order comes from `fx_rows` in settings.toml (Y2:Y18) and can't be checked,
