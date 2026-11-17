@@ -1,4 +1,4 @@
-"""Offline tests: run with `python -m pytest tests` (or `python tests/test_sheets_and_prices.py`).
+"""Offline tests: run with `uv run python -m pytest tests` (or `python tests/test_sheets_and_prices.py`).
 
 Yahoo is replaced by fixed quotes, and the Sheet by an in-memory copy of the cells the commands use.
 """

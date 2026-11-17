@@ -14,15 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt
+      - run: uv sync --locked --no-dev
       - name: Update the Sheet
         env:
           MINERVAL_SHEET_ID: ${{ secrets.MINERVAL_SHEET_ID }}
           KEY_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
           printf '%s' "$KEY_JSON" > "$RUNNER_TEMP/key.json"
-          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/key.json" python -m minerval prices
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/key.json" uv run --no-sync python -m minerval prices
           cat out/prices/report.txt >> "$GITHUB_STEP_SUMMARY"

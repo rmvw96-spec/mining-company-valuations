@@ -14,7 +14,7 @@ prices every day, company financials after each earnings season.
 ## What's here
 
 ```
-minerval/                the code; run it as  python -m minerval <command>
+minerval/                the code; run it as  uv run python -m minerval <command>
 config/
   settings.toml          scenario prices, model constants, Sheet layout, Yahoo settings
   corrections.csv        figures that replace Yahoo's where Yahoo is known to be wrong (with sources)
@@ -37,15 +37,18 @@ downloads), `data/derived/` (computed company figures), `out/` (reports, backtes
 
 ## Setup
 
-You need Python 3.11 or later.
+You need [uv](https://docs.astral.sh/uv/getting-started/installation/), which installs Python 3.11
+or later for you if you don't have it.
 
 ```
 git clone https://github.com/rmvw96-spec/mining-company-valuations
 cd mining-company-valuations
-python3 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python -m pytest tests                                  # should report 4 passed
+uv sync                                                 # creates .venv/ from pyproject.toml and uv.lock
+uv run python -m pytest tests                           # should report 4 passed
 ```
+
+`uv run` keeps `.venv/` in step with `uv.lock` before each command. To add or upgrade a dependency,
+use `uv add <package>` or `uv lock --upgrade` and commit `pyproject.toml` and `uv.lock` together.
 
 ### Move the spreadsheet to Google Sheets
 
@@ -69,7 +72,7 @@ A service account is a robot Google account that the scripts sign in as. It can 
 4. Share the Google Sheet with the service account's email address (it ends in
    `iam.gserviceaccount.com`), as **Editor**.
 5. `cp config/local.example.toml private/local.toml` and put the Sheet ID in it.
-6. Try it without writing anything: `python -m minerval prices --dry-run`.
+6. Try it without writing anything: `uv run python -m minerval prices --dry-run`.
 
 If you'd rather sign in as yourself, create an **OAuth client ID** (Desktop app) instead, save it as
 `private/oauth_client.json`, set `credentials = "private/oauth_client.json"` and `auth = "oauth"` in
@@ -78,7 +81,7 @@ If you'd rather sign in as yourself, create an **OAuth client ID** (Desktop app)
 ## Daily: prices
 
 ```
-python -m minerval prices
+uv run python -m minerval prices
 ```
 
 Run it after the US close (about 4 pm New York time) to get closing prices; during market hours they
@@ -108,10 +111,10 @@ workflow in `.github/workflows/update-prices.yml`, which explains its setup.
 ## After each earnings season: financials
 
 ```
-python -m minerval prices --shares          # share counts (review changes over 10% in the report)
-python -m minerval refresh                  # download financials, rebuild data/derived/
-python -m minerval financials --dry-run     # report what would change on the Sheet
-python -m minerval financials               # write it
+uv run python -m minerval prices --shares          # share counts (review changes over 10% in the report)
+uv run python -m minerval refresh                  # download financials, rebuild data/derived/
+uv run python -m minerval financials --dry-run     # report what would change on the Sheet
+uv run python -m minerval financials               # write it
 ```
 
 `refresh` is `fetch` (download, about a minute) followed by `compute` (no network). `financials`
@@ -186,10 +189,10 @@ exactly as on the Holdings tab.
 ## Other commands
 
 ```
-python -m minerval fetch-history   # monthly price histories for the backtest (cache/history/)
-python -m minerval backtest        # out/backtest/: recent windows, 2008-2011, since 2000
-python -m minerval project         # out/backtest/projection_k15.json
-python -m minerval prices --claude FILE --base REV   # payloads for the original Claude Sheet (see CLAUDE.md)
+uv run python -m minerval fetch-history   # monthly price histories for the backtest (cache/history/)
+uv run python -m minerval backtest        # out/backtest/: recent windows, 2008-2011, since 2000
+uv run python -m minerval project         # out/backtest/projection_k15.json
+uv run python -m minerval prices --claude FILE --base REV   # payloads for the original Claude Sheet (see CLAUDE.md)
 ```
 
 The backtest and projection use `private/portfolio.csv` (columns as in `config/portfolio.example.csv`):
