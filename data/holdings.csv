@@ -1,0 +1,337 @@
+fund,holding,ticker,weight_pct
+SGDJ,Minerals 260 Ltd,MI6 AU,5.36
+SGDJ,West African Resources Ltd.,WAF AU,5.16
+SGDJ,Emerald Resources NL,EMR AU,4.97
+SGDJ,Wesdome Gold Mines Ltd.,WDO CN,4.93
+SGDJ,Seabridge Gold Inc.,SA,4.91
+SGDJ,Allied Gold Corp.,AAUC CN,4.68
+SGDJ,Turk Altin Isletmeleri AS,TRALT TI,4.55
+SGDJ,TR Anadolu Metal Madencilik Isletmeleri AS,TRMET TI,4.48
+SGDJ,Ora Banda Mining Ltd.,OBM AU,4.46
+SGDJ,Kingsgate Consolidated Ltd.,KCN AU,4.32
+SGDJ,DRDGOLD Ltd.,DRD SJ,4.27
+SGDJ,Endeavour Silver Corp.,EDR CN,4.22
+SGDJ,Fortuna Mining Corp.,FVI CN,4.18
+SGDJ,Alkane Resources Ltd.,ALK AU,4.1
+SGDJ,PDI Gold Ltd.,PDI AU,4.04
+SGDJ,Catalyst Metals Ltd.,CYL AU,3.39
+SGDJ,Hycroft Mining Holding Corp.,HYMC,3.38
+SGDJ,Tongguan Gold Group Ltd.,340 HK,3.26
+SGDJ,i-80 Gold Corp.,IAU CN,3.08
+SGDJ,Perpetua Resources Corp.,PPTA CN,3.02
+SGDJ,Omai Gold Mines Corp.,OMG CN,2.23
+SGDJ,Mineros SA,MSA CN,1.8
+SGDJ,Orezone Gold Corp.,ORE CN,1.66
+SGDJ,Philex Mining Corp.,PX PM,1.56
+SGDJ,Bellevue Gold Ltd.,BGL AU,1.46
+SGDJ,Resolute Mining Ltd.,RSG AU,1.43
+SGDJ,Collective Mining Ltd.,CNL CN,1.38
+SGDJ,Rio2 Ltd.,RIO CN,1.31
+SGDJ,Southern Cross Gold Consolidated Ltd.,SXGC CN,1.16
+SGDJ,McEwen Inc.,MUX,1.07
+SGDM,Agnico Eagle Mines Ltd.,AEM CN,10.06
+SGDM,Newmont Corp.,NEM,7.92
+SGDM,Barrick Mining Corp.,ABX CN,7.48
+SGDM,Wheaton Precious Metals Corp.,WPM CN,7.33
+SGDM,Franco-Nevada Corp.,FNV CN,6.49
+SGDM,Kinross Gold Corp.,K CN,3.85
+SGDM,Lundin Gold Inc.,LUG CN,3.64
+SGDM,Pan American Silver Corp.,PAAS CN,3.22
+SGDM,Endeavour Mining PLC,EDV CN,3.05
+SGDM,IAMGOLD Corp.,IMG CN,3.04
+SGDM,OR Royalties Inc.,OR CN,3.0
+SGDM,Coeur Mining Inc.,CDE,2.94
+SGDM,Torex Resources Inc,TXR CN,2.89
+SGDM,Triple Flag Precious Metals Corp.,TFPM CN,2.86
+SGDM,OceanaGold Corp.,OGC CN,2.84
+SGDM,Harmony Gold Mining Co. Ltd.,HMY,2.83
+SGDM,Centerra Gold Inc.,CG CN,2.66
+SGDM,DPM Metals Inc.,DPM CN,2.66
+SGDM,Galiano Gold Inc.,GAU CN,2.59
+SGDM,K92 Mining Inc.,KNT CN,2.54
+SGDM,Allied Gold Corp.,AAUC CN,2.54
+SGDM,Discovery Mining Ltd.,DSV CN,2.3
+SGDM,Wesdome Gold Mines Ltd.,WDO CN,2.21
+SGDM,Fortuna Mining Corp.,FVI CN,2.12
+SGDM,Anglogold Ashanti PLC,AU,1.69
+SGDM,Gold Fields Ltd.,GFI,0.78
+SGDM,Royal Gold Inc.,RGLD,0.37
+SGDM,B2Gold Corp.,BTO CN,0.33
+SGDM,Aura Minerals Inc.,AUGO,0.32
+SGDM,G Mining Ventures Corp.,GMIN CN,0.32
+SGDM,Equinox Gold Corp.,EQX CN,0.3
+SGDM,Alamos Gold Inc.,AGI CN,0.29
+SGDM,Montage Gold Corp.,MAU CN,0.28
+SGDM,Eldorado Gold Corp.,ELD CN,0.27
+SGDM,SSR Mining Inc.,SSRM CN,0.26
+SGDM,Skeena Resources Ltd.,SKE CN,0.25
+SGDM,Aris Mining Corp.,ARIS CN,0.21
+SGDM,Seabridge Gold Inc.,SEA CN,0.18
+SGDM,Novagold Resources Inc.,NG CN,0.17
+SGDM,Perpetua Resources Corp.,PPTA CN,0.15
+SGDM,Snowline Gold Corp.,SGD CN,0.12
+SGDM,Southern Cross Gold Consolidated Ltd.,SXGC CN,0.1
+SGDM,Hycroft Mining Holding Corp.,HYMC,0.1
+SGDM,Orezone Gold Corp.,ORE CN,0.08
+SGDM,Collective Mining Ltd.,CNL CN,0.07
+SGDM,Rio2 Ltd.,RIO CN,0.07
+SGDM,McEwen Inc.,MUX,0.05
+SGDM,Valor Gold Corp.,VGC CN,0.01
+GBUG,G Mining Ventures Corp.,GMIN CN,4.97
+GBUG,DPM Metals Inc.,DPM CN,4.79
+GBUG,Discovery Mining Ltd.,DSV CN,4.13
+GBUG,Northern Star Resources Ltd.,NST AU,4.1
+GBUG,IAMGOLD Corp.,IAG,4.06
+GBUG,Newmont Corp.,NEM,3.5
+GBUG,Ramelius Resources Ltd.,RMS AU,3.42
+GBUG,Emerald Resources NL,EMR AU,3.39
+GBUG,OceanaGold Corp.,OGC CN,3.37
+GBUG,Montage Gold Corp.,MAU CN,3.36
+GBUG,Eldorado Gold Corp.,EGO,3.35
+GBUG,Wheaton Precious Metals Corp.,WPM,3.31
+GBUG,Agnico Eagle Mines Ltd.,AEM CN,3.25
+GBUG,Wesdome Gold Mines Ltd.,WDO CN,3.2
+GBUG,Coeur Mining Inc.,CDE,3.1
+GBUG,Genesis Minerals Ltd.,GMD AU,2.99
+GBUG,Westgold Resources Ltd.,WGX AU,2.85
+GBUG,Skeena Resources Ltd.,SKE CN,2.83
+GBUG,K92 Mining Inc.,KNT CN,2.79
+GBUG,Equinox Gold Corp.,EQX CN,2.42
+GBUG,Evolution Mining Ltd.,EVN AU,2.38
+GBUG,Anglogold Ashanti PLC,AU,2.32
+GBUG,Ora Banda Mining Ltd.,OBM AU,2.3
+GBUG,Barrick Mining Corp.,B,2.21
+GBUG,i-80 Gold Corp.,IAU CN,2.14
+GBUG,Alamos Gold Inc.,AGI,1.79
+GBUG,Valterra Platinum Ltd.,VALT LN,1.62
+GBUG,SSR Mining Inc.,SSRM,1.53
+GBUG,Metalla Royalty & Streaming Ltd.,MTA,1.44
+GBUG,Endeavour Silver Corp.,EDR CN,1.37
+GBUG,Aris Mining Corp.,ARIS CN,1.32
+GBUG,Vizsla Silver Corp.,VZLA CN,1.3
+GBUG,Hemlo Mining Corp.,HMMC CN,1.28
+GBUG,Artemis Gold Inc.,ARTG CN,1.12
+GBUG,OR Royalties Inc.,OR CN,0.99
+GBUG,Cia de Minas Buenaventura SAA,BVN,0.97
+GBUG,Kinross Gold Corp.,KGC,0.87
+GBUG,Pan American Silver Corp.,PAAS,0.59
+GBUG,Americas Gold & Silver Corp.,USAS,0.55
+GBUG,AbraSilver Resource Corp.,ABRA CN,0.47
+GBUG,New Found Gold Corp.,NFGC,0.38
+GBUG,Perpetua Resources Corp.,PPTA,0.38
+GBUG,LunR Royalties Corp.,LUNR CN,0.06
+SLVR,First Majestic Silver Corp.,AG,19.45
+SLVR,Sprott Physical Silver Trust,PSLV,17.96
+SLVR,Aya Gold & Silver Inc.,AYA CN,9.52
+SLVR,Wheaton Precious Metals Corp.,WPM,5.88
+SLVR,Endeavour Silver Corp.,EXK,4.83
+SLVR,Silvercorp Metals Inc.,SVM,4.7
+SLVR,AbraSilver Resource Corp.,ABRA CN,3.47
+SLVR,Vizsla Silver Corp.,VZLA,3.15
+SLVR,GoGold Resources Inc.,GGD CN,3.02
+SLVR,Americas Gold & Silver Corp.,USAS,2.29
+SLVR,Coeur Mining Inc.,CDE,2.05
+SLVR,Hecla Mining Co.,HL,1.78
+SLVR,Highlander Silver Corp.,HSLV CN,1.78
+SLVR,New Pacific Metals Corp.,NEWP,1.61
+SLVR,Fresnillo PLC,FRES LN,1.27
+SLVR,Industrias Penoles SAB de CV,PEOLES*,1.11
+SLVR,Triple Flag Precious Metals Corp.,TFPM,1.04
+SLVR,Silverco Mining Ltd.,SICO CN,0.86
+SLVR,Silver Tiger Metals Inc.,SLVR CN,0.81
+SLVR,OR Royalties Inc.,OR,0.8
+SLVR,Cia de Minas Buenaventura SAA,BVN,0.73
+SLVR,Unico Silver Ltd.,USL AU,0.72
+SLVR,Cerro de Pasco Resources Inc.,CDPR CN,0.72
+SLVR,Andean Precious Metals Corp.,APM CN,0.59
+SLVR,Silver Mines Ltd.,SVL AU,0.59
+SLVR,Andean Silver Ltd.,ASL AU,0.58
+SLVR,Discovery Mining Ltd.,DSV CN,0.57
+SLVR,Societe Metallurgique D'imiter,SMI MC,0.52
+SLVR,Silver Storm Mining Ltd.,SVRS CN,0.48
+SLVR,Blackrock Silver Corp.,BRC CN,0.46
+SLVR,Guanajuato Silver Co. Ltd.,GSVR CN,0.43
+SLVR,Silver X Mining Corp.,AGX CN,0.39
+SLVR,Boab Metals Ltd.,BML AU,0.38
+SLVR,Silver Mountain Resources Inc.,AGMR CN,0.36
+SLVR,Skeena Resources Ltd.,SKE CN,0.36
+SLVR,Silver One Resources Inc.,SVE CN,0.32
+SLVR,Sotkamo Silver AB,SOSI1 FH,0.3
+SLVR,Hochschild Mining PLC,HOC LN,0.28
+SLVR,GR Silver Mining Ltd.,GRSL CN,0.26
+SLVR,Aftermath Silver Ltd.,AAG CN,0.26
+SLVR,Sun Silver Ltd.,SS1 AU,0.26
+SLVR,Minaurum Gold Inc.,MGG CN,0.25
+SLVR,Southern Silver Exploration Corp.,SSV CN,0.25
+SLVR,Investigator Silver Ltd.,IVR AU,0.24
+SLVR,Outcrop Silver & Gold Corp.,OCG CN,0.21
+SLVR,Apollo Silver Corp.,APGO CN,0.19
+SLVR,Kuya Silver Corp.,KUYA CN,0.18
+SLVR,Maronan Metals Ltd.,MMA AU,0.18
+SLVR,Kootenay Silver Inc.,KTN CN,0.18
+SLVR,IMPACT Silver Corp.,IPT CN,0.16
+SLVR,Honey Badger Silver Inc.,TUF CN,0.15
+SLVR,Avino Silver & Gold Mines Ltd.,ASM,0.15
+SLVR,Argenta Silver Corp.,AGAG CN,0.15
+SLVR,Hycroft Mining Holding Corp.,HYMC,0.15
+SLVR,Santacruz Silver Mining Ltd.,SCZ CN,0.12
+SLVR,Viscount Mining Corp.,VML CN,0.09
+SLVR,Thesis Gold & Silver Inc.,TAU CN,0.07
+SLVR,Kingsmen Resources Ltd.,KNG CN,0.06
+SLVR,Argent Minerals Ltd.,ARD AU,0.06
+SLVR,Integra Resources Corp.,ITR CN,0.05
+SLVR,West Coast Silver Ltd.,WCE AU,0.04
+SLVR,Capitan Silver Corp.,CAPT CN,0.04
+SLVR,Sierra Madre Gold And Silver Ltd.,SM CN,0.03
+SLVR,Bunker Hill Mining Corp.,BNKR CN,0.02
+SLVR,Eloro Resources Ltd.,ELO CN,0.02
+SLVR,BMC Minerals Ltd.,BMC AU,0.01
+SLVR,Chesapeake Gold Corp.,CKG CN,0.01
+SLVR,Excellon Resources Inc.,EXN CN,0.01
+SLVR,Black Bear Minerals Ltd.,BKB AU,0.01
+COPP,Freeport-McMoRan Inc.,FCX,24.07
+COPP,Teck Resources Ltd.,TECK,11.33
+COPP,Antofagasta PLC,ANTO LN,8.25
+COPP,Sprott Physical Copper Trust,COP/U,5.72
+COPP,Hudbay Minerals Inc.,HBM,5.0
+COPP,Southern Copper Corp.,SCCO,4.84
+COPP,Lundin Mining Corp.,LUN CN,4.61
+COPP,KGHM Polska Miedz SA,KGH PW,4.41
+COPP,First Quantum Minerals Ltd.,FM CN,4.14
+COPP,Sandfire Resources Ltd.,SFR AU,2.86
+COPP,Capstone Copper Corp.,CS CN,2.71
+COPP,MMG Ltd.,1208 HK,2.17
+COPP,Amman Mineral Internasional PT,AMMN IJ,2.13
+COPP,Ivanhoe Mines Ltd.,IVN CN,1.93
+COPP,ERO Copper Corp.,ERO,1.54
+COPP,Trekor Metals Ltd.,TGB,1.27
+COPP,iShares MSCI India ETF,INDA,1.18
+COPP,NGEx Minerals Ltd.,NGEX CN,1.13
+COPP,Minsur SA,MINSURI1,1.13
+COPP,ATALAYA MINING COPPER SA,ATYM LN,0.87
+COPP,Sociedad Minera Cerro Verde SAA,CVERDEC1,0.66
+COPP,Amerigo Resources Ltd.,ARG CN,0.42
+COPP,Ivanhoe Electric Inc.,IE,0.42
+COPP,Solaris Resources Inc.,SLS CN,0.4
+COPP,FireFly Metals Ltd.,FFM AU,0.39
+COPP,Sociedad Punta del Cobre SA,PUCOBREC,0.37
+COPP,Faraday Copper Corp.,FDY CN,0.36
+COPP,Osisko Metals Inc.,OM CN,0.35
+COPP,Gruvaktiebolaget Viscaria,VISC SS,0.24
+COPP,Marimaca Copper Corp.,MARI CN,0.21
+COPP,Anglo Asian Mining PLC,AAZ LN,0.2
+COPP,Atex Resources Inc.,ATX CN,0.19
+COPP,Aeris Resources Ltd.,AIS AU,0.19
+COPP,Regulus Resources Inc.,REG CN,0.19
+COPP,Philex Mining Corp.,PX PM,0.19
+COPP,Atlas Consolidated Mining & Development Corp.,AT PM,0.18
+COPP,Imperial Metals Corp.,III CN,0.18
+COPP,Trilogy Metals Inc.,TMQ,0.17
+COPP,Koryx Copper SA,KRY CN,0.17
+COPP,AIC Mines Ltd.,A1M AU,0.16
+COPP,Central Asia Metals PLC,CAML LN,0.16
+COPP,PECOY COPPER Corp.,PCU CN,0.15
+COPP,Blue Moon Metals Inc.,MOON CN,0.15
+COPP,Aldebaran Resources Inc.,ALDE CN,0.15
+COPP,Element 29 Resources Inc.,ECU CN,0.14
+COPP,Entree Resources Ltd.,ETG CN,0.13
+COPP,Panoro Minerals Ltd.,PML CN,0.12
+COPP,Hercules Metals Corp.,BIG CN,0.12
+COPP,Andina Copper Corp.,ANDC CN,0.1
+COPP,Hot Chili Ltd.,HCH AU,0.09
+COPP,29Metals Ltd.,29M AU,0.08
+COPP,Cobre Ltd.,CBE AU,0.08
+COPP,Evolution Mining Ltd.,EVN AU,0.08
+COPP,Kantra Copper Ltd.,KAN AU,0.08
+COPP,King Copper Discovery Corp.,KCP CN,0.07
+COPP,KGL Resources Ltd.,KGL AU,0.07
+COPP,Gunnison Copper Corp.,GCU CN,0.07
+COPP,Kingfisher Metals Corp.,KFR CN,0.06
+COPP,Amarc Resources Ltd.,AHR CN,0.06
+COPP,Prospect Resources Ltd.,PSC AU,0.06
+COPP,Los Andes Copper Ltd.,LA CN,0.06
+COPP,Gladiator Metals Corp.,GLAD CN,0.06
+COPP,Copper Fox Metals Inc.,CUU CN,0.05
+COPP,Fitzroy Minerals Inc.,FTZ CN,0.05
+COPP,Copper 360 Ltd.,CPR SJ,0.05
+COPP,Copper Giant Resources Corp.,CGNT CN,0.05
+COPP,Cyprium Metals Ltd.,CYM AU,0.04
+COPP,China Daye Non-Ferrous Metals Mining Ltd.,661 HK,0.04
+COPP,Oroco Resource Corp.,OCO CN,0.04
+COPP,Midnight Sun Mining Corp.,MMA CN,0.04
+COPP,Selkirk Copper Mines Inc.,SCMI CN,0.03
+COPP,Caravel Minerals Ltd.,CVV AU,0.03
+COPP,Austral Resources Australia Ltd.,AR1 AU,0.03
+COPP,Kodiak Copper Corp.,KDK CN,0.03
+COPP,Vizsla Copper Corp.,VCU CN,0.02
+COPP,Intrepid Metals Corp.,INTR CN,0.02
+COPP,Barksdale Resources Corp.,BRO CN,0.02
+COPP,Sterling Metals Corp.,SAG CN,0.01
+COPJ,Minsur SA,MINSURI1,5.48
+COPJ,ERO Copper Corp.,ERO CN,4.88
+COPJ,Trekor Metals Ltd.,TGB,4.71
+COPJ,ATALAYA MINING COPPER SA,ATYM LN,4.56
+COPJ,Amerigo Resources Ltd.,ARG CN,4.38
+COPJ,Solaris Resources Inc.,SLS CN,4.06
+COPJ,FireFly Metals Ltd.,FFM AU,3.95
+COPJ,Ivanhoe Electric Inc.,IE,3.83
+COPJ,Faraday Copper Corp.,FDY CN,3.7
+COPJ,Sociedad Punta del Cobre SA,PUCOBREC,3.64
+COPJ,Osisko Metals Inc.,OM CN,3.54
+COPJ,Gruvaktiebolaget Viscaria,VISC SS,2.43
+COPJ,Marimaca Copper Corp.,MARI CN,2.08
+COPJ,Anglo Asian Mining PLC,AAZ LN,2.05
+COPJ,Atex Resources Inc.,ATX CN,1.97
+COPJ,Aeris Resources Ltd.,AIS AU,1.96
+COPJ,Regulus Resources Inc.,REG CN,1.91
+COPJ,Philex Mining Corp.,PX PM,1.89
+COPJ,Atlas Consolidated Mining & Development Corp.,AT PM,1.88
+COPJ,Imperial Metals Corp.,III CN,1.81
+COPJ,Trilogy Metals Inc.,TMQ,1.69
+COPJ,Koryx Copper SA,KRY CN,1.69
+COPJ,AIC Mines Ltd.,A1M AU,1.59
+COPJ,Central Asia Metals PLC,CAML LN,1.59
+COPJ,PECOY COPPER Corp.,PCU CN,1.54
+COPJ,Blue Moon Metals Inc.,MOON CN,1.5
+COPJ,Aldebaran Resources Inc.,ALDE CN,1.48
+COPJ,Element 29 Resources Inc.,ECU CN,1.42
+COPJ,Entree Resources Ltd.,ETG CN,1.33
+COPJ,Panoro Minerals Ltd.,PML CN,1.26
+COPJ,Hercules Metals Corp.,BIG CN,1.22
+COPJ,Andina Copper Corp.,ANDC CN,1.06
+COPJ,Hot Chili Ltd.,HCH AU,0.94
+COPJ,KGL Resources Ltd.,KGL AU,0.92
+COPJ,Evolution Mining Ltd.,EVN AU,0.86
+COPJ,29Metals Ltd.,29M AU,0.83
+COPJ,Cobre Ltd.,CBE AU,0.82
+COPJ,Kantra Copper Ltd.,KAN AU,0.75
+COPJ,King Copper Discovery Corp.,KCP CN,0.74
+COPJ,Gunnison Copper Corp.,GCU CN,0.7
+COPJ,Kingfisher Metals Corp.,KFR CN,0.62
+COPJ,Amarc Resources Ltd.,AHR CN,0.6
+COPJ,Prospect Resources Ltd.,PSC AU,0.58
+COPJ,Los Andes Copper Ltd.,LA CN,0.56
+COPJ,Gladiator Metals Corp.,GLAD CN,0.56
+COPJ,Barksdale Resources Corp.,BRO CN,0.55
+COPJ,Copper Fox Metals Inc.,CUU CN,0.55
+COPJ,Fitzroy Minerals Inc.,FTZ CN,0.51
+COPJ,Copper Giant Resources Corp.,CGNT CN,0.48
+COPJ,Copper 360 Ltd.,CPR SJ,0.48
+COPJ,Cyprium Metals Ltd.,CYM AU,0.44
+COPJ,Cascadia Minerals Ltd.,CAM CN,0.44
+COPJ,China Daye Non-Ferrous Metals Mining Ltd.,661 HK,0.44
+COPJ,Oroco Resource Corp.,OCO CN,0.37
+COPJ,Midnight Sun Mining Corp.,MMA CN,0.37
+COPJ,Selkirk Copper Mines Inc.,SCMI CN,0.34
+COPJ,Coppernico Metals Inc.,COPR CN,0.34
+COPJ,Caravel Minerals Ltd.,CVV AU,0.33
+COPJ,Kodiak Copper Corp.,KDK CN,0.33
+COPJ,Austral Resources Australia Ltd.,AR1 AU,0.32
+COPJ,Intrepid Metals Corp.,INTR CN,0.29
+COPJ,Coda Minerals Ltd.,COD AU,0.26
+COPJ,Centauri Minerals Inc.,CENT CN,0.24
+COPJ,Vizsla Copper Corp.,VCU CN,0.23
+COPJ,Edge Copper Corp.,EDCU CN,0.22
+COPJ,Star Copper Corp.,STCU CN,0.21
+COPJ,True North Copper Ltd.,TNC AU,0.19
+COPJ,Sterling Metals Corp.,SAG CN,0.19

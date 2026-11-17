@@ -1,0 +1,58 @@
+# Monte Carlo projection of the portfolio (private/portfolio.csv) over 1, 3 and 5 years.
+# These are judgement calls, recorded Nov 17, 2026. Change them and rerun `python -m minerval project`.
+
+paths = 40000
+months = 60
+seed = 20261117
+horizons = { "1 year" = 11, "3 years" = 35, "5 years" = 59 }   # month index of each horizon
+
+# Monthly metal returns: covariance of log returns from this month on (20 years).
+metals_from = "2006-12"
+# Each stock = beta x its main metal + its own (idiosyncratic) moves, fitted on monthly data from:
+beta_from = "2016-11"
+correlation_from = "2020-11"    # correlation of the idiosyncratic moves; shrunk toward zero by:
+correlation_shrink = 0.2
+developer_volatility = 0.8      # developers' own moves are scaled down: outcome trees carry their big risks
+trust_fee = 0.005               # yearly fee drag on the physical trusts
+
+# Valuation catch-up: a stock trading at x times its peer norm drifts toward 1.0 at this speed
+# (log gap closes by 1 - exp(-kappa x years)). 0 turns it off.
+kappa = 0.15
+# Valuation vs peer norm on Nov 16, 2026 (Model portfolio tab, column K).
+valuation = { NEM = 0.64, KGC = 0.74, OGC = 0.78, DPM = 1.00, IAG = 0.51, GFI = 0.74, LUN = 0.57, TECK = 0.72, TGB = 0.67, BVN = 0.83 }
+
+# Interest-rate regimes: probability, then yearly median price growth for (gold, silver, copper)
+# in years 1-2 and in years 3-5.
+[regimes."Hawkish: hikes, 10-yr stays above 5%"]
+probability = 0.25
+years_1_2 = [-0.06, -0.09, -0.05]
+years_3_5 = [0.03, 0.03, 0.03]
+
+[regimes."Base: on hold through 2027, cuts in 2028-29 (Fed's Sept projections)"]
+probability = 0.50
+years_1_2 = [0.05, 0.05, 0.05]
+years_3_5 = [0.05, 0.05, 0.05]
+
+[regimes."Dovish: cuts start in 2027"]
+probability = 0.25
+years_1_2 = [0.12, 0.15, 0.00]
+years_3_5 = [0.05, 0.05, 0.06]
+
+# Outcome trees for the growth names: between the first and last month, one event multiplies the
+# price by one of the outcomes, with the given probabilities. Perpetua has two stages.
+[outcomes]
+AGI = [{ months = [12, 30], odds = [[0.65, 1.20], [0.30, 0.85], [0.05, 0.60]] }]
+ARTG = [{ months = [6, 24], odds = [[0.60, 1.20], [0.32, 0.85], [0.08, 0.60]] }]
+SKE = [{ months = [6, 18], odds = [[0.55, 1.30], [0.33, 0.75], [0.12, 0.45]] }]
+SA = [{ months = [12, 36], odds = [[0.30, 1.80], [0.55, 0.80], [0.15, 0.50]] }]
+PPTA = [{ months = [3, 15], odds = [[0.60, 1.25], [0.30, 0.70], [0.10, 0.40]] },
+        { months = [30, 54], odds = [[0.50, 1.40], [0.40, 0.75], [0.10, 0.45]] }]
+OMG = [{ months = [12, 42], odds = [[0.35, 2.00], [0.40, 0.70], [0.25, 0.35]] }]
+
+# Cross-checks reported alongside the results.
+[checks]
+spot = { gold = 3859.0, silver = 46.91, copper = 5.99 }   # metal prices on the start date
+gold_band = [4700, 5400]          # where banks' end-2027 gold forecasts sat (month 12)
+gold_above = 4800
+# Argus 12-month targets (Yahoo ws/insights, Nov 2026) vs the share price used: target / price - 1
+analyst_targets = { NEM = [123, 110.31], KGC = [24, 19.94], IAG = [20, 16.93], TECK = [72, 57.16] }

@@ -1,0 +1,7 @@
+# Python 3.11 or later
+requests>=2.31
+pandas>=2.1
+numpy>=1.26
+gspread>=6.0          # Google Sheets
+google-auth>=2.23
+pytest>=8.0           # tests only

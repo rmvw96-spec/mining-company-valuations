@@ -1,0 +1,8 @@
+ticker,yahoo,note
+PEOLES*,PE&OLES.MX,Sprott's ticker has no exchange code
+MINSURI1,MINSURI1.LM,Lima listing; Yahoo has no data for it (Nov 2026)
+CVERDEC1,CVERDEC1.LM,Lima listing; Yahoo has no data for it (Nov 2026)
+PUCOBREC,PUCOBRE.SN,Santiago listing
+COP/U,COP-U.TO,Sprott Physical Copper Trust (US$ units in Toronto)
+PX PM,PXMFF,Philex Mining: the Manila line has no data on Yahoo; priced through the thinly traded US line
+ETG CN,ETG.TO,Entree Resources: name check fails on Yahoo's listing
