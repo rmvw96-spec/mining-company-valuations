@@ -6,3 +6,5 @@ PUCOBREC,PUCOBRE.SN,Santiago listing
 COP/U,COP-U.TO,Sprott Physical Copper Trust (US$ units in Toronto)
 PX PM,PXMFF,Philex Mining: the Manila line has no data on Yahoo; priced through the thinly traded US line
 ETG CN,ETG.TO,Entree Resources: name check fails on Yahoo's listing
+SVL AU,SVL.AX,"Silver Mines Ltd.; Yahoo calls it Silver Mines Limited"
+AGX CN,AGX.V,"Silver X Mining; TSX Venture listing"

@@ -1,2 +1,4 @@
 ticker,field,value_usd_m,note,source
 LUG CN,fcf,1103.6,Free cash flow from company reports: Yahoo omitted capital spending,"Lundin Gold reports: 9 months to Sep 30, 2026 US$775.4M + Q4 2025 US$328.2M"
+MSA CN,ocf,244.6,"Op. cash flow before gold bullion purchases (Mineros' own measure); reported figure is net of $247M of bullion bought","Mineros Q3 2026 release (Nov 12, 2026): 9 months to Sep 30, 2026 US$194.9M before purchases + Q4 2025 US$49.7M (FY2025 US$198.5M less 9 months US$148.8M; no purchases in 2025)"
+MSA CN,fcf,167.6,"Op. cash flow before gold bullion purchases (Mineros' own measure); reported figure is net of $247M of bullion bought","Trailing op. cash flow before purchases US$244.6M less trailing capital spending US$77.0M (Yahoo)"
