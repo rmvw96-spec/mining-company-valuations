@@ -1,16 +1,10 @@
-"""Offline tests: run with `uv run python -m pytest tests` (or `python tests/test_sheets_and_prices.py`).
-
-Yahoo is replaced by fixed quotes, and the Sheet by an in-memory copy of the cells the commands use.
-"""
+"""The daily price update. Yahoo is replaced by fixed quotes, and the Sheet by an in-memory copy of
+the cells the commands use."""
 import json
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from minerval import prices, yahoo  # noqa: E402
-from minerval.config import settings  # noqa: E402
-from minerval.sheets import CLEAR, ClaudePayloads, MemorySheet, a1, blocks_by_row, runs  # noqa: E402
+from minerval import prices, yahoo
+from minerval.config import settings
+from minerval.sheets import CLEAR, ClaudePayloads, MemorySheet, a1, blocks_by_row, col_to_num, num_to_col, runs, split_cell
 
 QUOTES = {
     "AEM.TO": {"price": 250.0, "currency": "CAD", "date": "2026-11-17", "prev": 240.0},
@@ -24,7 +18,7 @@ QUOTES = {
 FX = {"CAD": (0.7, "Yahoo CAD=X, inverted"), "GBP": (1.3, "Yahoo GBP=X, inverted")}
 
 
-def fake_yahoo(monkeypatch=None):
+def fake_yahoo(monkeypatch):
     def quote(s):
         return QUOTES.get(s)
 
@@ -35,10 +29,7 @@ def fake_yahoo(monkeypatch=None):
         return {i: fn(i) for i in items}
 
     for name, fn in (("quote", quote), ("usd_per_unit", usd), ("pmap", pmap)):
-        if monkeypatch:
-            monkeypatch.setattr(yahoo, name, fn)
-        else:
-            setattr(yahoo, name, fn)
+        monkeypatch.setattr(yahoo, name, fn)
 
 
 def sheet():
@@ -62,7 +53,7 @@ def test_helpers():
     assert blocks_by_row("T", "R", {2: [1], 3: [2], 5: [3]}) == [("T", "R2", [[1], [2]]), ("T", "R5", [[3]])]
 
 
-def test_prices_google_like(tmp_path, monkeypatch=None):
+def test_prices_google_like(tmp_path, monkeypatch):
     fake_yahoo(monkeypatch)
     sh = sheet()
     rep = prices.run(sheet=sh, out_dir=tmp_path)
@@ -75,7 +66,7 @@ def test_prices_google_like(tmp_path, monkeypatch=None):
     assert (m["C15"], m["C16"], m["C17"], m["C30"]) == (3900.0, 48.0, 6.0, 0.0505)
 
 
-def test_layout_change_stops_the_update(tmp_path, monkeypatch=None):
+def test_layout_change_stops_the_update(tmp_path, monkeypatch):
     fake_yahoo(monkeypatch)
     sh = sheet()
     sh.cells["Holdings"]["S1"] = "Currency"
@@ -87,7 +78,7 @@ def test_layout_change_stops_the_update(tmp_path, monkeypatch=None):
         raise AssertionError("a changed header should stop the update")
 
 
-def test_claude_payloads(tmp_path, monkeypatch=None):
+def test_claude_payloads(tmp_path, monkeypatch):
     fake_yahoo(monkeypatch)
     f = tmp_path / "symbols.json"
     f.write_text(json.dumps({"1": "Yahoo symbol", "2": "AEM.TO", "3": "NEM"}))
@@ -100,9 +91,16 @@ def test_claude_payloads(tmp_path, monkeypatch=None):
     assert json.loads((tmp_path / "payload_x_1.json").read_text())["edits"][0]["rows"] == [[1.0, None]]
 
 
-if __name__ == "__main__":
-    import tempfile
-    for t in (test_helpers, test_prices_google_like, test_layout_change_stops_the_update, test_claude_payloads):
-        with tempfile.TemporaryDirectory() as d:
-            t(Path(d)) if t is not test_helpers else t()
-        print("ok", t.__name__)
+
+def test_prices_write_only_their_own_cells(tmp_path, monkeypatch):
+    """Holdings D:H and V are ARRAYFORMULAs: a value typed below them breaks the whole column."""
+    fake_yahoo(monkeypatch)
+    monkeypatch.setattr(prices, "latest_shares", lambda s: {"shares_m": 10.0, "asof": "2026-09-30"})
+    sh = sheet()
+    prices.run(sheet=sh, shares=True, out_dir=tmp_path)
+    allowed = {"Holdings": {"R", "S", "T", "U", "Z", "AA", "AB"}, "Metal prices reference": {"C"}}
+    for tab, cell, rows in sh.blocks:
+        col, _ = split_cell(cell)
+        cols = {num_to_col(col_to_num(col) + j) for row in rows for j in range(len(row))}
+        assert cols <= allowed[tab], (tab, cell)
+    assert sh.cells["Holdings"]["U2"] == 10.0
