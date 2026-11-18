@@ -11,7 +11,7 @@ import pandas as pd
 
 from .config import DERIVED, ensure, fund_metal, settings
 from .holdings import companies, load_cache
-from .price_model import METALS, Metals, mix_for, mixes, revenue_change
+from .price_model import METALS, Metals, cost_change, cost_increase_default, mix_for, mixes, revenue_change
 
 UNIT = {"gold": "gold $/oz", "silver": "silver $/oz", "copper": "copper $/lb"}
 
@@ -40,10 +40,11 @@ def latest(series: dict, keys, fx):
     return max(pts, key=lambda p: p["date"]) if pts else None
 
 
-def per_holding(X: pd.DataFrame, metals: Metals, cache=None) -> pd.DataFrame:
+def per_holding(X: pd.DataFrame, metals: Metals, cache=None, cost_increase: float | None = None) -> pd.DataFrame:
     S = settings()
     pm = S["price_model"]
     ebitda_k, cf_k = pm["ebitda_share"], pm["cash_flow_share"]
+    c = cost_increase_default(cost_increase)
     tol = {int(k): v for k, v in S["stress"]["dilution_tolerance_days"].items()}
     cache = cache or load_cache()
     H, FX = cache["holdings"], cache["fx"]
@@ -57,11 +58,15 @@ def per_holding(X: pd.DataFrame, metals: Metals, cache=None) -> pd.DataFrame:
         rev = r.revenue if r.kind == "company" and pd.notna(r.revenue) and r.revenue > 0 and isinstance(r.fin_date, str) else 0.0
         avg = {m: metals.average(m, r.fin_date) for m in METALS} if rev else {}
         d = {"comp": comp, "revenue_used": rev}
+        # Producers' cost increase: the same in every scenario (costs don't follow metal prices here).
+        cost_fcf, cost_ocf = cost_change(rev, r.fcf, c), cost_change(rev, r.ocf, c)
+        cost_ebitda = cost_change(rev, r.ebitda, c, share=1.0)
+        d["cost_base_m"] = max(0.0, rev - r.fcf) / 1e6 if rev and pd.notna(r.fcf) else np.nan
         for name, P in scen.items():
             dr = revenue_change(rev, mix, P, avg) if rev else 0.0
-            d[f"ocf_{name}"] = r.ocf + cf_k * dr if pd.notna(r.ocf) else np.nan
-            d[f"fcf_{name}"] = r.fcf + cf_k * dr if pd.notna(r.fcf) else np.nan
-            d[f"ebitda_{name}"] = r.ebitda + ebitda_k * dr if pd.notna(r.ebitda) else np.nan
+            d[f"ocf_{name}"] = r.ocf + cf_k * dr + cost_ocf if pd.notna(r.ocf) else np.nan
+            d[f"fcf_{name}"] = r.fcf + cf_k * dr + cost_fcf if pd.notna(r.fcf) else np.nan
+            d[f"ebitda_{name}"] = r.ebitda + ebitda_k * dr + cost_ebitda if pd.notna(r.ebitda) else np.nan
             if name == "Today":
                 d["revenue_change_today"] = dr
         # Breakeven: the multiple k of today's prices (all metals together) at which FCF = 0.
@@ -70,12 +75,13 @@ def per_holding(X: pd.DataFrame, metals: Metals, cache=None) -> pd.DataFrame:
         A = sum(sh * metals.spot[m] / avg[m] for m, sh in mix.items()) if rev else 0.0
         B = sum(mix.values())
         if pd.notna(r.fcf):
-            d["a"], d["b"] = cf_k * rev * A, r.fcf - cf_k * rev * B
+            d["a"], d["b"] = cf_k * rev * A, r.fcf - cf_k * rev * B + cost_fcf
         if rev and A > 0 and pd.notna(r.fcf):
             d["be_k"] = -d["b"] / d["a"]
             d["be_metal"] = max(mix, key=mix.get)
             d["be_price"] = d["be_k"] * metals.spot[d["be_metal"]]
         # Linear FCF in $M: intercept + per-$ coefficients, so the Sheet can recompute FCF at any prices.
+        # The cost increase is left out: the Sheet subtracts it with cost_base_m (Holdings downside R).
         if r.kind == "company" and pd.notna(r.fcf):
             a0, b = r.fcf, {m: 0.0 for m in METALS}
             for m, sh in (mix.items() if rev else []):
@@ -163,11 +169,11 @@ def multiples_today(M: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(out).set_index("fund")
 
 
-def run(today: dict | None = None):
+def run(today: dict | None = None, cost_increase: float | None = None):
     ensure(DERIVED)
     X = pd.read_csv(DERIVED / "holdings_detail.csv")
     metals = Metals(today)
-    M = per_holding(X, metals)
+    M = per_holding(X, metals, cost_increase=cost_increase)
     M.to_csv(DERIVED / "stress_holdings.csv", index=False)
     F = fund_table(M, metals)
     F.to_csv(DERIVED / "stress_funds.csv")

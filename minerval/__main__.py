@@ -1,12 +1,15 @@
 """Command line: python -m minerval <command> [options]. Run with -h for help on any command.
 
 Daily
-  prices          update share prices, FX, metal prices and the 10-year yield on the Sheet
+  prices          update share prices, FX, metal prices and the 10-year yield on the Sheet, then signals
+  signals         refresh the Signals tab (market timing signals for each tier)
 After each earnings season (or when Sprott's holdings change)
   refresh         = fetch + compute
   fetch           download financials for every holding from Yahoo (cache/)
   compute         rebuild data/derived/ from the cache (no network)
   financials      write the refreshed company data to the Sheet
+Once (and after changing the layout settings)
+  setup-sheet     add the Signals tab and the new columns to the Sheet
 Portfolio research (occasional)
   fetch-history   download monthly price histories for the backtest
   backtest        backtest the portfolio in private/portfolio.csv
@@ -51,12 +54,20 @@ def main(argv=None):
     p.add_argument("--shares", action="store_true", help="also update share counts (after earnings season)")
     p.add_argument("--old-shares", help="(Claude Sheet) saved read of Holdings!U1:U<last>, to flag big changes")
     p.add_argument("--no-metals", action="store_true", help="leave metal prices and the 10-year yield alone")
+    p.add_argument("--no-signals", action="store_true", help="don't refresh the Signals tab afterwards")
+    p = sub.add_parser("signals", help="refresh the Signals tab")
+    google(p)
+    p = sub.add_parser("setup-sheet", help="add the Signals tab and new columns (idempotent)")
+    google(p)
 
     sub.add_parser("fetch", help="download financials for every holding")
     for name in ("compute", "refresh"):
         p = sub.add_parser(name, help="rebuild data/derived/" + (" after fetching" if name == "refresh" else ""))
         p.add_argument("--today", help="metal prices to use as today's, e.g. gold=3859,silver=47.7,copper=5.99 "
                                        "(default: the latest COMEX close in the cache)")
+        p.add_argument("--cost-increase", type=float,
+                       help="producers' cost increase since their reported period, e.g. 0.1 for 10%% "
+                            "(default: price_model.cost_increase in settings.toml)")
     p = sub.add_parser("financials", help="write refreshed company data to the Sheet")
     google(p)
     sub.add_parser("fetch-history", help="download monthly price histories")
@@ -72,7 +83,16 @@ def main(argv=None):
             lines = prices.run(symbols_file=a.claude, payload_dir=Path(a.payload_dir) if a.payload_dir else None,
                                base=a.base, shares=a.shares, old_shares=a.old_shares, metals=not a.no_metals)
         else:
-            lines = prices.run(sheet=open_sheet(a), shares=a.shares, metals=not a.no_metals, dry_run=a.dry_run)
+            sheet = open_sheet(a)
+            lines = prices.run(sheet=sheet, shares=a.shares, metals=not a.no_metals, dry_run=a.dry_run)
+            if not a.no_signals:
+                lines += prices.run_signals(sheet, dry_run=a.dry_run)
+    if a.cmd == "signals":
+        from . import signals
+        lines = signals.run(open_sheet(a), dry_run=a.dry_run)
+    if a.cmd == "setup-sheet":
+        from . import layout
+        lines = layout.run(open_sheet(a), dry_run=a.dry_run)
     if a.cmd in ("fetch", "refresh"):
         from . import fundamentals
         lines += fundamentals.run()
@@ -80,8 +100,8 @@ def main(argv=None):
         from . import holdings, pnav, stress
         today = parse_today(a.today)
         X, F = holdings.run()
-        stress.run(today)
-        pnav.run(today)
+        stress.run(today, a.cost_increase)
+        pnav.run(today, a.cost_increase)
         lines.append(f"Wrote data/derived/: {len(X)} holdings, {len(F)} funds.")
     if a.cmd == "financials":
         from . import financials

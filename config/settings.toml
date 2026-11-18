@@ -23,6 +23,9 @@ COPJ = { metal = "copper", focus = "Junior copper miners" }
 ebitda_share = 0.95                 # share of that revenue change reaching EBITDA (royalties take ~5%)
 cash_flow_share = 0.70              # share reaching operating and free cash flow (after ~30% tax)
 average_window_days = 365           # window for the average price over a company's reported 12 months
+# Producers' cost increase since their reported 12 months (0.10 = 10%). It lowers free cash flow by
+# cash_flow_share x (revenue - FCF) x cost_increase. On the Sheet it is the Signals tab's producer_cost_increase input.
+cost_increase = 0.0
 
 # Revenue shares for companies not listed in config/metal_mix.csv, by their fund's metal.
 [price_model.default_mix]
@@ -101,6 +104,121 @@ downside_tab = "Holdings downside"
 pnav_inputs_tab = "PNAV inputs"
 pnav_first_row = 12
 pnav_last_row = 154
+
+# New layout added by `setup-sheet` (Signals tab, PNAV inputs AR:BE, P/NAV U:V, Holdings downside R, Model portfolio W:Y).
+signals_tab = "Signals"
+signals_first_row = 5               # first signal row (headers on row 4)
+signals_last_row = 120              # how far down the code looks for keys in column A
+pnav_tab = "P_NAV"                  # the P/NAV tab (row N there is PNAV inputs row N+10)
+pnav_tab_first_row = 2
+pnav_tab_last_row = 144
+pnav_cost_label_cell = "G7"         # PNAV inputs: "Producer cost increase ..." label and its value
+pnav_cost_cell = "H7"
+pass_through_cell = "C32"           # Metal prices reference: share of a revenue change reaching cash flow
+downside_first_row = 2
+downside_last_row = 337
+portfolio_tab = "Model portfolio"
+portfolio_first_row = 6
+portfolio_last_row = 31
+
+# PNAV inputs columns: the existing ones the new formulas refer to, and the new ones (AR onwards).
+[sheet.pnav_inputs]
+holding = "B"
+price = "C"
+mcap = "D"
+net_cash = "E"
+revenue = "F"
+fcf = "G"
+ocf = "H"
+basis = "I"
+nav_per_share = "R"
+independent_pnav = "AJ"
+peer_group = "AL"
+buy_below = "AR"
+royalty_band = "AS"
+resource_amount = "AT"
+resource_unit = "AU"
+resource_category = "AV"
+resource_source = "AW"
+cash = "AX"
+fcf_12m = "AY"
+ev = "AZ"
+ev_per_unit = "BA"
+ev_per_aueq_oz = "BB"
+months_of_cash = "BC"
+cash_share = "BD"
+developer_check = "BE"
+
+[sheet.pnav_tab_cols]
+royalty_band = "U"
+buy_below = "V"
+
+[sheet.downside_cols]
+low_fcf = "K"                       # the one ARRAYFORMULA on Holdings downside
+ticker = "L"
+cost_base = "R"                     # new helper: revenue - FCF, $M
+
+[sheet.portfolio_cols]
+bucket = "A"
+holding = "B"
+metal = "E"
+timing = "W"
+ev_per_aueq_oz = "X"
+months_of_cash = "Y"
+
+[signals]
+# Market signals for the Signals tab (`python -m minerval signals`, also run at the end of `prices`).
+daily = ["GC=F", "SI=F", "HG=F", "GDX", "GDXJ", "SIL", "SILJ", "COPX", "CL=F", "HO=F", "DX-Y.NYB", "SPY"]
+monthly = ["GC=F", "SI=F", "HG=F", "GDX", "SIL", "COPX"]      # full monthly history, for percentiles
+fred_series = "DFII10"              # 10-year TIPS real yield, %, daily; no API key
+fred_url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
+ratio_history_start = "2000-08"     # gold/silver ratio percentile: month-ends from here (COMEX futures on Yahoo)
+percentile_years = 10               # miners-against-metal percentiles: month-ends over this many years
+uptrend_days = 200                  # trading days in the moving average
+real_yield_change_days = 63         # ~3 months of trading days
+tax_loss_window = ["11-01", "12-31"]   # month-day, inclusive: when juniors are sold for tax losses
+fcf_yield_funds = ["SGDM", "SGDJ", "COPP", "SLVR"]
+
+# Thresholds: [G, H] on the Signals tab. The Sheet's values win when the code runs against it; these are the
+# record and the fallback. Each is chosen to match the framework's wording:
+[signals.thresholds]
+gold_silver_ratio = [80, 50]        # above 80 silver is historically cheap against gold; below 50 gold is
+real_yield_10y = [0.25, 0.10]       # [drop from 12-month high, % points; 3-month rise counted as "rising"]
+usd_12m = [-0.03, 0.03]             # a 3% move in the dollar index over a year is a trend, not noise
+spy_drawdown = [-0.10, -0.20]       # 10% off the high is a pullback, 20% a bear market ("panic")
+royalty_pnav_median = [1.4, 2.2]    # framework: buy royalties at 1.1-1.4x NAV; 1.5-2.2x is their normal range
+gold_vs_diesel_12m = [0.10, -0.10]  # a 10-point gap between the metal and diesel moves margins visibly
+copper_vs_diesel_12m = [0.10, -0.10]
+silver_vs_diesel_12m = [0.10, -0.10]
+gdx_gold_pctile10y = [20, 80]       # bottom and top fifth of the last 10 years
+sil_silver_pctile10y = [20, 80]
+copx_copper_pctile10y = [20, 80]
+fcf_yield_SGDM = [0.08, 0.03]       # 8%+ is cheap for miners (12.5x FCF); under 3% (33x) is expensive
+fcf_yield_SGDJ = [0.08, 0.03]
+fcf_yield_COPP = [0.08, 0.03]
+fcf_yield_SLVR = [0.08, 0.03]
+
+# Inputs block on the Signals tab (key = value). Blank ones are left for you to fill in on the Sheet.
+[signals.inputs]
+industry_aisc = 1930                # all-in sustaining cost, $/oz, industry average
+industry_aisc_source = "World Gold Council, Q2 2026"
+producer_cost_increase = 0.0        # used by the P/NAV and Low-scenario cash flows (Part 3 of the spec)
+near_cash_share = 0.5               # developer "trading near cash" when cash is at least this share of market value
+runway_short_months = 12            # framework: hold at least 12 to 18 months of cash
+runway_ok_months = 18
+
+# Model portfolio column W: which signals each bucket shows (keys on the Signals tab, joined with " / ").
+# "Bucket|Metal" entries win over "Bucket". "=text" shows the text itself; "@developer_check" is this row's
+# PNAV inputs developer check. Any royalty/streaming company shows its royalty band instead.
+[signals.timing]
+"Physical metal|Gold" = ["real_yield_10y"]
+"Physical metal|Silver" = ["gold_silver_ratio"]
+"Physical metal|Copper" = ["=No framework signal for physical copper"]
+"Gold producers" = ["gold_vs_diesel_12m", "gdx_gold_pctile10y"]
+"Growth: expanding producers" = ["gold_vs_diesel_12m", "gdx_gold_pctile10y"]
+"Copper producers" = ["copper_vs_diesel_12m", "copx_copper_pctile10y"]
+"Silver and polymetallic producers" = ["silver_vs_diesel_12m", "sil_silver_pctile10y"]
+"Growth: developers" = ["junior_timing", "@developer_check"]
 
 [report]
 stale_days = 6          # flag prices older than this

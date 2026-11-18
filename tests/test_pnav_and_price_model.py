@@ -74,3 +74,88 @@ def test_pnav_compute():
     assert T.loc[13, "independent or study pnav"] == pytest.approx(10 / 8)
     assert pd.isna(T.loc[13, "pnav Today"])                       # no basis: no model P/NAV
     assert T.loc[14, "pnav Today"] == pytest.approx(1000 / ((150 + chg_today) * ann + 100))   # OCF basis
+
+
+# --- producers' cost increase ---
+
+def test_cost_change():
+    from minerval.price_model import cost_change
+    assert cost_change(500.0, 80.0, 0.1) == pytest.approx(-0.7 * 420 * 0.1)
+    assert cost_change(500.0, 80.0, 0.1, share=1.0) == pytest.approx(-42.0)
+    assert cost_change(500.0, 600.0, 0.1) == 0.0            # cash flow above revenue: nothing to inflate
+    assert cost_change(0.0, -80.0, 0.1) == 0.0              # no revenue: not a producer
+
+
+def pnav_inputs():
+    scen = {"Low": {"gold": 3500.0, "silver": 35.0, "copper": 4.0},
+            "High": {"gold": 5000.0, "silver": 70.0, "copper": 7.0},
+            "All-time high": {"gold": 5586.2, "silver": 121.3, "copper": 6.83}}
+    metals = FakeMetals(spot={"gold": 4400.0, "silver": 50.0, "copper": 5.0}, scenarios=scen)
+    I = pd.DataFrame([pnav_row(), pnav_row(sheet_row=13, basis="OCF", model_nav_per_share_usd=8.0),
+                      pnav_row(sheet_row=14, basis=None, study_value_usd_m=2000.0)])
+    return I, metals
+
+
+def test_pnav_zero_cost_changes_nothing(monkeypatch):
+    from minerval import pnav
+    I, metals = pnav_inputs()
+    got = compute(I, metals, ten_year_yield=0.05, cost_increase=0.0)
+    monkeypatch.setattr(pnav, "cost_change", lambda *a, **k: 0.0)
+    pd.testing.assert_frame_equal(got, compute(I, metals, ten_year_yield=0.05, cost_increase=0.0), check_exact=True)
+
+
+def test_pnav_ten_percent_cost_increase():
+    I, metals = pnav_inputs()
+    T = compute(I, metals, ten_year_yield=0.05, cost_increase=0.10).set_index("sheet_row")
+    ann = annuity(0.09, 25)
+    chg = 0.7 * 500 * (4400 / 4000 - 1) - 0.7 * (500 - 80) * 0.1             # FCF row: cost term applies
+    assert T.loc[12, "pnav Today"] == pytest.approx(1000 / ((80 + chg) * ann + 100))
+    chg_ocf = 0.7 * 500 * (4400 / 4000 - 1)                                  # royalty (OCF) row: left alone
+    assert T.loc[13, "pnav Today"] == pytest.approx(1000 / ((150 + chg_ocf) * ann + 100))
+
+
+# --- royalty band and developer columns ---
+
+@pytest.mark.parametrize("pnav,band", [(1.4, "Buy zone"), (1.41, "Normal range"), (2.2, "Normal range"),
+                                       (2.21, "Rich"), (None, "no independent NAV")])
+def test_royalty_band(pnav, band):
+    from minerval.pnav import royalty_band
+    assert royalty_band(pnav, 1.4, 2.2) == band
+
+
+def test_royalty_columns_in_compute():
+    I, metals = pnav_inputs()
+    T = compute(I, metals, ten_year_yield=0.05).set_index("sheet_row")
+    assert T.loc[13, "royalty_band"] == "Buy zone"                           # price 10 ÷ NAV 8 = 1.25
+    assert T.loc[13, "buy_below_price_usd"] == pytest.approx(1.4 * 8.0)
+    assert pd.isna(T.loc[12, "royalty_band"])                                # FCF row: not a royalty company
+
+
+@pytest.mark.parametrize("months,share,want", [
+    (11.9, 0.1, "Short of cash: financing likely"), (12.0, 0.1, "Watch"), (17.9, 0.1, "Watch"),
+    (18.0, 0.1, "Enough cash"), ("Cash-generating", 0.1, "Enough cash"),
+    (5.0, 0.5, "Short of cash: financing likely; trading near cash"), (None, 0.9, "")])
+def test_developer_check(months, share, want):
+    from minerval.pnav import developer_check
+    assert developer_check(months, share, 12, 18, 0.5) == want
+
+
+def test_months_of_cash_and_ev_per_ounce():
+    from minerval.pnav import ev_per_aueq_oz, months_of_cash
+    assert months_of_cash(50.0, -150.0) == pytest.approx(4.0)
+    assert months_of_cash(50.0, 10.0) == "Cash-generating"
+    assert months_of_cash(50.0, float("nan")) is None
+    assert ev_per_aueq_oz(2.5, "oz AgEq", 82.6) == pytest.approx(206.5)     # silver oz converted to gold oz
+    assert ev_per_aueq_oz(940.0, "oz AuEq", 82.6) == 940.0
+    assert pd.isna(ev_per_aueq_oz(0.05, "lb Cu", 82.6))
+
+
+def test_developer_columns_in_compute():
+    I, metals = pnav_inputs()
+    I.loc[2, ["cash_m", "fcf_12m_m", "resource_amount", "resource_unit"]] = [50.0, -150.0, 4.0, "oz Au"]
+    T = compute(I, metals, ten_year_yield=0.05).set_index("sheet_row")
+    d = T.loc[14]
+    assert d.ev_m == pytest.approx(900.0) and d.ev_per_aueq_oz == pytest.approx(225.0)
+    assert d.months_of_cash == pytest.approx(4.0)
+    assert d.developer_check == "Short of cash: financing likely"
+    assert pd.isna(T.loc[12, "developer_check"])

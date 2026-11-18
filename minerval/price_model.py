@@ -4,6 +4,10 @@ revenue change = revenue x sum over metals of (share of revenue x (new price / a
 where the average price is over the 12 months the company's reported figures cover. A set share of
 that change (config: price_model) reaches EBITDA and cash flow. Costs, output, capital spending and
 hedges are held fixed: these are sensitivities, not forecasts.
+
+A cost increase c (config: price_model.cost_increase) lowers cash flow by share x (revenue - cash flow) x c:
+revenue - FCF is everything the company spends (operating costs, taxes, capital spending), and costs are
+tax-deductible, so the same share reaches cash flow. Taxes don't inflate, so this slightly overstates it.
 """
 import json
 
@@ -58,3 +62,17 @@ def revenue_change(rev: float, mix: dict, prices: dict, avg: dict) -> float:
     if not rev or rev <= 0:
         return 0.0
     return rev * sum(sh * (prices[m] / avg[m] - 1) for m, sh in mix.items())
+
+
+def cost_change(revenue: float, cash_flow: float, cost_increase: float, share: float | None = None) -> float:
+    """Change in a cash-flow measure when costs rise by `cost_increase`: -share x max(0, revenue - cash_flow) x c.
+
+    share defaults to price_model.cash_flow_share; use 1.0 for EBITDA (before tax). Zero without revenue."""
+    if not revenue or revenue <= 0 or cash_flow is None or pd.isna(cash_flow):
+        return 0.0
+    k = settings()["price_model"]["cash_flow_share"] if share is None else share
+    return -k * max(0.0, revenue - cash_flow) * cost_increase
+
+
+def cost_increase_default(value: float | None = None) -> float:
+    return settings()["price_model"].get("cost_increase", 0.0) if value is None else value

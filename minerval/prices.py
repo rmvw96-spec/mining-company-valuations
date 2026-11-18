@@ -212,3 +212,12 @@ def run(sheet=None, symbols_file=None, payload_dir=None, base=None, shares=False
     (out_dir / "report.txt").write_text(f"Price update {time.strftime('%Y-%m-%d %H:%M')}\n" + "\n".join(rep) + "\n")
     (out_dir / "quotes.json").write_text(json.dumps({"quotes": Q, "fx": F}, indent=1))
     return rep
+
+
+def run_signals(sheet, dry_run=False) -> list[str]:
+    """Refresh the Signals tab after the price update. A failure here (FRED down, say) never fails the update."""
+    from . import signals
+    try:
+        return ["", "Signals (out/signals/report.txt):"] + signals.run(sheet, dry_run=dry_run)
+    except Exception as e:                      # reported, not raised
+        return [f"Signals not updated: {type(e).__name__}: {e}. The prices above were written."]

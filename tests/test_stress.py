@@ -101,3 +101,38 @@ def test_fund_breakeven(stressed):
     assert f["breakeven % of today"] == pytest.approx(100 * k)
     assert f["breakeven metal"] == "gold $/oz"
     assert f["burning cash %"] == 5.0 and f["runway < 2 yrs %"] == 0.0
+
+
+# --- producers' cost increase ---
+
+def stress_inputs():
+    metals = FakeMetals(spot={"gold": 4400.0, "silver": 50.0, "copper": 5.0},
+                        avg={"gold": 4000.0, "silver": 50.0, "copper": 5.0},
+                        scenarios={"Severe": {"gold": 2000.0, "silver": 25.0, "copper": 3.0},
+                                   "Low": {"gold": 3000.0, "silver": 35.0, "copper": 4.0},
+                                   "High": {"gold": 5000.0, "silver": 70.0, "copper": 7.0}})
+    X = pd.DataFrame([company("AAA"), company("BBB", weight_pct=5.0, fcf=-50e6, ocf=-10e6, revenue=float("nan")),
+                      company("CCC", revenue=50e6, fcf=200e6)])               # FCF above revenue: no cost base
+    return X, metals, {"fx": {"USD": 1.0}, "holdings": {}}
+
+
+def test_zero_cost_increase_changes_nothing(monkeypatch):
+    from minerval import stress
+    X, metals, cache = stress_inputs()
+    got = per_holding(X, metals, cache, cost_increase=0.0)
+    monkeypatch.setattr(stress, "cost_change", lambda *a, **k: 0.0)          # the code before the cost term
+    before = per_holding(X, metals, cache, cost_increase=0.0)
+    pd.testing.assert_frame_equal(got, before, check_exact=True)
+
+
+def test_ten_percent_cost_increase():
+    X, metals, cache = stress_inputs()
+    M = per_holding(X, metals, cache, cost_increase=0.10).set_index("ticker")
+    a = M.loc["AAA"]
+    assert a.cost_base_m == pytest.approx(900.0)                            # revenue 1000 - FCF 100
+    assert a.fcf_Today == pytest.approx(100e6 + 70e6 - 0.7 * 900e6 * 0.1)   # = 107e6
+    assert a.ocf_Low == pytest.approx(300e6 + 0.7 * 1000e6 * (3000 / 4000 - 1) - 0.7 * 700e6 * 0.1)
+    assert a.ebitda_High == pytest.approx(400e6 + 0.95 * 1000e6 * 0.25 - 600e6 * 0.1)
+    assert a.be_k == pytest.approx(663 / 770)                               # b = 100 - 700 - 63
+    assert M.loc["BBB"].fcf_Today == -50e6                                  # no revenue: not a producer
+    assert M.loc["CCC"].cost_base_m == 0.0

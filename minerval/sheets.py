@@ -82,6 +82,35 @@ class GoogleSheet:
             gc = gspread.service_account(filename=credentials, scopes=scopes) if credentials else gspread.service_account(scopes)
         self.book = gc.open_by_key(sheet_id)
 
+    def _ws(self, tab: str):
+        return self.book.worksheet(tab)
+
+    def has_tab(self, tab: str) -> bool:
+        return tab in [w.title for w in self.book.worksheets()]
+
+    def ensure_tab(self, tab: str, rows: int = 200, cols: int = 26) -> bool:
+        """Create the tab if it doesn't exist. Returns True if it was created."""
+        if self.has_tab(tab):
+            return False
+        self.book.add_worksheet(title=tab, rows=rows, cols=cols)
+        return True
+
+    def ensure_cols(self, tab: str, ncols: int) -> int:
+        """Widen the tab to at least ncols columns (the API refuses writes beyond the grid). Returns columns added."""
+        ws = self._ws(tab)
+        add = ncols - ws.col_count
+        if add > 0:
+            ws.add_cols(add)
+            return add
+        return 0
+
+    def col_count(self, tab: str) -> int:
+        return self._ws(tab).col_count
+
+    def number_format(self, tab: str, rng: str, pattern: str):
+        kind = "PERCENT" if pattern.endswith("%") else "NUMBER"
+        self._ws(tab).format(rng, {"numberFormat": {"type": kind, "pattern": pattern}})
+
     def read(self, tab: str, rng: str, formulas: bool = False) -> list[list]:
         """Values of a range as a list of rows (ragged: Google drops trailing empty cells)."""
         r = self.book.values_get(f"'{tab}'!{rng}", params={
@@ -155,9 +184,35 @@ class ClaudePayloads:
 class MemorySheet:
     """An in-memory sheet for dry runs and tests: {tab: {"A1": value}}."""
 
-    def __init__(self, cells: dict | None = None):
+    def __init__(self, cells: dict | None = None, sizes: dict | None = None):
         self.cells = cells or {}
         self.blocks = []
+        self.sizes = {t: list(v) for t, v in (sizes or {}).items()}   # {tab: [rows, cols]}; unknown = unlimited
+        self.formats = []
+
+    def has_tab(self, tab: str) -> bool:
+        return tab in self.cells or tab in self.sizes
+
+    def ensure_tab(self, tab: str, rows: int = 200, cols: int = 26) -> bool:
+        if self.has_tab(tab):
+            return False
+        self.cells[tab] = {}
+        self.sizes[tab] = [rows, cols]
+        return True
+
+    def ensure_cols(self, tab: str, ncols: int) -> int:
+        size = self.sizes.get(tab)
+        if size and size[1] < ncols:
+            add = ncols - size[1]
+            size[1] = ncols
+            return add
+        return 0
+
+    def col_count(self, tab: str) -> int:
+        return self.sizes.get(tab, [0, 10_000])[1]
+
+    def number_format(self, tab: str, rng: str, pattern: str):
+        self.formats.append((tab, rng, pattern))
 
     def read(self, tab: str, rng: str, formulas: bool = False) -> list[list]:
         a, b = rng.split(":") if ":" in rng else (rng, rng)
@@ -172,6 +227,11 @@ class MemorySheet:
         return out
 
     def write(self, blocks) -> int:
+        for tab, cell, rows in blocks:                  # the API refuses writes beyond the grid
+            c0, r0 = split_cell(cell)
+            size = self.sizes.get(tab)
+            if size and (r0 + len(rows) - 1 > size[0] or col_to_num(c0) + max(map(len, rows)) - 1 > size[1]):
+                raise ValueError(f"write to {tab}!{cell} goes beyond the grid {size}")
         self.blocks += blocks
         for tab, cell, rows in blocks:
             c0, r0 = split_cell(cell)
