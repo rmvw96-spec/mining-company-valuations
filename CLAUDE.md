@@ -20,13 +20,16 @@ README.md explains the project for people; this file is how Claude should run an
 
 | When | Command | Writes |
 |---|---|---|
-| Daily, after 4 pm New York | `prices` (`--dry-run` first if anything looks off) | Holdings R–T, FX table Y–AB; Metal prices reference C15:C17, C30 |
+| Daily, after 4 pm New York | `prices` (`--dry-run` first if anything looks off); it runs `signals` at the end | Holdings R–T, FX table Y–AB; Metal prices reference C15:C17, C30; Signals E–F |
+| On its own, if needed | `signals` (`--dry-run`) | Signals E–F; out/signals/ |
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
-| After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–Q; PNAV inputs E–H, M–O |
+| After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY |
+| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:BE; P/NAV U:V; Holdings downside K2, R; Model portfolio W:Y |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 
-`compute --today gold=..,silver=..,copper=..` reruns the offline analysis at chosen metal prices.
+`compute --today gold=..,silver=..,copper=..` reruns the offline analysis at chosen metal prices;
+`--cost-increase 0.1` raises producers' costs 10%.
 Reports go to `out/<command>/report.txt`.
 
 ## Routine price update (Google Sheet)
@@ -38,8 +41,10 @@ Reports go to `out/<command>/report.txt`.
    - **Older than 6 days**: thinly traded or suspended.
    - **Moved more than 25% in 5 days**: check for a split or consolidation; a split changes the share count, so run `prices --shares`.
    - **Currency not in the FX table**: add a row at the bottom of Holdings!Y:AB with the code; the next run fills the rate.
-3. Tell the user the price date, the biggest movers, today's metal prices, and any Model portfolio rows
-   whose Status (column T) changed to "Review: above level". To read the Sheet from Python:
+3. Tell the user the price date, the biggest movers, today's metal prices, any Model portfolio rows
+   whose Status (column T) changed to "Review: above level", and the signals whose status changed
+   ("Changed since the last run" in `out/signals/report.txt`). If the report says the Sheet's and
+   Python's statuses differ, a status formula or threshold on the Signals tab was edited: find out which. To read the Sheet from Python:
    `from minerval.sheets import open_google; open_google().read("Model portfolio", "B6:T31")`.
 
 ## Earnings-season refresh
@@ -50,6 +55,7 @@ Reports go to `out/<command>/report.txt`.
    `config/symbol_overrides.csv` and rerun.
 3. `uv run python -m minerval financials --dry-run`. Look at `out/financials/report.txt`: holdings in the data
    but not on the Sheet need rows added first (README, "When Sprott's holdings change").
+   `financials` also writes PNAV inputs AX:AY and Holdings downside R once `setup-sheet` has added them.
 4. Check the companies with large changes and any new "Op. cash flow corrected" notes against company
    reports. Put verified replacements in `config/corrections.csv` (value in US$ millions, with source).
 5. `uv run python -m minerval financials`.
@@ -62,8 +68,19 @@ Single `ARRAYFORMULA`s in a column's first row spill down the column. Anything t
 spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
 
 - Holdings: D2:H2 and V2 (open-ended ranges to row 1000). Never write into D3:H1000 or V3:V1000.
-- PNAV inputs: C12 and D12 (to row 154), AL12:AO12. Never write into C13:D154 or AL13:AO154.
+- PNAV inputs: C12 and D12 (to row 154), AL12:AO12 (to row 146 only), and AR12:AS12 and AZ12:BE12 (to row 154).
+  Never write into C13:D154, AL13:AO146, AR13:AS154 or AZ13:BE154. H7 is a formula (the Signals cost input).
+  AT:AW (resources) are inputs; AX:AY are written by `financials`.
 - Holdings downside: K2 (to row 337). Its ranges are fixed (`N2:N337` ...): extend them in K2 if rows are added below 337.
+  R (cost base) is written by `financials`.
+- P/NAV (tab `P_NAV`): U2:V2 (to row 144). Never write into U3:V162.
+- Model portfolio: G6 (buy with new money: B3 split over the F weights after the silver in C4 fills PSLV, then
+  the silver stocks) and H6:J6, L6:R6, T6 (to row 31). K has its own formula in each row. Never write into
+  G7:J31, L7:R31 or T7:T31. W6:Y6 (timing signal, EV per ounce, months of cash) spill to row 31 too: never
+  write into W7:Y31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
+  a row added below 31 is outside every range.
+- Signals: column I (status) is a formula on every signal row, and so is E on the `royalty_pnav_median`,
+  `junior_timing` and `implied_cost_increase` rows. Python writes E:F on the other signal rows, by the key in A.
 - Clear cells with an empty value; in Claude Sheets payloads that is `null`, never `""`.
 
 ### Holdings tab
