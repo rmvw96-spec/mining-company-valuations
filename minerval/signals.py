@@ -12,6 +12,7 @@ These are signals from a framework, not advice.
 """
 import io
 import json
+import os
 from dataclasses import dataclass
 from datetime import date
 
@@ -19,7 +20,7 @@ import pandas as pd
 
 from . import yahoo
 from .config import CACHE, DERIVED, OUT, ensure, settings
-from .sheets import blocks_by_row
+from .sheets import blocks_by_row, col_to_num
 
 SIG_CACHE = CACHE / "signals"
 
@@ -160,12 +161,26 @@ def fetch() -> list[str]:
                 _cache_name(sym, interval).write_text(json.dumps(j))
             else:
                 failed.append(f"{sym} ({interval})")
-    txt = yahoo.get_text(S["fred_url"].format(series=S["fred_series"]))
+    txt = fred_csv(S)
     if txt and txt.startswith("observation_date"):
         (SIG_CACHE / f"{S['fred_series']}.csv").write_text(txt)
     else:
         failed.append(f"FRED {S['fred_series']}")
     return [f"Download failed (cached copy used if there is one): {', '.join(failed)}"] if failed else []
+
+
+def fred_csv(S) -> str | None:
+    """The FRED series as graph CSV text. With FRED_API_KEY set, FRED's API is tried first (it answers
+    from cloud servers, where the graph CSV sometimes doesn't); its JSON is turned into the same CSV."""
+    key = os.environ.get("FRED_API_KEY")
+    if key:
+        j = yahoo.get_json(S["fred_api_url"], {"series_id": S["fred_series"], "api_key": key, "file_type": "json"},
+                           tries=3)
+        obs = (j or {}).get("observations")
+        if obs:
+            return "observation_date," + S["fred_series"] + "\n" + "".join(
+                f"{o['date']},{o['value']}\n" for o in obs)
+    return yahoo.get_text(S["fred_url"].format(series=S["fred_series"]))
 
 
 def load_cache() -> dict:
@@ -243,6 +258,21 @@ def fcf_yield(rows, fund, exclude) -> float | None:
             num += w * f / m
             den += w
     return num / den if den else None
+
+
+def royalty_pnavs_from_sheet(sheet) -> list[float]:
+    """Independent P/NAVs of the royalty/streaming rows on PNAV inputs, picked as the Sheet's median formula
+    picks them (peer group "Royalty/streaming", a NAV per share). Works where data/derived/ doesn't exist."""
+    S = settings()["sheet"]
+    P, a, b = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"]
+    rows = sheet.read(S["pnav_inputs_tab"], f"A{a}:{P['peer_group']}{b}")
+    ip, pg, nav = (col_to_num(P[k]) - 1 for k in ("independent_pnav", "peer_group", "nav_per_share"))
+    out = []
+    for r in rows:
+        r = list(r) + [""] * (pg + 1)
+        if str(r[pg]).strip() == "Royalty/streaming" and r[nav] not in ("", None) and _num(r[ip]):
+            out.append(float(r[ip]))
+    return out
 
 
 def royalty_pnavs_from_derived() -> list[float]:
@@ -362,8 +392,12 @@ def value_formula(sig: Signal) -> str:
 # ---------- compute ----------
 
 def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dict | None = None,
-            fcf_yields: dict | None = None, royalty_pnavs: list | None = None) -> list[dict]:
-    """Every signal's value, as-of date and status. Pure: no network, no files, no Sheet."""
+            fcf_yields: dict | None = None, royalty_pnavs: list | None = None,
+            fallback: dict | None = None) -> list[dict]:
+    """Every signal's value, as-of date and status. Pure: no network, no files, no Sheet.
+
+    fallback: {key: (value, as-of date)} used, and marked stale, when a series is missing (the Sheet's last
+    values, say, when FRED can't be reached and there's no cached copy)."""
     S = settings()["signals"]
     th = {k: list(v) for k, v in S["thresholds"].items()}
     th.update(thresholds or {})
@@ -422,6 +456,11 @@ def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dic
         put(key, vs_average(D.get(sym), S["uptrend_days"]), D.get(sym))
     put("gdxj_drawdown", drawdown(D.get("GDXJ")), D.get("GDXJ"))
     put("silj_drawdown", drawdown(D.get("SILJ")), D.get("SILJ"))
+    stale = set()
+    for key, (v, d) in (fallback or {}).items():
+        if vals.get(key) is None and _num(v) and key in BY_KEY and not BY_KEY[key].formula:
+            vals[key], asof[key] = float(v), str(d or "")
+            stale.add(key)
     # Formula rows: the Sheet computes these; Python works out the same to check them.
     rp = [v for v in (royalty_pnavs or []) if _num(v)]
     vals["royalty_pnav_median"] = float(pd.Series(rp).median()) if rp else None
@@ -435,7 +474,7 @@ def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dic
         v = vals.get(sig.key)
         out.append({"key": sig.key, "tier": sig.tier, "label": sig.label, "value": v,
                     "asof": asof.get(sig.key, ""), "threshold_1": g, "threshold_2": h,
-                    "status": status(sig, v, g, h, ctx), "formula": sig.formula})
+                    "status": status(sig, v, g, h, ctx), "formula": sig.formula, "stale": sig.key in stale})
     return out
 
 
@@ -451,7 +490,7 @@ def read_tab(sheet) -> dict:
         r = list(r) + [""] * 9
         key = str(r[0]).strip()
         if key and i >= S["signals_first_row"]:
-            out[key] = {"row": i, "E": r[4], "G": r[6], "H": r[7], "I": r[8]}
+            out[key] = {"row": i, "E": r[4], "F": r[5], "G": r[6], "H": r[7], "I": r[8]}
     return out
 
 
@@ -497,14 +536,19 @@ def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | 
         if key not in BY_KEY:
             inputs[key] = c["E"]
     fy = fcf_yields_from_sheet(sheet) if sheet is not None else {}
-    rows = compute(data, today, thresholds, inputs, fy, royalty_pnavs_from_derived())
+    royalty = royalty_pnavs_from_sheet(sheet) if tab is not None else royalty_pnavs_from_derived()
+    fallback = {k: (c["E"], c["F"]) for k, c in (tab or {}).items() if k in BY_KEY}
+    rows = compute(data, today, thresholds, inputs, fy, royalty, fallback)
+    stale = [f"{r['key']} ({r['asof'] or 'no date'})" for r in rows if r["stale"]]
+    if stale:
+        rep.append("No new data, so the Sheet's last values are kept: " + ", ".join(stale))
 
     # Write values and dates for the Python rows, by key
     blocks, missing_rows = [], []
     if tab is not None:
         vals = {}
         for r in rows:
-            if r["formula"]:
+            if r["formula"] or r["stale"]:
                 continue
             if r["key"] not in tab:
                 missing_rows.append(r["key"])
@@ -533,11 +577,18 @@ def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | 
     if nodata:
         rep.append("No value (missing data): " + ", ".join(nodata))
 
-    # Changed since the last run
+    # Changed since the last run: the Sheet's statuses before this run's write (wherever the last run was:
+    # here or on GitHub); without a Sheet, the statuses saved by the last run on this computer.
     last_f = out_dir / "last.json"
-    now = {r["key"]: r["status"] for r in rows if r["status"] and r["status"] != "Info"}
-    if last_f.exists():
+    # The AISC margin's status is the margin itself, so it changes every day: not a change worth reporting.
+    now = {r["key"]: r["status"] for r in rows
+           if r["status"] and r["status"] != "Info" and BY_KEY[r["key"]].kind != "aisc"}
+    before = None
+    if tab is not None:
+        before = {k: str(c["I"]).strip() for k, c in tab.items() if k in BY_KEY}
+    elif last_f.exists():
         before = json.loads(last_f.read_text())
+    if before is not None:
         ch = [f"{BY_KEY[k].label}: {before.get(k) or '—'} -> {v}" for k, v in now.items()
               if k in BY_KEY and before.get(k) != v]
         rep.append("Changed since the last run:\n  " + "\n  ".join(ch) if ch else "No status changed since the last run.")

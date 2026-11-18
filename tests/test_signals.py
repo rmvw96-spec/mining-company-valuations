@@ -1,4 +1,5 @@
 """Market signals: the calculations, the status rules, and writing the Signals tab. All on synthetic data."""
+import json
 from datetime import date
 
 import numpy as np
@@ -260,3 +261,66 @@ def test_price_update_survives_a_signals_failure(monkeypatch):
     monkeypatch.setattr(signals, "run", boom)
     lines = prices.run_signals(MemorySheet())
     assert lines == ["Signals not updated: ConnectionError: FRED is down. The prices above were written."]
+
+
+# --- running on GitHub: no FRED download, no data/derived/, no last.json ---
+
+def test_missing_series_falls_back_to_the_sheet_and_is_not_rewritten(tmp_path, monkeypatch):
+    data = base_data()
+    data["real_yield"] = None
+    monkeypatch.setattr(signals, "load_cache", lambda: data)
+    cells = signals_tab()
+    keys = {v: k[1:] for k, v in cells.items() if k.startswith("A")}
+    for k, v in (("real_yield_10y", 2.9), ("real_yield_12m_high", 2.95), ("real_yield_3m_change", 0.5)):
+        cells[f"E{keys[k]}"], cells[f"F{keys[k]}"] = v, "2026-11-14"
+    sh = MemorySheet({"Signals": cells, "Holdings": {}})
+    rep = signals.run(sh, out_dir=tmp_path, fetch_data=False, today=TODAY)
+    out = {r["key"]: r for r in json.loads((tmp_path / "signals.json").read_text())["signals"]}
+    assert out["real_yield_10y"]["stale"] and out["real_yield_10y"]["status"] == "Rising: keep accumulating steadily"
+    assert out["real_yield_10y"]["asof"] == "2026-11-14"
+    assert not any(cell == f"E{keys['real_yield_10y']}" for _, cell, _ in sh.blocks)   # not rewritten
+    assert any("Sheet's last values are kept: real_yield_10y (2026-11-14)" in line for line in rep)
+
+
+def test_fallback_never_overrides_fresh_data():
+    rows = compute(base_data(), TODAY, fallback={"real_yield_10y": (9.9, "2026-01-01"), "junior_timing": (2, "")})
+    assert row(rows, "real_yield_10y")["value"] == pytest.approx(2.0) and not row(rows, "real_yield_10y")["stale"]
+    assert row(rows, "junior_timing")["value"] == 1                 # formula rows are never filled from the Sheet
+
+
+def test_royalty_median_from_the_pnav_inputs_tab(tmp_path, monkeypatch):
+    monkeypatch.setattr(signals, "load_cache", lambda: base_data())
+    monkeypatch.setattr(signals, "royalty_pnavs_from_derived", lambda: [])
+    pnav = {"R12": 50.0, "AJ12": 2.0, "AL12": "Royalty/streaming",
+            "R13": 40.0, "AJ13": 2.6, "AL13": "Royalty/streaming",
+            "R14": "", "AJ14": 9.0, "AL14": "Royalty/streaming",     # no NAV per share: left out, as on the Sheet
+            "R15": 30.0, "AJ15": 0.5, "AL15": "Gold producer"}
+    sh = MemorySheet({"Signals": signals_tab(), "Holdings": {}, "PNAV inputs": pnav})
+    signals.run(sh, out_dir=tmp_path, fetch_data=False, today=TODAY)
+    out = json.loads((tmp_path / "signals.json").read_text())["signals"]
+    assert row(out, "royalty_pnav_median")["value"] == pytest.approx(2.3)
+
+
+def test_changes_are_measured_against_the_sheet_before_the_write(tmp_path, monkeypatch):
+    monkeypatch.setattr(signals, "load_cache", lambda: base_data())
+    cells = signals_tab()
+    keys = {v: k[1:] for k, v in cells.items() if k.startswith("A")}
+    cells[f"I{keys['tax_loss_window']}"] = "Outside the window"
+    (tmp_path / "last.json").write_text('{"tax_loss_window": "In the tax-loss selling window"}')   # ignored
+    rep = signals.run(MemorySheet({"Signals": cells, "Holdings": {}}), out_dir=tmp_path, fetch_data=False,
+                      today=TODAY)
+    assert any("Outside the window -> In the tax-loss selling window" in line for line in rep)
+
+
+def test_fred_api_json_becomes_the_graph_csv(monkeypatch):
+    monkeypatch.setenv("FRED_API_KEY", "k")
+    got = {}
+
+    def fake_json(url, params=None, tries=5, timeout=30):
+        got.update(params)
+        return {"observations": [{"date": "2026-11-13", "value": "2.90"}, {"date": "2026-11-14", "value": "."}]}
+    monkeypatch.setattr(signals.yahoo, "get_json", fake_json)
+    txt = signals.fred_csv(settings()["signals"])
+    assert got["series_id"] == "DFII10" and got["file_type"] == "json"
+    s = parse_fred(txt)
+    assert list(s.values) == [2.9]
