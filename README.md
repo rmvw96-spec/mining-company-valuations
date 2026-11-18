@@ -28,7 +28,7 @@ data/
   holdings.csv           the six funds' holdings (Sprott, Nov 13, 2026)
   research/pnav_companies.csv   P/NAV research inputs: stage, countries, risk add-on, reserve life,
                                 outside NAV estimates and study values, with notes
-tests/                   offline tests (pytest)
+tests/                   offline tests (pytest); run on every push and pull request by .github/workflows/tests.yml
 ```
 
 These are created when you run the commands and are not committed to git: `cache/` (raw Yahoo
@@ -44,7 +44,8 @@ or later for you if you don't have it.
 git clone https://github.com/rmvw96-spec/mining-company-valuations
 cd mining-company-valuations
 uv sync                                                 # creates .venv/ from pyproject.toml and uv.lock
-uv run python -m pytest tests                           # should report 4 passed
+uv run python -m pytest                                 # offline tests: no network, no Sheet
+uv run ruff check                                       # lint
 ```
 
 `uv run` keeps `.venv/` in step with `uv.lock` before each command. To add or upgrade a dependency,

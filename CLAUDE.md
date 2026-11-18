@@ -4,7 +4,9 @@ README.md explains the project for people; this file is how Claude should run an
 
 ## Ground rules
 
-- Run everything from the repo root as `uv run python -m minerval <command>`. `uv run python -m pytest tests` must pass before any commit.
+- Run everything from the repo root as `uv run python -m minerval <command>`. `uv run python -m pytest` and `uv run ruff check`
+  must pass before any commit (CI runs the tests on Python 3.11 and 3.14, and ruff). Tests must stay offline: `tests/conftest.py`
+  fails any test that reaches Yahoo, and the Sheet is a `MemorySheet`.
 - Never commit `private/`, `cache/`, `out/` or `data/derived/` (they're in .gitignore), or any credentials.
   The repo is public: no personal amounts, account details or names in committed files.
 - Ask the user before every `git push`.
