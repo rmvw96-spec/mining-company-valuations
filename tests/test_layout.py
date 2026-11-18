@@ -123,7 +123,10 @@ def test_downside_formula():
 @pytest.mark.parametrize("a,b,same", [
     ('=IF(A1="", "x", B1)', '=IF(A1="","x",B1)', True),
     ('=IF(A1="a b","",1)', '=IF(A1="ab","",1)', False),                     # spaces inside strings count
-    (1930, 1930.0, True), ("", None, True), ("Buy zone", "Buy zone ", True)])
+    (1930, 1930.0, True), ("", None, True), ("Buy zone", "Buy zone ", True),
+    ("=XLOOKUP(1,'Signals'!$A:$A,1)", "=XLOOKUP(1,Signals!$A:$A,1)", True),     # Google drops needless quotes
+    ("=SUM('PNAV inputs'!A1)", "=SUM('PNAV inputs'!A1)", True),
+    ("=SUM('PNAV inputs'!A1)", "=SUM(PNAVinputs!A1)", False)])
 def test_same(a, b, same):
     assert layout.same(a, b) is same
 

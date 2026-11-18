@@ -92,8 +92,17 @@ def _norm(v):
         return float(v)
     s = str(v)
     if s.startswith("="):
-        parts = re.split(r'("(?:[^"]|"")*")', s)
-        return "".join(p if i % 2 else re.sub(r"\s+", "", p) for i, p in enumerate(parts))
+        # Strings ("...") and quoted tab names ('...') are kept as they are, except that Google drops the
+        # quotes from simple tab names ('Signals'!A1 -> Signals!A1); spaces elsewhere are dropped.
+        out = []
+        for p in re.split(r'("(?:[^"]|"")*"|\'(?:[^\']|\'\')*\')', s):
+            if p.startswith('"'):
+                out.append(p)
+            elif p.startswith("'"):
+                out.append(p[1:-1] if re.fullmatch(r"'[A-Za-z_][A-Za-z0-9_]*'", p) else p)
+            else:
+                out.append(re.sub(r"\s+", "", p))
+        return "".join(out)
     try:
         return float(s) if s.strip() and re.fullmatch(r"-?\d+(\.\d+)?", s.strip()) else s.strip()
     except ValueError:
@@ -528,8 +537,8 @@ def run(sheet, dry_run=False, out_dir=None) -> list[str]:
             # Formats only on a fresh install of the step, so later formatting by hand is kept.
             written = {(c.tab, c.ref) for c in writes}
             fresh = all((c.tab, c.ref) in written for c in st.cells if c.mode != "seed" and _norm(c.new) != "")
-            for t, r, pattern in st.formats if fresh else []:
-                sheet.number_format(t, r, pattern)
+            if fresh:
+                sheet.number_formats(st.formats)
 
     # Check: with the cost increase at 0%, P/NAV and the Low-scenario cash flows must not move.
     if not dry_run and total:
