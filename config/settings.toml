@@ -184,6 +184,7 @@ uptrend_days = 200                  # trading days in the moving average
 real_yield_change_days = 63         # ~3 months of trading days
 tax_loss_window = ["11-01", "12-31"]   # month-day, inclusive: when juniors are sold for tax losses
 fcf_yield_funds = ["SGDM", "SGDJ", "COPP", "SLVR"]
+breadth_funds = ["SGDJ", "COPJ"]    # junior breadth: share of each fund's holdings (by weight) above their 200-day average
 
 # Thresholds: [G, H] on the Signals tab. The Sheet's values win when the code runs against it; these are the
 # record and the fallback. Each is chosen to match the framework's wording:
@@ -205,6 +206,8 @@ fcf_yield_SGDM = [0.08, 0.03]       # 8%+ is cheap for miners (12.5x FCF); under
 fcf_yield_SGDJ = [0.08, 0.03]
 fcf_yield_COPP = [0.08, 0.03]
 fcf_yield_SLVR = [0.08, 0.03]
+breadth_sgdj = [0.6, 0.3]           # provisional (junior-breadth spec): 60%+ of the weight above its 200-day average
+breadth_copj = [0.6, 0.3]           # is a broad uptrend; under 30%, most juniors are still falling
 
 # Inputs block on the Signals tab (key = value). Blank ones are left for you to fill in on the Sheet.
 [signals.inputs]
@@ -226,7 +229,8 @@ runway_ok_months = 18
 "Growth: expanding producers" = ["gold_vs_diesel_12m", "gdx_gold_pctile10y"]
 "Copper producers" = ["copper_vs_diesel_12m", "copx_copper_pctile10y"]
 "Silver and polymetallic producers" = ["silver_vs_diesel_12m", "sil_silver_pctile10y"]
-"Growth: developers" = ["junior_timing", "@developer_check"]
+"Growth: developers" = ["junior_timing", "breadth_sgdj", "@developer_check"]
+"Growth: developers|Copper" = ["junior_timing", "breadth_copj", "@developer_check"]
 
 [signal_backtest]
 # `python -m minerval backtest-signals`: each signal at every month-end since first_month_end, against the tier
@@ -260,6 +264,7 @@ gdx_gold_pctile10y = {threshold = "g", values = [10, 15, 20, 25, 30]}
 sil_silver_pctile10y = {threshold = "g", values = [10, 15, 20, 25, 30]}
 copx_copper_pctile10y = {threshold = "g", values = [10, 15, 20, 25, 30]}
 aisc_margin_share = {threshold = "g", values = [0.35, 0.40, 0.45, 0.50, 0.55]}
+breadth_sgdj = {threshold = "g", values = [0.5, 0.6, 0.7]}
 
 [report]
 stale_days = 6          # flag prices older than this

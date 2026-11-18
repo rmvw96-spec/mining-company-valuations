@@ -22,7 +22,7 @@ import pandas as pd
 from . import yahoo
 from .config import OUT, ensure, settings
 from .history import truncate
-from .signals import BY_KEY, SIG_CACHE, aisc_at, compute, load_cache, parse_fred, status
+from .signals import BY_KEY, SIG_CACHE, aisc_at, compute, load_breadth, load_cache, parse_fred, status
 
 BT_CACHE = SIG_CACHE / "backtest"
 DEST = OUT / "backtest-signals"
@@ -60,6 +60,8 @@ def tests() -> list[Test]:
         Test("uptrend_silver", ("SILJ",), t("uptrend_silver")[0]),
         Test("uptrend_sil", ("SILJ",), t("uptrend_sil")[0]),
         Test("junior_timing", ("GDXJ", "SILJ", "GDXJ-GDX"), "Uptrend confirmed"),
+        Test("breadth_sgdj", ("GDXJ", "GDXJ-GDX"), t("breadth_sgdj")[0]),
+        Test("breadth_copj", ("COPX",), t("breadth_copj")[0]),
     ]
 
 
@@ -149,7 +151,8 @@ def load() -> tuple[dict, dict]:
     data = {"daily": {s: closes[s] for s in S["daily"] if s in closes},
             "monthly": {s: closes[s] for s in S["monthly"] if s in closes},   # daily: month_end_ratio takes the last
             "real_yield": fred(S["fred_series"]),
-            "rates": {k: v for k, v in rates.items() if v is not None}}
+            "rates": {k: v for k, v in rates.items() if v is not None},
+            "breadth": load_breadth()}       # today's holdings, from the daily signals cache (5 years)
     if not data["daily"]:                 # no backtest download yet: fall back to the daily signals cache
         data = load_cache()
     return data, total
@@ -425,6 +428,8 @@ def run(refresh: bool = False) -> list[str]:
         "starts (a percentile of a shorter history says little).",
         "Not tested (no history): fund FCF yields (need past fundamentals) and the royalty median P/NAV "
         "(needs past P/NAVs; Signal history records it from Nov 2026).",
+        "Junior breadth uses today's SGDJ and COPJ holdings for every past date (survivorship: today's holdings "
+        "are the survivors) and starts once 200 days of their prices exist (about 4 years back).",
         "Limits: one cycle-heavy period; ETFs hold today's survivors; Yahoo's futures series roll from contract "
         "to contract; ROYALTY = equal weight of RGLD, FNV and WPM (as listed then).",
         "The thresholds aren't changed by this report: change settings.toml [signals.thresholds] and Signals G:H "

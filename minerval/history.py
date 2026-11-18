@@ -265,7 +265,10 @@ def truncate(data: dict, d) -> dict:
     return {"daily": {k: cut(s) for k, s in data.get("daily", {}).items()},
             "monthly": {k: cut(s) for k, s in data.get("monthly", {}).items()},
             "real_yield": cut(data.get("real_yield")),
-            "rates": {k: cut(s) for k, s in (data.get("rates") or {}).items()}}
+            "rates": {k: cut(s) for k, s in (data.get("rates") or {}).items()},
+            "breadth": ({"holdings": data["breadth"]["holdings"],
+                         "closes": {k: cut(s) for k, s in data["breadth"]["closes"].items()}}
+                        if data.get("breadth") else None)}
 
 
 def backfill_entries(data: dict, start, end) -> dict:

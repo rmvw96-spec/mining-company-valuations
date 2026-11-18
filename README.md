@@ -159,7 +159,12 @@ is the working copy, and the code reads the Sheet's values when it runs against 
 | Physical metal and royalty | S&P 500 below its 12-month high | panics are when to buy bullion and royalty companies |
 | Royalty | median independent P/NAV of the royalty companies (a formula over PNAV inputs) | buy at 1.1–1.4× NAV; 1.5–2.2× is normal |
 | Producers | gold, silver and copper against diesel over 12 months; gold price minus the industry AISC; GDX, SIL and COPX against their metal (percentile of 10 years); each fund's free-cash-flow yield from the Holdings tab | margins widen when metals outrun costs; buy miners when they're cheap against their metal |
-| Juniors | the tax-loss selling window (Nov 1 – Dec 31); gold, GDX, silver and SIL against their 200-day average; GDXJ and SILJ below their 12-month high; and a formula combining them | buy juniors in the tax-loss window, or once the uptrend is confirmed |
+| Juniors | the tax-loss selling window (Nov 1 – Dec 31); gold, GDX, silver and SIL against their 200-day average; breadth: the share of SGDJ and of COPJ (by fund weight) whose holdings trade above their own 200-day average; GDXJ and SILJ below their 12-month high; and a formula combining the window and the gold and GDX uptrends | buy juniors in the tax-loss window, or once the uptrend is confirmed; breadth confirms that most juniors, not just a few large names, have turned up |
+
+Junior breadth downloads daily prices for every SGDJ and COPJ holding with a Yahoo symbol on the Holdings
+tab (column P), about 100 symbols, into `cache/signals/breadth/`, and reports the share of each fund's weight
+it covers (holdings with no symbol, a short history or no trade in 10 days are left out of both sides). Its
+60%/30% thresholds are provisional: the backtest has only about four years for it, using today's holdings.
 
 These are signals from a framework, not advice. The Model portfolio's column W shows the ones that apply
 to each bucket (set in `[signals.timing]`), and a royalty company's valuation band where there is one.
