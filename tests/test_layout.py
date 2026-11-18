@@ -137,3 +137,32 @@ def test_timing_formula_covers_every_bucket():
         assert f'="{k.split("|")[0]}")' in f
     assert f.index('(E6:E31="Silver")') < f.index('IF((A6:A31="Gold producers")')      # bucket|metal first
     assert '"No framework signal for physical copper"' in f and f.count("(") == f.count(")")
+
+
+def test_new_signals_get_rows_inserted_in_their_tier(tmp_path):
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    tab = sh.cells["Signals"]
+    keys = {v: int(k[1:]) for k, v in tab.items() if k.startswith("A") and k[1:].isdigit()}
+    # Take two signal rows out, as on a Sheet set up before they existed
+    for key in ("two_year_3m_change", "two_year_minus_fed_funds"):
+        r = keys[key]
+        for ref in [x for x in tab if x[1:].isdigit() or x[2:].isdigit()]:
+            if layout.split_cell(ref)[1] == r:
+                tab[ref] = ""
+    tab["A90"] = "something below"                                   # rows below the tier move down
+    tab["G7"] = "user's threshold"                                    # an edit elsewhere stays put
+    dry = layout.run(sh, dry_run=True, out_dir=tmp_path)
+    assert any("Would insert rows" in line and "two_year_3m_change" in line for line in dry)
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert any(line.startswith("Inserted rows") for line in rep)
+    tab = sh.cells["Signals"]
+    now = {v: int(k[1:]) for k, v in tab.items() if k.startswith("A") and k[1:].isdigit() and v}
+    order = [s.key for s in SIGNALS]
+    i = order.index("two_year_3m_change")
+    assert now["two_year_3m_change"] == now[order[i - 1]] + 1
+    assert now["two_year_minus_fed_funds"] == now["two_year_3m_change"] + 1
+    r = now["two_year_3m_change"]
+    assert tab[f"I{r}"].startswith(f'=IF(E{r}="","",') and tab[f"G{r}"] == -0.25
+    assert now["something below"] == 92 and tab["G7"] == "user's threshold"
+    assert not layout.signal_inserts(sh)                             # idempotent

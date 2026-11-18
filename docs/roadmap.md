@@ -39,7 +39,9 @@ Done in Nov 2026: the real yield and the dollar's 12-month change are context on
 thresholds), because neither showed an edge. Their old rules stay in the backtest
 (`[signal_backtest.context_thresholds]`).
 
-Candidate (2c, not built): a **rate-expectations signal** for physical gold. A one-off study (Nov 2026,
+Built in Nov 2026 (2c): a **rate-expectations signal** for physical gold (`two_year_3m_change`, with
+`two_year_minus_fed_funds` and `two_year_yield` for context). It is the Model portfolio's timing signal for
+physical gold. A one-off study (Nov 2026,
 month-ends 2003–2026) found the 10-year real yield moves with gold in the same month (correlation −0.44
 monthly, −0.58 over 3 months) and not ahead of it at any lag, so a rule that waits for it to peak and fall
 comes late. What the market expects the Fed to do did better, from FRED's 2-year Treasury yield (DGS2) and

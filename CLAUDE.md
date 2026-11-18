@@ -84,6 +84,9 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
   G7:J31, L7:R31 or T7:T31. W6:Y6 (timing signal, EV per ounce, months of cash) spill to row 31 too: never
   write into W7:Y31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
   a row added below 31 is outside every range.
+- Signals: `setup-sheet` inserts a row for a new signal (below the signal before it in `SIGNALS`), so add new
+  signals in code and run it rather than adding rows by hand. Context-only signals (`context=True`) show "Info"
+  and have no G:H; their rule is tested by `backtest-signals` with `[signal_backtest.context_thresholds]`.
 - Signals: column I (status) is a formula on every signal row, and so is E on the `royalty_pnav_median`,
   `junior_timing` and `implied_cost_increase` rows. Python writes E:F on the other signal rows, by the key in A,
   and on the `industry_aisc` input row: `data/research/industry_aisc.csv` is the record for it (the latest

@@ -121,13 +121,39 @@ def test_status_boundaries(key, value, want):
 def test_context_signals_show_info_and_have_no_sheet_thresholds():
     th = settings()["signals"]["thresholds"]
     ctx = [s for s in SIGNALS if s.context]
-    assert {s.key for s in ctx} == {"real_yield_10y", "usd_12m"}
+    assert {s.key for s in ctx} == {"real_yield_10y", "usd_12m", "two_year_minus_fed_funds"}
     for s in ctx:
         assert s.key not in th and s.key in settings()["signal_backtest"]["context_thresholds"]
         assert status(s, 1.0, None, None, {}) == "Info"
         assert status_formula(s, 9) == '=IF(E9="","","Info")'
     rows = compute(base_data(), TODAY)
     assert row(rows, "usd_12m")["status"] == "Info" and row(rows, "real_yield_10y")["status"] == "Info"
+
+
+def test_rate_expectations_from_the_two_year_yield():
+    two = daily(np.r_[np.full(200, 4.0), np.linspace(4.0, 3.6, 64)])        # down 0.4 over the last 3 months
+    ff = daily(np.full(264, 4.25))
+    rows = compute(base_data() | {"rates": {"DGS2": two, "DFF": ff}}, TODAY)
+    chg, gap = row(rows, "two_year_3m_change"), row(rows, "two_year_minus_fed_funds")
+    assert chg["value"] == pytest.approx(-0.4, abs=0.01) and chg["asof"] == "2026-11-17"
+    assert chg["status"] == BY_KEY["two_year_3m_change"].texts[0]          # turning dovish
+    assert gap["value"] == pytest.approx(3.6 - 4.25) and gap["status"] == "Info"
+    assert row(rows, "two_year_yield")["value"] == pytest.approx(3.6)
+    rows = compute(base_data() | {"rates": {"DGS2": daily(np.full(264, 4.0))}}, TODAY)
+    assert row(rows, "two_year_3m_change")["status"] == BY_KEY["two_year_3m_change"].texts[2]
+    assert row(rows, "two_year_minus_fed_funds")["value"] is None             # no fed funds series
+    assert row(compute(base_data(), TODAY), "two_year_3m_change")["value"] is None
+
+
+def test_every_fred_series_is_downloaded(monkeypatch, tmp_path):
+    monkeypatch.setattr(signals, "SIG_CACHE", tmp_path)
+    monkeypatch.setattr(signals.yahoo, "pmap", lambda fn, items: {})
+    asked = []
+    monkeypatch.setattr(signals, "fred_csv", lambda S, series=None: asked.append(series) or
+                        f"observation_date,{series}\n2026-11-13,1.0\n")
+    signals.fetch()
+    assert asked == ["DFII10", "DGS2", "DFF"]
+    assert {f.name for f in tmp_path.glob("*.csv")} == {"DFII10.csv", "DGS2.csv", "DFF.csv"}
 
 
 def test_real_yield_peaked_and_falling_vs_rising():

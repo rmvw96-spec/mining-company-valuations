@@ -44,6 +44,8 @@ def tests() -> list[Test]:
     return [
         Test("gold_silver_ratio", ("SI=F-GC=F",), t("gold_silver_ratio")[0]),
         Test("real_yield_10y", ("GC=F",), t("real_yield_10y")[0]),
+        Test("two_year_3m_change", ("GC=F",), t("two_year_3m_change")[0]),
+        Test("two_year_minus_fed_funds", ("GC=F",), t("two_year_minus_fed_funds")[0]),
         Test("usd_12m", ("GC=F",), t("usd_12m")[0]),
         Test("spy_drawdown", ("GC=F", "ROYALTY"), t("spy_drawdown")[0]),
         Test("gold_vs_diesel_12m", ("GDX-GC=F",), t("gold_vs_diesel_12m")[0]),
@@ -97,7 +99,7 @@ def symbols() -> list[str]:
 
 def fetch() -> list[str]:
     """Full daily histories for every series the backtest uses, and the FRED real yield."""
-    from .signals import fred_csv
+    from .signals import fred_all, fred_csv
     ensure(BT_CACHE)
     got = yahoo.pmap(lambda s: yahoo.history(s, "1d"), symbols())
     failed = []
@@ -107,11 +109,12 @@ def fetch() -> list[str]:
         else:
             failed.append(sym)
     S = settings()["signals"]
-    txt = fred_csv(S)
-    if txt and txt.startswith("observation_date"):
-        (BT_CACHE / f"{S['fred_series']}.csv").write_text(txt)
-    else:
-        failed.append(f"FRED {S['fred_series']}")
+    for series in fred_all(S):
+        txt = fred_csv(S, series)
+        if txt and txt.startswith("observation_date"):
+            (BT_CACHE / f"{series}.csv").write_text(txt)
+        else:
+            failed.append(f"FRED {series}")
     return [f"Download failed (cached copy used if there is one): {', '.join(failed)}"] if failed else []
 
 
@@ -138,12 +141,15 @@ def load() -> tuple[dict, dict]:
         for D in (closes, total):
             if sym in D:
                 D[sym] = D[sym][D[sym].index >= d]
-    fred = BT_CACHE / f"{S['fred_series']}.csv"
-    if not fred.exists():
-        fred = SIG_CACHE / f"{S['fred_series']}.csv"
+    def fred(series):
+        f = BT_CACHE / f"{series}.csv"
+        f = f if f.exists() else SIG_CACHE / f"{series}.csv"
+        return parse_fred(f.read_text()) if f.exists() else None
+    rates = {k: fred(k) for k in S.get("fred_rates", [])}
     data = {"daily": {s: closes[s] for s in S["daily"] if s in closes},
             "monthly": {s: closes[s] for s in S["monthly"] if s in closes},   # daily: month_end_ratio takes the last
-            "real_yield": parse_fred(fred.read_text()) if fred.exists() else None}
+            "real_yield": fred(S["fred_series"]),
+            "rates": {k: v for k, v in rates.items() if v is not None}}
     if not data["daily"]:                 # no backtest download yet: fall back to the daily signals cache
         data = load_cache()
     return data, total

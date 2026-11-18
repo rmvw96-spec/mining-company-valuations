@@ -128,6 +128,14 @@ class GoogleSheet:
             return add
         return 0
 
+    def insert_rows(self, tab: str, before_row: int, n: int = 1) -> None:
+        """Insert n empty rows above before_row (formatting copied from the row above). Formulas elsewhere that
+        point below the insertion shift down, as when rows are inserted by hand."""
+        ws = self._ws(tab)
+        self.book.batch_update({"requests": [{"insertDimension": {
+            "range": {"sheetId": ws.id, "dimension": "ROWS", "startIndex": before_row - 1,
+                      "endIndex": before_row - 1 + n}, "inheritFromBefore": before_row > 1}}]})
+
     def number_formats(self, formats) -> int:
         """Apply [(tab, range, pattern)] number formats in one API call."""
         reqs = []
@@ -256,6 +264,28 @@ class MemorySheet:
             size[0] = nrows
             return add
         return 0
+
+    def insert_rows(self, tab: str, before_row: int, n: int = 1) -> None:
+        """As Google Sheets does: cells move down, and this tab's formulas follow references below the insert."""
+        def shift(f):
+            if not (isinstance(f, str) and f.startswith("=")):
+                return f
+            # Strings and references to other tabs ('Tab'!A1:B2, Tab!A1) are left alone.
+            other = r"(?:'[^']*'|[A-Za-z_][A-Za-z0-9_]*)!\$?[A-Z]{1,3}\$?\d*(?::\$?[A-Z]{1,3}\$?\d*)?"
+            parts = re.split(rf'("(?:[^"]|"")*"|{other})', f)
+            for i, p in enumerate(parts):
+                if i % 2 == 0:
+                    parts[i] = re.sub(r"(?<![A-Za-z0-9_$!])(\$?[A-Z]{1,3}\$?)(\d+)(?![\d(])",
+                                      lambda m: m[1] + str(int(m[2]) + n if int(m[2]) >= before_row else m[2]), p)
+            return "".join(parts)
+        t = self.cells.get(tab, {})
+        moved = {}
+        for ref, v in t.items():
+            c, r = split_cell(ref)
+            moved[f"{c}{r + n if r >= before_row else r}"] = shift(v)
+        self.cells[tab] = moved
+        if tab in self.sizes:
+            self.sizes[tab][0] += n
 
     def number_formats(self, formats) -> int:
         self.formats += list(formats)
