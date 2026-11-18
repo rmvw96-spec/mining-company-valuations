@@ -111,12 +111,16 @@ Read `out/prices/report.txt` afterwards. It lists:
 - **Currency not in the FX table**: add a row at the bottom of Holdings!Y:AB with the code; the next run fills it in.
 
 `prices` then refreshes the Signals tab (see [Signals tab](#signals-tab)) and adds its statuses to
-the report: which changed since the last run, and any row where the Sheet's status formula disagrees
-with Python's (a sign a formula or threshold was edited). `--no-signals` skips it; a failure there
-(FRED down, say) is reported but never stops the price update. `signals` on its own does just that part.
+the report: which changed since the last run (against the Sheet's statuses before the write, so it
+works wherever the last run was), and any row where the Sheet's status formula disagrees with Python's
+(a sign a formula or threshold was edited). If a series can't be downloaded and isn't cached, the
+Signals tab keeps its last value and the report names it with its date. `--no-signals` skips it; a
+failure there is reported but never stops the price update. `signals` on its own does just that part.
 
-To run it automatically, use cron (or Task Scheduler on Windows) on your computer, or the GitHub
-workflow in `.github/workflows/update-prices.yml`, which explains its setup.
+The GitHub workflow in `.github/workflows/update-prices.yml` runs it every weekday after the New York
+close (its header explains the secrets). FRED's CSV download often fails from GitHub's servers: add a
+free FRED API key as the `FRED_API_KEY` secret to keep the real yield current there. Locally, cron (or
+Task Scheduler on Windows) works too.
 
 ## After each earnings season: financials
 
@@ -258,7 +262,7 @@ exactly as on the Holdings tab.
   calls these GBX and ZAC, because XLOOKUP ignores case and would match "GBp" to the pound rate.
 - **Signals** use Yahoo daily and monthly closes (COMEX futures, NYMEX heating oil and crude, the
   dollar index, SPY and the miner ETFs) and the 10-year TIPS real yield from FRED
-  (`fredgraph.csv?id=DFII10`, no key needed).
+  (`fredgraph.csv?id=DFII10`, no key needed; FRED's API instead when `FRED_API_KEY` is set).
 - **Developers' resources** are each company's latest published estimate (Nov 2026), with source and
   date in the research file; pounds are worked out from tonnes and grade where that's all a source gives.
 - **Holdings** are from Sprott's ETF pages. **P/NAV research inputs** (stages, country risk, reserve

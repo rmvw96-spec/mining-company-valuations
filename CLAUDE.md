@@ -1,6 +1,7 @@
 # Notes for Claude: maintaining the miner ETF valuations
 
 README.md explains the project for people; this file is how Claude should run and change it.
+Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`.
 
 ## Ground rules
 
@@ -43,7 +44,8 @@ Reports go to `out/<command>/report.txt`.
    - **Currency not in the FX table**: add a row at the bottom of Holdings!Y:AB with the code; the next run fills the rate.
 3. Tell the user the price date, the biggest movers, today's metal prices, any Model portfolio rows
    whose Status (column T) changed to "Review: above level", and the signals whose status changed
-   ("Changed since the last run" in `out/signals/report.txt`). If the report says the Sheet's and
+   ("Changed since the last run" in `out/signals/report.txt`; on GitHub, the run's step summary). If a
+   line says "the Sheet's last values are kept", a download failed: say which and since when. If the report says the Sheet's and
    Python's statuses differ, a status formula or threshold on the Signals tab was edited: find out which. To read the Sheet from Python:
    `from minerval.sheets import open_google; open_google().read("Model portfolio", "B6:T31")`.
 

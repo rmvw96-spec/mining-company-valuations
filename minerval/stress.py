@@ -112,6 +112,16 @@ def _wavg(c, col):
     return (v.weight_pct * v[col]).sum() / v.weight_pct.sum() if len(v) else np.nan
 
 
+def _wmedian(c, col):
+    """Median by fund weight: the value at which holdings below it make up half the covered weight, so the many
+    tiny explorers don't dominate (the Stress test & downside tab's definition)."""
+    v = c[c[col].notna()].sort_values(col)
+    if not len(v):
+        return np.nan
+    cum = v.weight_pct.cumsum() / v.weight_pct.sum()
+    return float(v.loc[cum >= 0.5, col].iloc[0])
+
+
 
 
 def fund_table(M: pd.DataFrame, metals: Metals) -> pd.DataFrame:
@@ -139,7 +149,7 @@ def fund_table(M: pd.DataFrame, metals: Metals) -> pd.DataFrame:
                     "burning cash %": c.loc[c.runway.notna(), "weight_pct"].sum(),
                     "runway < 2 yrs %": c.loc[c.runway < 2, "weight_pct"].sum()})
         for y in (1, 3):
-            res[f"dil{y} wavg"], res[f"dil{y} median"] = _wavg(c, f"dil{y}"), c[f"dil{y}"].median()   # median holding, unweighted
+            res[f"dil{y} wavg"], res[f"dil{y} median"] = _wavg(c, f"dil{y}"), _wmedian(c, f"dil{y}")
             res[f"dil{y} cov"] = c.loc[c[f"dil{y}"].notna(), "weight_pct"].sum()
         res["dil3 >20% weight"] = c.loc[c.dil3 > 20, "weight_pct"].sum()
         out.append(res)

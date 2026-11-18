@@ -172,6 +172,7 @@ daily = ["GC=F", "SI=F", "HG=F", "GDX", "GDXJ", "SIL", "SILJ", "COPX", "CL=F", "
 monthly = ["GC=F", "SI=F", "HG=F", "GDX", "SIL", "COPX"]      # full monthly history, for percentiles
 fred_series = "DFII10"              # 10-year TIPS real yield, %, daily; no API key
 fred_url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
+fred_api_url = "https://api.stlouisfed.org/fred/series/observations"   # used when FRED_API_KEY is set
 ratio_history_start = "2000-08"     # gold/silver ratio percentile: month-ends from here (COMEX futures on Yahoo)
 percentile_years = 10               # miners-against-metal percentiles: month-ends over this many years
 uptrend_days = 200                  # trading days in the moving average
