@@ -1,4 +1,5 @@
 """Stress test: dilution, breakevens and the linear free-cash-flow model."""
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -136,3 +137,11 @@ def test_ten_percent_cost_increase():
     assert a.be_k == pytest.approx(663 / 770)                               # b = 100 - 700 - 63
     assert M.loc["BBB"].fcf_Today == -50e6                                  # no revenue: not a producer
     assert M.loc["CCC"].cost_base_m == 0.0
+
+
+def test_dilution_median_is_by_fund_weight():
+    from minerval.stress import _wmedian
+    c = pd.DataFrame({"weight_pct": [10.0, 1.0, 1.0, 1.0], "dil1": [0.5, 40.0, 60.0, 80.0]})
+    assert _wmedian(c, "dil1") == 0.5                       # one big holding outweighs three small diluters
+    assert c.dil1.median() == 50.0                          # the unweighted median would say 50%
+    assert np.isnan(_wmedian(c.assign(dil1=np.nan), "dil1"))
