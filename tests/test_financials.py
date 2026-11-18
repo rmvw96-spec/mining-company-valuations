@@ -29,13 +29,14 @@ def test_breakeven_labels(be_k, expected):
 def test_non_companies_get_cleared_rows():
     M = frame([{"fund": "SLVR", "ticker": "PSLV", "kind": "physical metal", "netcash_pct": 3.0}])
     left, right = downside_rows(M)[("SLVR", "PSLV")]
-    assert left[0] == CLEAR and right == ["PSLV", CLEAR, CLEAR, CLEAR, CLEAR]
+    assert left[0] == CLEAR and right == ["PSLV", CLEAR, CLEAR, CLEAR, CLEAR, CLEAR]
 
 
 # Key columns and formula columns on each tab (see CLAUDE.md, "The Sheet: what not to touch").
 PROTECTED = {"Holdings": {"A", "D", "E", "F", "G", "H", "O", "P", "V"},
              "Holdings downside": {"A", "K", "L"},
-             "PNAV inputs": {"C", "D", "I", "J", "K", "L", "P", "Q", "R", "S", "AL", "AM", "AN", "AO", "AP", "AQ"}}
+             "PNAV inputs": {"C", "D", "I", "J", "K", "L", "P", "Q", "R", "S", "AL", "AM", "AN", "AO", "AP", "AQ",
+                             "AR", "AS", "AT", "AU", "AV", "AW", "AZ", "BA", "BB", "BC", "BD", "BE"}}
 
 
 def touched(blocks):
@@ -58,9 +59,10 @@ def derived(tmp_path, monkeypatch):
     pd.DataFrame([{"fund": "SGDM", "ticker": "AEM CN", "kind": "company", "netcash_pct": 1.25, "wc_pct": 2.0,
                    "runway": nan, "dil1": 0.5, "dil3": 1.5, "be_k": 0.4, "be_metal": "gold", "be_price": 1600.0,
                    "fcf_intercept_m": -100.0, "fcf_per_gold_m": 0.5, "fcf_per_silver_m": 0.0,
-                   "fcf_per_copper_m": 0.0}]).to_csv(tmp_path / "stress_holdings.csv", index=False)
+                   "fcf_per_copper_m": 0.0, "cost_base_m": 6000.0}]).to_csv(tmp_path / "stress_holdings.csv",
+                                                                             index=False)
     pd.DataFrame([{"yahoo": "AEM.TO", "net_cash_m": 1000.0, "revenue_m": 9000.0, "fcf_m": 3000.0, "ocf_m": 5000.0,
-                   "avg_gold": 3500.0, "avg_silver": 40.0, "avg_copper": 4.5},
+                   "avg_gold": 3500.0, "avg_silver": 40.0, "avg_copper": 4.5, "cash_m": 2000.0, "fcf_12m_m": 3000.0},
                   {"yahoo": "NOBASIS", "net_cash_m": 5.0, "revenue_m": 1.0, "fcf_m": 1.0, "ocf_m": 1.0,
                    "avg_gold": 1.0, "avg_silver": 1.0, "avg_copper": 1.0}]).to_csv(tmp_path / "pnav.csv", index=False)
     monkeypatch.setattr(financials, "DERIVED", tmp_path)
@@ -105,3 +107,23 @@ def test_financials_dry_run_writes_nothing(derived, tmp_path):
     assert sh.cells == before and not sh.blocks
     assert (tmp_path / "out" / "dry_run.json").exists()
     assert any("cells change" in line and not line.startswith("Holdings downside") for line in rep)
+
+
+def test_financials_writes_the_new_columns_once_set_up(derived, tmp_path):
+    from minerval.layout import DOWNSIDE_COST_HEADER, PNAV_HEADERS
+    sh = sheet()
+    sh.cells["Holdings downside"]["R1"] = DOWNSIDE_COST_HEADER
+    sh.cells["PNAV inputs"]["AX11"] = PNAV_HEADERS["cash"]
+    rep = financials.run(sh, out_dir=tmp_path / "out")
+    d, p = sh.cells["Holdings downside"], sh.cells["PNAV inputs"]
+    assert d["R2"] == 6000.0
+    assert (p["AX12"], p["AY12"]) == (2000.0, 3000.0)
+    assert "AX13" not in p                                         # fixed-price trust row left alone
+    assert not any("not set up yet" in line for line in rep)
+
+
+def test_financials_before_setup_leaves_new_columns_alone(derived, tmp_path):
+    sh = sheet()
+    rep = financials.run(sh, out_dir=tmp_path / "out")
+    assert "R2" not in sh.cells["Holdings downside"] and "AX12" not in sh.cells["PNAV inputs"]
+    assert sum("not set up yet" in line for line in rep) == 2
