@@ -228,7 +228,7 @@ def test_run_writes_values_by_key_and_reports_drift(tmp_path, monkeypatch):
     assert tab[f"E{keys['aisc_margin']}"] == pytest.approx(4000 - 2000)    # the Sheet's input wins
     for k in ("royalty_pnav_median", "junior_timing"):
         assert tab[f"E{keys[k]}"] == "=FORMULA()"                         # formula rows are never written
-    written = {c for _, cell, rows_ in sh.blocks for c in [cell[0]]}
+    written = {cell[0] for t, cell, rows_ in sh.blocks if t == "Signals"}
     assert written == {"E"}
     text = "\n".join(rep)
     assert "Sheet and Python statuses differ" in text                      # MemorySheet has no formulas in I

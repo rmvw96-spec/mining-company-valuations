@@ -2,7 +2,8 @@
 
 Daily
   prices          update share prices, FX, metal prices and the 10-year yield on the Sheet, then signals
-  signals         refresh the Signals tab (market timing signals for each tier)
+  signals         refresh the Signals tab (market timing signals for each tier); records Signal history
+  history         --backfill DATE: fill Signal history for past dates from the cached series
 After each earnings season (or when Sprott's holdings change)
   refresh         = fetch + compute
   fetch           download financials for every holding from Yahoo (cache/)
@@ -57,6 +58,10 @@ def main(argv=None):
     p.add_argument("--no-signals", action="store_true", help="don't refresh the Signals tab afterwards")
     p = sub.add_parser("signals", help="refresh the Signals tab")
     google(p)
+    p = sub.add_parser("history", help="backfill the Signal history tab for past dates")
+    google(p)
+    p.add_argument("--backfill", metavar="DATE", required=True, help="first date, e.g. 2023-01-01")
+    p.add_argument("--end", metavar="DATE", help="last date (default: today)")
     p = sub.add_parser("setup-sheet", help="add the Signals tab and new columns (idempotent)")
     google(p)
 
@@ -90,6 +95,9 @@ def main(argv=None):
     if a.cmd == "signals":
         from . import signals
         lines = signals.run(open_sheet(a), dry_run=a.dry_run)
+    if a.cmd == "history":
+        from . import history
+        lines = history.backfill(open_sheet(a), a.backfill, a.end, dry_run=a.dry_run)
     if a.cmd == "setup-sheet":
         from . import layout
         lines = layout.run(open_sheet(a), dry_run=a.dry_run)

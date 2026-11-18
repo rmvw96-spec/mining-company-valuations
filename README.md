@@ -164,6 +164,28 @@ is the working copy, and the code reads the Sheet's values when it runs against 
 These are signals from a framework, not advice. The Model portfolio's column W shows the ones that apply
 to each bucket (set in `[signals.timing]`), and a royalty company's valuation band where there is one.
 
+### Signal history and Company history
+
+Each `signals` run (so each daily `prices` run) also keeps its readings, on two tabs the code creates and
+manages:
+
+- **Signal history**: one row per trading day. A is the date, B the source (`live`, or `backfill` for rows
+  recomputed from past prices), then one column per signal key (row 1 holds the keys, so you can reorder
+  the columns; new signals get a column on the right). A second run on the same day replaces that day's
+  row. A value that couldn't be downloaded that day is left blank rather than repeated.
+- **Company history**: Date, Holding, Yahoo symbol, Metric, Value. Each royalty company's independent P/NAV
+  and price, and each developer's EV per gold-equivalent ounce, months of cash and cash share of market value.
+
+Weekend runs aren't recorded. To fill in the past from the cached prices (five years of daily data):
+
+```
+uv run python -m minerval history --backfill 2022-01-01 --dry-run
+uv run python -m minerval history --backfill 2022-01-01
+```
+
+The fund free-cash-flow yields, the royalty median and the AISC margin need past fundamentals, P/NAVs or
+costs, so they aren't backfilled. A backfilled row never replaces a live one.
+
 ### Royalty buy zone
 
 PNAV inputs AS classes each royalty/streaming company by its independent P/NAV (AJ): "Buy zone" up to

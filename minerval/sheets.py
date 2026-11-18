@@ -116,13 +116,25 @@ class GoogleSheet:
     def col_count(self, tab: str) -> int:
         return self._ws(tab).col_count
 
+    def row_count(self, tab: str) -> int:
+        return self._ws(tab).row_count
+
+    def ensure_rows(self, tab: str, nrows: int) -> int:
+        """Lengthen the tab to at least nrows rows. Returns rows added."""
+        ws = self._ws(tab)
+        add = nrows - ws.row_count
+        if add > 0:
+            ws.add_rows(add)
+            return add
+        return 0
+
     def number_formats(self, formats) -> int:
         """Apply [(tab, range, pattern)] number formats in one API call."""
         reqs = []
         for tab, rng, pattern in formats:
             a, b = rng.split(":") if ":" in rng else (rng, rng)
             (c1, r1), (c2, r2) = split_cell(a), split_cell(b)
-            kind = "PERCENT" if pattern.endswith("%") else "NUMBER"
+            kind = "PERCENT" if pattern.endswith("%") else "DATE" if pattern.startswith("yyyy") else "NUMBER"
             reqs.append({"repeatCell": {
                 "range": {"sheetId": self._ws(tab).id, "startRowIndex": r1 - 1, "endRowIndex": r2,
                           "startColumnIndex": col_to_num(c1) - 1, "endColumnIndex": col_to_num(c2)},
@@ -231,6 +243,19 @@ class MemorySheet:
 
     def col_count(self, tab: str) -> int:
         return self.sizes.get(tab, [0, 10_000])[1]
+
+    def row_count(self, tab: str) -> int:
+        if tab in self.sizes:
+            return self.sizes[tab][0]
+        return max([split_cell(c)[1] for c in self.cells.get(tab, {})], default=0) + 1000
+
+    def ensure_rows(self, tab: str, nrows: int) -> int:
+        size = self.sizes.get(tab)
+        if size and size[0] < nrows:
+            add = nrows - size[0]
+            size[0] = nrows
+            return add
+        return 0
 
     def number_formats(self, formats) -> int:
         self.formats += list(formats)
