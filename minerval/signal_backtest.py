@@ -14,7 +14,7 @@ and Signals G:H.
 """
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 import pandas as pd
@@ -73,6 +73,15 @@ def aisc_share_status(share, g, h) -> str:
 
 def cfg() -> dict:
     return settings()["signal_backtest"]
+
+
+def rule(key: str):
+    """(signal with its status rule active, threshold 1, threshold 2). Context-only signals show "Info" on the
+    Sheet; the backtest still tests their rule, with [signal_backtest.context_thresholds]."""
+    sig = BY_KEY[key]
+    if sig.context:
+        return replace(sig, context=False), *cfg()["context_thresholds"][key]
+    return sig, *settings()["signals"]["thresholds"][key]
 
 
 # ---------- data ----------
@@ -161,6 +170,10 @@ def signal_table(data: dict, dates) -> pd.DataFrame:
         for r in out:
             rec[r["key"]] = r["value"]
             rec[r["key"] + "__status"] = r["status"]
+        for r in out:                                 # context-only signals: their rule, as backtest statuses
+            if BY_KEY[r["key"]].context:
+                sig, g, h = rule(r["key"])
+                rec[r["key"] + "__status"] = status(sig, r["value"], g, h, rec)
         gold = data["daily"].get("GC=F")
         m = rec.get("aisc_margin")
         g = gold[gold.index <= ts] if gold is not None else pd.Series(dtype=float)
@@ -295,9 +308,8 @@ def sweep_statuses(T: pd.DataFrame, key: str, which: str, value: float) -> pd.Se
         g, h = cfg()["aisc_margin_share"]
         g, h = (value, h) if which == "g" else (g, value)
         return T[key].map(lambda v: aisc_share_status(v, g, h))
-    g, h = settings()["signals"]["thresholds"][key]
+    sig, g, h = rule(key)
     g, h = (value, h) if which == "g" else (g, value)
-    sig = BY_KEY[key]
     out = []
     for _, r in T.iterrows():
         v = r[key]
@@ -341,7 +353,8 @@ def run(refresh: bool = False) -> list[str]:
         have = st[st.str.len() > 0]
         sig_name = BY_KEY[t.key].label if t.key in BY_KEY else "AISC margin as a share of the gold price"
         span = f"{have.index[0]:%b %Y} to {have.index[-1]:%b %Y}" if len(have) else "no history"
-        lines.append(f"\n{sig_name} [{t.key}], {span}. Lean-in status: \"{t.lean_in}\"")
+        ctx = " (context only on the Sheet: its old rule, tested)" if t.key in BY_KEY and BY_KEY[t.key].context else ""
+        lines.append(f"\n{sig_name} [{t.key}]{ctx}, {span}. Lean-in status: \"{t.lean_in}\"")
         for name in t.outcomes:
             for h in HORIZONS:
                 fwd = forward(series, name, T.index, h)
@@ -376,7 +389,7 @@ def run(refresh: bool = False) -> list[str]:
         t = next(x for x in tests() if x.key == key)
         which, values = spec["threshold"], spec["values"]
         cur = (cfg()["aisc_margin_share"] if key == "aisc_margin_share"
-               else settings()["signals"]["thresholds"][key])[0 if which == "g" else 1]
+               else rule(key)[1:])[0 if which == "g" else 1]
         name, h = t.outcomes[0], spec.get("horizon", 12)
         fwd = forward(series, name, T.index, h)
         lines.append(f"  {key}, threshold {1 if which == 'g' else 2}; {label(name)}, next {h} months")

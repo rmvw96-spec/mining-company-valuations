@@ -155,7 +155,7 @@ is the working copy, and the code reads the Sheet's values when it runs against 
 
 | Tier | Signals | What the framework says |
 |---|---|---|
-| Physical metal | gold/silver ratio and its percentile since 2000; 10-year real yield (FRED DFII10) with its 12-month high and 3-month change; dollar index, 12 months | buy silver when the ratio is high; buy bullion more heavily when real yields peak and turn down; a falling dollar helps |
+| Physical metal | gold/silver ratio and its percentile since 2000; for context only (no status): 10-year real yield (FRED DFII10) with its 12-month high and 3-month change, and the dollar index over 12 months | buy silver when the ratio is high. The real-yield and dollar rules showed no edge in the backtest, so they're shown without a status |
 | Physical metal and royalty | S&P 500 below its 12-month high | panics are when to buy bullion and royalty companies |
 | Royalty | median independent P/NAV of the royalty companies (a formula over PNAV inputs) | buy at 1.1–1.4× NAV; 1.5–2.2× is normal |
 | Producers | gold, silver and copper against diesel over 12 months; gold price minus the industry AISC; GDX, SIL and COPX against their metal (percentile of 10 years); each fund's free-cash-flow yield from the Holdings tab | margins widen when metals outrun costs; buy miners when they're cheap against their metal |

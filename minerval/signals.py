@@ -39,6 +39,8 @@ class Signal:
     source: str = ""
     fmt: str = "0.00"           # number format for E (and G:H)
     formula: bool = False       # E is a Sheet formula: Python never writes it
+    context: bool = False       # shown for context only: status "Info", no thresholds on the Sheet. The rule in
+                                # `kind` is kept for the backtest ([signal_backtest.context_thresholds]).
 
 
 def _vs_diesel(metal):
@@ -80,15 +82,17 @@ SIGNALS = [
     Signal("real_yield_10y", "Physical metal", "10-year real yield (TIPS)", "%", "real_yield",
            ("Peaked and falling: the framework's signal to buy bullion more heavily",
             "Rising: keep accumulating steadily", "Flat: keep accumulating steadily"),
-           "Gold does best when real yields peak and turn down. Threshold 1: drop from the 12-month high "
-           "(% points); threshold 2: 3-month rise counted as rising.", "FRED DFII10", "0.00"),
+           "Context only: real yields move with gold in the same month rather than ahead of it, and the "
+           "'peaked and falling' rule showed no edge in the backtest (Nov 2026).", "FRED DFII10", "0.00",
+           context=True),
     Signal("real_yield_12m_high", "Physical metal", "10-year real yield: 12-month high", "%", "info", (), "",
            "FRED DFII10", "0.00"),
     Signal("real_yield_3m_change", "Physical metal", "10-year real yield: change over ~3 months", "% points",
            "info", (), "", "FRED DFII10", "0.00"),
     Signal("usd_12m", "Physical metal", "US dollar index, 12-month change", "% change", "low_high",
            ("Dollar weakening: supportive for bullion", "Dollar strengthening: a headwind", "Neutral"),
-           "A falling dollar lifts metal prices in US dollars.", "Yahoo, DX-Y.NYB", "0.0%"),
+           "Context only: a falling dollar lifts metal prices in US dollars, but the 12-month change showed no "
+           "edge for gold's next months in the backtest (Nov 2026).", "Yahoo, DX-Y.NYB", "0.0%", context=True),
     Signal("spy_drawdown", "Physical metal and royalty", "S&P 500 (SPY) below its 12-month high", "% from high",
            "drawdown", ("Stock-market panic: framework's moment for bullion and royalties",
                         "Market pullback: watch royalty companies", "Calm"),
@@ -323,7 +327,7 @@ def status(sig: Signal, v, g, h, ctx: dict) -> str:
     if not _num(v):
         return ""
     t, k = sig.texts, sig.kind
-    if k == "info":
+    if k == "info" or sig.context:
         return "Info"
     if k == "high_low":
         return t[0] if v >= g else t[1] if v <= h else t[2]
@@ -370,7 +374,7 @@ def status_formula(sig: Signal, r: int) -> str:
     E, G, H = f"E{r}", f"G{r}", f"H{r}"
     t = [_q(x) for x in sig.texts]
     k = sig.kind
-    if k == "info":
+    if k == "info" or sig.context:
         body = '"Info"'
     elif k == "high_low":
         body = f"IF({E}>={G},{t[0]},IF({E}<={H},{t[1]},{t[2]}))"

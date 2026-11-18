@@ -188,8 +188,8 @@ fcf_yield_funds = ["SGDM", "SGDJ", "COPP", "SLVR"]
 # record and the fallback. Each is chosen to match the framework's wording:
 [signals.thresholds]
 gold_silver_ratio = [80, 50]        # above 80 silver is historically cheap against gold; below 50 gold is
-real_yield_10y = [0.25, 0.10]       # [drop from 12-month high, % points; 3-month rise counted as "rising"]
-usd_12m = [-0.03, 0.03]             # a 3% move in the dollar index over a year is a trend, not noise
+# real_yield_10y and usd_12m are context only since Nov 2026 (no edge in the backtest): their old thresholds
+# are kept under [signal_backtest.context_thresholds].
 spy_drawdown = [-0.10, -0.20]       # 10% off the high is a pullback, 20% a bear market ("panic")
 royalty_pnav_median = [1.4, 2.2]    # framework: buy royalties at 1.1-1.4x NAV; 1.5-2.2x is their normal range
 gold_vs_diesel_12m = [0.10, -0.10]  # a 10-point gap between the metal and diesel moves margins visibly
@@ -216,7 +216,7 @@ runway_ok_months = 18
 # "Bucket|Metal" entries win over "Bucket". "=text" shows the text itself; "@developer_check" is this row's
 # PNAV inputs developer check. Any royalty/streaming company shows its royalty band instead.
 [signals.timing]
-"Physical metal|Gold" = ["real_yield_10y"]
+"Physical metal|Gold" = ["=No timing signal (real yield and dollar are context only: see Signals)"]
 "Physical metal|Silver" = ["gold_silver_ratio"]
 "Physical metal|Copper" = ["=No framework signal for physical copper"]
 "Gold producers" = ["gold_vs_diesel_12m", "gdx_gold_pctile10y"]
@@ -231,6 +231,10 @@ runway_ok_months = 18
 first_month_end = "2001-08-01"      # 12 months after COMEX gold and silver start on Yahoo (Aug 2000)
 percentile_min_months = 60          # miners-against-metal percentiles count once the ETF has 5 years of history
 aisc_margin_share = [0.45, 0.30]    # backtest only: (gold − AISC) ÷ gold at/above 45% "wide", at/below 30% "thin"
+
+[signal_backtest.context_thresholds]   # context-only signals (no status on the Sheet): the rules still tested
+real_yield_10y = [0.25, 0.10]       # [drop from 12-month high, % points; 3-month rise counted as "rising"]
+usd_12m = [-0.03, 0.03]             # a 3% move in the dollar index over a year
 
 [signal_backtest.start]             # ignore a series before this date (first full month of trading)
 GDX = "2006-06-01"

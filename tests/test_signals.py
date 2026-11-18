@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from minerval import prices, signals
+from minerval import prices, signal_backtest, signals
 from minerval.config import settings
 from minerval.signals import BY_KEY, SIGNALS, compute, in_window, parse_fred, percentile, status, status_formula
 from minerval.sheets import MemorySheet
@@ -111,22 +111,38 @@ def test_fcf_yield_from_the_holdings_tab():
 ])
 def test_status_boundaries(key, value, want):
     sig = BY_KEY[key]
-    g, h = settings()["signals"]["thresholds"].get(key, [None, None])
+    if sig.context:
+        sig, g, h = signal_backtest.rule(key)          # the rule the backtest still tests
+    else:
+        g, h = settings()["signals"]["thresholds"].get(key, [None, None])
     assert status(sig, value, g, h, {}) == sig.texts[want]
 
 
+def test_context_signals_show_info_and_have_no_sheet_thresholds():
+    th = settings()["signals"]["thresholds"]
+    ctx = [s for s in SIGNALS if s.context]
+    assert {s.key for s in ctx} == {"real_yield_10y", "usd_12m"}
+    for s in ctx:
+        assert s.key not in th and s.key in settings()["signal_backtest"]["context_thresholds"]
+        assert status(s, 1.0, None, None, {}) == "Info"
+        assert status_formula(s, 9) == '=IF(E9="","","Info")'
+    rows = compute(base_data(), TODAY)
+    assert row(rows, "usd_12m")["status"] == "Info" and row(rows, "real_yield_10y")["status"] == "Info"
+
+
 def test_real_yield_peaked_and_falling_vs_rising():
-    sig, (g, h) = BY_KEY["real_yield_10y"], settings()["signals"]["thresholds"]["real_yield_10y"]
+    sig, g, h = signal_backtest.rule("real_yield_10y")      # context only on the Sheet; the rule is backtested
     assert status(sig, 2.6, g, h, {"real_yield_12m_high": 2.9, "real_yield_3m_change": -0.2}) == sig.texts[0]
     assert status(sig, 2.7, g, h, {"real_yield_12m_high": 2.9, "real_yield_3m_change": -0.2}) == sig.texts[2]
     assert status(sig, 2.9, g, h, {"real_yield_12m_high": 2.9, "real_yield_3m_change": 0.1}) == sig.texts[1]
     assert status(sig, 2.9, g, h, {"real_yield_12m_high": 2.9, "real_yield_3m_change": 0.05}) == sig.texts[2]
     # From the series: a rise to a peak, then a fall over the last 3 months
     up = np.r_[np.linspace(2.0, 3.0, 200), np.linspace(3.0, 2.6, 64)]
-    rows = compute(base_data() | {"real_yield": daily(up)}, TODAY)
-    assert row(rows, "real_yield_10y")["status"] == sig.texts[0]
-    rows = compute(base_data() | {"real_yield": daily(np.linspace(2.0, 3.0, 264))}, TODAY)
-    assert row(rows, "real_yield_10y")["status"] == sig.texts[1]
+    def via_compute(series):
+        rows = {r["key"]: r["value"] for r in compute(base_data() | {"real_yield": daily(series)}, TODAY)}
+        return status(sig, rows["real_yield_10y"], g, h, rows)
+    assert via_compute(up) == sig.texts[0]
+    assert via_compute(np.linspace(2.0, 3.0, 264)) == sig.texts[1]
 
 
 def test_junior_timing():
@@ -151,6 +167,8 @@ def test_every_status_formula_uses_its_row_and_texts():
     for sig in SIGNALS:
         f = status_formula(sig, 9)
         assert f.startswith('=IF(E9="","",') and f.count("(") == f.count(")")
+        if sig.context:
+            continue                                   # "Info" (test_context_signals_...)
         for t in sig.texts:
             assert '"' + t.replace('"', '""') + '"' in f, (sig.key, t)
         if sig.kind in ("high_low", "low_high", "drawdown", "band"):
@@ -279,7 +297,7 @@ def test_missing_series_falls_back_to_the_sheet_and_is_not_rewritten(tmp_path, m
     sh = MemorySheet({"Signals": cells, "Holdings": {}})
     rep = signals.run(sh, out_dir=tmp_path, fetch_data=False, today=TODAY)
     out = {r["key"]: r for r in json.loads((tmp_path / "signals.json").read_text())["signals"]}
-    assert out["real_yield_10y"]["stale"] and out["real_yield_10y"]["status"] == "Rising: keep accumulating steadily"
+    assert out["real_yield_10y"]["stale"] and out["real_yield_10y"]["status"] == "Info"
     assert out["real_yield_10y"]["asof"] == "2026-11-14"
     assert not any(cell == f"E{keys['real_yield_10y']}" for _, cell, _ in sh.blocks)   # not rewritten
     assert any("Sheet's last values are kept: real_yield_10y (2026-11-14)" in line for line in rep)

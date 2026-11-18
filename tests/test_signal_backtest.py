@@ -114,11 +114,10 @@ def test_aisc_share_buckets():
 
 def test_sweep_settings_name_real_thresholds():
     C = settings()["signal_backtest"]
-    th = settings()["signals"]["thresholds"]
     keys = {t.key for t in bt.tests()}
     for key, spec in C["sweep"].items():
         assert key in keys and spec["threshold"] in ("g", "h")
-        cur = C["aisc_margin_share"] if key == "aisc_margin_share" else th[key]
+        cur = C["aisc_margin_share"] if key == "aisc_margin_share" else bt.rule(key)[1:]
         assert cur[0 if spec["threshold"] == "g" else 1] in spec["values"], key   # the current value is swept
 
 

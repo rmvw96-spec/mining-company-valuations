@@ -35,6 +35,25 @@ Written Nov 18, 2026, after the market-signals work (PR #5) and the scheduled Gi
 After 2a, revisit the thresholds in `config/settings.toml` [signals.thresholds] and on the Signals tab
 (G:H) with the results in hand. That's a judgment call for the user, not something the code changes.
 
+Done in Nov 2026: the real yield and the dollar's 12-month change are context only (status "Info", no
+thresholds), because neither showed an edge. Their old rules stay in the backtest
+(`[signal_backtest.context_thresholds]`).
+
+Candidate (2c, not built): a **rate-expectations signal** for physical gold. A one-off study (Nov 2026,
+month-ends 2003–2026) found the 10-year real yield moves with gold in the same month (correlation −0.44
+monthly, −0.58 over 3 months) and not ahead of it at any lag, so a rule that waits for it to peak and fall
+comes late. What the market expects the Fed to do did better, from FRED's 2-year Treasury yield (DGS2) and
+the effective fed funds rate (DFF):
+
+- 2-year yield down 0.25 points or more over 3 months ("turning dovish"): gold +11.4% over the next 6
+  months against +6.1% for all months, up 90% of the time, score +2.6 (17 independent windows). Positive at
+  every threshold from 0.10 to 0.75, and in both 2003–2013 and 2014–2026.
+- 2-year yield 0.25 points or more below fed funds ("market expects cuts"): +14.4% over 6 months, up 90%,
+  score +2.4 (12 windows).
+- Caveat: both fire in clusters around three or four easing cycles (2006–08, 2019–20, 2023–25), so the
+  real evidence is a handful of episodes. CME FedWatch probabilities aren't freely available as history;
+  Yahoo's front fed funds future (ZQ=F) covers only the next month and was too noisy.
+
 ## Phase 3: developers (December 2026 to January 2027, before the next tax-loss window closes in practice)
 
 | # | Item | Spec | Size | Depends on |
