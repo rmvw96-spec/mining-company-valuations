@@ -25,6 +25,7 @@ from .config import CACHE, DERIVED, OUT, RESEARCH, ensure, settings
 from .sheets import blocks_by_row, col_to_num
 
 SIG_CACHE = CACHE / "signals"
+BREADTH_CACHE = SIG_CACHE / "breadth"
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,15 @@ def _fcf(fund):
                   "high_low", ("High free-cash-flow yield", "Low free-cash-flow yield", "Middling"),
                   "Producers are cheap when they earn a high free-cash-flow yield at today's prices.",
                   "Holdings tab: weight × free cash flow ÷ market value, companies only", "0.0%")
+
+
+def _breadth(fund):
+    return Signal(f"breadth_{fund.lower()}", "Juniors", f"{fund}: share of its companies above their 200-day average "
+                  "(by fund weight)", "share of weight", "high_low",
+                  ("Broad uptrend: most juniors rising", "Narrow: most juniors still falling", "Mixed"),
+                  "Confirms an uptrend: an index can turn up on a few large names while most juniors keep falling. "
+                  "Thresholds are provisional; the backtest has only about 4 years, with today's holdings.",
+                  f"Yahoo, daily closes of {fund}'s holdings (Holdings tab, Yahoo symbol in P)", "0%")
 
 
 def _trend(key, name):
@@ -133,6 +143,7 @@ SIGNALS = [
            "Juniors are sold for tax losses late in the year: a time to buy them cheaply.", "Calendar", "0"),
     _trend("uptrend_gold", "Gold"), _trend("uptrend_gdx", "GDX (gold miners)"),
     _trend("uptrend_silver", "Silver"), _trend("uptrend_sil", "SIL (silver miners)"),
+    _breadth("SGDJ"), _breadth("COPJ"),
     Signal("junior_timing", "Juniors", "Junior buy conditions met (tax-loss window; gold and GDX uptrend)",
            "of 2", "junior",
            ("Both buy conditions met", "Tax-loss window open; uptrend not confirmed", "Uptrend confirmed", "Wait"),
@@ -167,11 +178,27 @@ def _cache_name(sym, interval):
     return SIG_CACHE / f"{sym.replace('=', '_').replace('^', '_')}_{interval}.json"
 
 
-def fetch() -> list[str]:
-    """Download everything compute() needs into cache/signals/. Returns lines naming what failed."""
+def fetch(breadth: list[dict] | None = None) -> list[str]:
+    """Download everything compute() needs into cache/signals/. Returns lines naming what failed.
+
+    breadth: the junior funds' holdings ({fund, holding, yahoo, weight}, from breadth_holdings()); their daily
+    closes go to cache/signals/breadth/, with the list itself, so later runs and backfills use the same names."""
     S = settings()["signals"]
     ensure(SIG_CACHE)
     failed = []
+    if breadth:
+        ensure(BREADTH_CACHE)
+        (BREADTH_CACHE / "holdings.json").write_text(json.dumps(breadth, indent=0))
+        syms = sorted({h["yahoo"] for h in breadth if h["yahoo"]})
+        got = yahoo.pmap(lambda s: yahoo.chart(s, range=S.get("daily_range", "2y"), interval="1d"), syms)
+        bad = []
+        for sym, j in got.items():
+            if j and (j.get("chart") or {}).get("result"):
+                (BREADTH_CACHE / f"{sym.replace('=', '_').replace('^', '_')}.json").write_text(json.dumps(j))
+            else:
+                bad.append(sym)
+        if bad:
+            failed.append(f"{len(bad)} junior-breadth symbols ({', '.join(bad[:8])}{'...' if len(bad) > 8 else ''})")
     daily = yahoo.pmap(lambda s: yahoo.chart(s, range=S.get("daily_range", "2y"), interval="1d"), S["daily"])
     monthly = yahoo.pmap(lambda s: yahoo.history(s, "1mo"), S["monthly"])
     for interval, got in (("1d", daily), ("1mo", monthly)):
@@ -224,7 +251,69 @@ def load_cache() -> dict:
         f = SIG_CACHE / f"{series}.csv"
         if f.exists():
             out["rates"][series] = parse_fred(f.read_text())
+    out["breadth"] = load_breadth()
     return out
+
+
+def load_breadth(folder=None) -> dict | None:
+    """{"holdings": [...], "closes": {yahoo: Series}} from cache/signals/breadth/, or None before the first fetch."""
+    folder = folder or BREADTH_CACHE
+    f = folder / "holdings.json"
+    if not f.exists():
+        return None
+    H = json.loads(f.read_text())
+    closes_ = {}
+    for sym in {h["yahoo"] for h in H if h["yahoo"]}:
+        c = folder / f"{sym.replace('=', '_').replace('^', '_')}.json"
+        if c.exists():
+            closes_[sym] = closes(json.loads(c.read_text()))
+    return {"holdings": H, "closes": closes_}
+
+
+def breadth_holdings(sheet=None) -> list[dict]:
+    """The junior funds' holdings with Yahoo symbols: from the Holdings tab (A fund, B holding, C weight,
+    P Yahoo symbol) when there's a Sheet, else from data/derived/holdings_detail.csv. Holdings without a symbol
+    are kept (blank yahoo), so they count in the coverage figure."""
+    funds = settings()["signals"]["breadth_funds"]
+    out = []
+    if sheet is not None:
+        S = settings()["sheet"]
+        for r in sheet.read(S["holdings_tab"], f"A2:P{S['last_row']}"):
+            r = list(r) + [""] * 16
+            if str(r[0]).strip() in funds and _num(r[2]):
+                out.append({"fund": str(r[0]).strip(), "holding": str(r[1]).strip(), "weight": float(r[2]),
+                            "yahoo": str(r[15]).strip()})
+        return out
+    p = DERIVED / "holdings_detail.csv"
+    if p.exists():
+        T = pd.read_csv(p)
+        for _, r in T[T.fund.isin(funds)].iterrows():
+            out.append({"fund": r.fund, "holding": r.holding, "weight": float(r.weight_pct),
+                        "yahoo": "" if pd.isna(r.yahoo) else str(r.yahoo)})
+    return out
+
+
+def breadth(B: dict | None, fund: str, days: int, stale_days: int = 10):
+    """(Σ weight above its own `days`-day average ÷ Σ weight with `days` closes, the weight so covered ÷ the fund's
+    total weight, as-of date). A holding counts only if it traded within stale_days of the fund's latest close."""
+    if not B:
+        return None, 0.0, None
+    H = [h for h in B["holdings"] if h["fund"] == fund]
+    total = sum(h["weight"] for h in H)
+    series = {h["yahoo"]: B["closes"].get(h["yahoo"]) for h in H if h["yahoo"]}
+    series = {k: v for k, v in series.items() if v is not None and not v.empty}
+    if not series or not total:
+        return None, 0.0, None
+    asof = max(v.index[-1] for v in series.values())
+    up = cov = 0.0
+    for h in H:
+        s = series.get(h["yahoo"])
+        if s is None or len(s) < days or s.index[-1] < asof - pd.Timedelta(days=stale_days):
+            continue
+        cov += h["weight"]
+        if s.iloc[-1] > s.iloc[-days:].mean():
+            up += h["weight"]
+    return (up / cov if cov else None), cov / total, asof
 
 
 # ---------- calculations ----------
@@ -521,6 +610,10 @@ def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dic
     for key, sym in (("uptrend_gold", "GC=F"), ("uptrend_gdx", "GDX"), ("uptrend_silver", "SI=F"),
                      ("uptrend_sil", "SIL")):
         put(key, vs_average(D.get(sym), S["uptrend_days"]), D.get(sym))
+    for fund in S["breadth_funds"]:
+        v, _, d = breadth(data.get("breadth"), fund, S["uptrend_days"])
+        vals[f"breadth_{fund.lower()}"] = v
+        asof[f"breadth_{fund.lower()}"] = d.date().isoformat() if v is not None else ""
     put("gdxj_drawdown", drawdown(D.get("GDXJ")), D.get("GDXJ"))
     put("silj_drawdown", drawdown(D.get("SILJ")), D.get("SILJ"))
     stale = set()
@@ -591,8 +684,12 @@ def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | 
     today = today or today_ny()
     out_dir = out_dir or OUT / "signals"
     ensure(out_dir)
-    rep = fetch() if fetch_data else []
+    rep = fetch(breadth_holdings(sheet)) if fetch_data else []
     data = load_cache()
+    for fund in settings()["signals"]["breadth_funds"]:
+        v, cov, _ = breadth(data.get("breadth"), fund, settings()["signals"]["uptrend_days"])
+        if v is not None:
+            rep.append(f"Junior breadth {fund}: holdings with 200 days of prices cover {cov:.0%} of the fund's weight.")
     tabname = settings()["sheet"]["signals_tab"]
     tab = read_tab(sheet) if sheet is not None and sheet.has_tab(tabname) else None
     if sheet is not None and tab is None:

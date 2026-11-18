@@ -30,7 +30,7 @@ Written Nov 18, 2026, after the market-signals work (PR #5) and the scheduled Gi
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
 | 2a | **Signal backtest**, including an industry AISC history table, so the AISC margin can be tested and the Q3 2026 figure (World Gold Council, due early December 2026) goes in from the record | [signal-backtest-spec.md](specs/signal-backtest-spec.md) | L | WGC Q3 2026 AISC for the last row |
-| 2b | **Junior breadth**: the share of SGDJ and COPJ (by weight) above their 200-day averages, as a confirmation signal | [junior-breadth-spec.md](specs/junior-breadth-spec.md) | S | best built alongside 2a, which tests it |
+| 2b | **Built Nov 2026.** **Junior breadth**: the share of SGDJ and COPJ (by weight) above their 200-day averages, as a confirmation signal | [junior-breadth-spec.md](specs/junior-breadth-spec.md) | S | best built alongside 2a, which tests it |
 
 After 2a, revisit the thresholds in `config/settings.toml` [signals.thresholds] and on the Signals tab
 (G:H) with the results in hand. That's a judgment call for the user, not something the code changes.
