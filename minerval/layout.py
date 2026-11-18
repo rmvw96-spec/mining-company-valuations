@@ -277,6 +277,30 @@ def fresh_rows() -> dict:
     return rows
 
 
+def signal_inserts(sheet) -> list[tuple[str, int]]:
+    """(key, row) for each signal missing from an existing Signals tab: a new row just below the signal before it
+    in SIGNALS order, so it lands in its tier. Rows are given as they'll be once the earlier inserts are done."""
+    S = _S()
+    tab = S["signals_tab"]
+    if not sheet.has_tab(tab):
+        return []
+    found = {}
+    for i, row in enumerate(sheet.read(tab, f"A1:A{S['signals_last_row']}"), start=1):
+        if row and str(row[0]).strip():
+            found[str(row[0]).strip()] = i
+    if not any(s.key in found for s in SIGNALS):
+        return []
+    out, prev = [], None
+    for s in SIGNALS:
+        if s.key not in found:
+            at = (found[prev] if prev else S["signals_first_row"] - 1) + 1
+            found = {k: r + 1 if r >= at else r for k, r in found.items()}
+            found[s.key] = at
+            out.append((s.key, at))
+        prev = s.key
+    return out
+
+
 def step_signals(sheet) -> Step:
     S = _S()
     tab = S["signals_tab"]
@@ -490,6 +514,19 @@ def run(sheet, dry_run=False, out_dir=None) -> list[str]:
     out_dir = out_dir or DEST
     ensure(out_dir)
     rep = []
+    # New signals on an existing Signals tab: insert their rows first, so the steps below find them by key.
+    inserts = signal_inserts(sheet)
+    if inserts:
+        names = ", ".join(f"{k} (row {r})" for k, r in inserts)
+        if dry_run:
+            rep.append(f"Would insert rows on the {S['signals_tab']} tab for new signals: {names}.")
+        else:
+            for key, r in inserts:
+                sheet.insert_rows(S["signals_tab"], r)
+                sheet.write([(S["signals_tab"], f"A{r}", [[key]])])        # the key, so the step below finds it
+                sig_ = next(x for x in SIGNALS if x.key == key)
+                sheet.number_formats([(S["signals_tab"], f"E{r}", sig_.fmt), (S["signals_tab"], f"G{r}:H{r}", sig_.fmt)])
+            rep.append(f"Inserted rows on the {S['signals_tab']} tab for new signals: {names}.")
     all_steps = steps(sheet)
     pnav_tab, need_cols = S["pnav_inputs_tab"], col_to_num(S["pnav_inputs"]["developer_check"])
 

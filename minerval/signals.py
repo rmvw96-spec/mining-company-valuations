@@ -39,6 +39,8 @@ class Signal:
     source: str = ""
     fmt: str = "0.00"           # number format for E (and G:H)
     formula: bool = False       # E is a Sheet formula: Python never writes it
+    context: bool = False       # shown for context only: status "Info", no thresholds on the Sheet. The rule in
+                                # `kind` is kept for the backtest ([signal_backtest.context_thresholds]).
 
 
 def _vs_diesel(metal):
@@ -80,15 +82,30 @@ SIGNALS = [
     Signal("real_yield_10y", "Physical metal", "10-year real yield (TIPS)", "%", "real_yield",
            ("Peaked and falling: the framework's signal to buy bullion more heavily",
             "Rising: keep accumulating steadily", "Flat: keep accumulating steadily"),
-           "Gold does best when real yields peak and turn down. Threshold 1: drop from the 12-month high "
-           "(% points); threshold 2: 3-month rise counted as rising.", "FRED DFII10", "0.00"),
+           "Context only: real yields move with gold in the same month rather than ahead of it, and the "
+           "'peaked and falling' rule showed no edge in the backtest (Nov 2026).", "FRED DFII10", "0.00",
+           context=True),
     Signal("real_yield_12m_high", "Physical metal", "10-year real yield: 12-month high", "%", "info", (), "",
            "FRED DFII10", "0.00"),
     Signal("real_yield_3m_change", "Physical metal", "10-year real yield: change over ~3 months", "% points",
            "info", (), "", "FRED DFII10", "0.00"),
+    Signal("two_year_3m_change", "Physical metal", "2-year Treasury yield: change over ~3 months (the market's "
+           "expected Fed path)", "% points", "low_high",
+           ("Turning dovish: the market is pricing in cuts; buy bullion more heavily",
+            "Turning hawkish: the market is pricing in hikes", "Steady: keep accumulating steadily"),
+           "Gold reacts to expected rates, not to rates already set: the 2-year yield moves when the market "
+           "changes its view of the Fed's next two years. Backtest 2003-2026: gold rose 11% on average in the 6 "
+           "months after a 0.25-point fall, against 6% for all months; it fires in clusters around easing cycles.",
+           "FRED DGS2", "0.00"),
+    Signal("two_year_minus_fed_funds", "Physical metal", "2-year Treasury yield minus the fed funds rate",
+           "% points", "low_high", ("Market expects cuts", "Market expects hikes", "Market expects holds"),
+           "Context: below zero, the market expects the Fed to cut over the next two years.",
+           "FRED DGS2 and DFF", "0.00", context=True),
+    Signal("two_year_yield", "Physical metal", "2-year Treasury yield", "%", "info", (), "", "FRED DGS2", "0.00"),
     Signal("usd_12m", "Physical metal", "US dollar index, 12-month change", "% change", "low_high",
            ("Dollar weakening: supportive for bullion", "Dollar strengthening: a headwind", "Neutral"),
-           "A falling dollar lifts metal prices in US dollars.", "Yahoo, DX-Y.NYB", "0.0%"),
+           "Context only: a falling dollar lifts metal prices in US dollars, but the 12-month change showed no "
+           "edge for gold's next months in the backtest (Nov 2026).", "Yahoo, DX-Y.NYB", "0.0%", context=True),
     Signal("spy_drawdown", "Physical metal and royalty", "S&P 500 (SPY) below its 12-month high", "% from high",
            "drawdown", ("Stock-market panic: framework's moment for bullion and royalties",
                         "Market pullback: watch royalty companies", "Calm"),
@@ -163,31 +180,38 @@ def fetch() -> list[str]:
                 _cache_name(sym, interval).write_text(json.dumps(j))
             else:
                 failed.append(f"{sym} ({interval})")
-    txt = fred_csv(S)
-    if txt and txt.startswith("observation_date"):
-        (SIG_CACHE / f"{S['fred_series']}.csv").write_text(txt)
-    else:
-        failed.append(f"FRED {S['fred_series']}")
+    for series in fred_all(S):
+        txt = fred_csv(S, series)
+        if txt and txt.startswith("observation_date"):
+            (SIG_CACHE / f"{series}.csv").write_text(txt)
+        else:
+            failed.append(f"FRED {series}")
     return [f"Download failed (cached copy used if there is one): {', '.join(failed)}"] if failed else []
 
 
-def fred_csv(S) -> str | None:
+def fred_all(S) -> list[str]:
+    """Every FRED series the signals use: the real yield, then the rate-expectation series."""
+    return [S["fred_series"]] + list(S.get("fred_rates", []))
+
+
+def fred_csv(S, series: str | None = None) -> str | None:
     """The FRED series as graph CSV text. With FRED_API_KEY set, FRED's API is tried first (it answers
     from cloud servers, where the graph CSV sometimes doesn't); its JSON is turned into the same CSV."""
+    series = series or S["fred_series"]
     key = os.environ.get("FRED_API_KEY")
     if key:
-        j = yahoo.get_json(S["fred_api_url"], {"series_id": S["fred_series"], "api_key": key, "file_type": "json"},
+        j = yahoo.get_json(S["fred_api_url"], {"series_id": series, "api_key": key, "file_type": "json"},
                            tries=3)
         obs = (j or {}).get("observations")
         if obs:
-            return "observation_date," + S["fred_series"] + "\n" + "".join(
+            return "observation_date," + series + "\n" + "".join(
                 f"{o['date']},{o['value']}\n" for o in obs)
-    return yahoo.get_text(S["fred_url"].format(series=S["fred_series"]))
+    return yahoo.get_text(S["fred_url"].format(series=series))
 
 
 def load_cache() -> dict:
     S = settings()["signals"]
-    out = {"daily": {}, "monthly": {}, "real_yield": None}
+    out = {"daily": {}, "monthly": {}, "real_yield": None, "rates": {}}
     for interval, key in (("1d", "daily"), ("1mo", "monthly")):
         for sym in S[key]:
             f = _cache_name(sym, interval)
@@ -196,6 +220,10 @@ def load_cache() -> dict:
     f = SIG_CACHE / f"{S['fred_series']}.csv"
     if f.exists():
         out["real_yield"] = parse_fred(f.read_text())
+    for series in S.get("fred_rates", []):
+        f = SIG_CACHE / f"{series}.csv"
+        if f.exists():
+            out["rates"][series] = parse_fred(f.read_text())
     return out
 
 
@@ -323,7 +351,7 @@ def status(sig: Signal, v, g, h, ctx: dict) -> str:
     if not _num(v):
         return ""
     t, k = sig.texts, sig.kind
-    if k == "info":
+    if k == "info" or sig.context:
         return "Info"
     if k == "high_low":
         return t[0] if v >= g else t[1] if v <= h else t[2]
@@ -370,7 +398,7 @@ def status_formula(sig: Signal, r: int) -> str:
     E, G, H = f"E{r}", f"G{r}", f"H{r}"
     t = [_q(x) for x in sig.texts]
     k = sig.kind
-    if k == "info":
+    if k == "info" or sig.context:
         body = '"Info"'
     elif k == "high_low":
         body = f"IF({E}>={G},{t[0]},IF({E}<={H},{t[1]},{t[2]}))"
@@ -457,6 +485,15 @@ def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dic
         put("real_yield_10y", float(ry.iloc[-1]), ry)
         put("real_yield_12m_high", high_12m(ry), ry)
         put("real_yield_3m_change", float(ry.iloc[-1] - ry.iloc[-1 - n]) if len(ry) > n else None, ry)
+    rates = data.get("rates") or {}
+    two, ff = rates.get("DGS2"), rates.get("DFF")
+    if two is not None and not two.empty:
+        n = S["real_yield_change_days"]
+        put("two_year_yield", float(two.iloc[-1]), two)
+        put("two_year_3m_change", float(two.iloc[-1] - two.iloc[-1 - n]) if len(two) > n else None, two)
+        f = ff[ff.index <= two.index[-1]] if ff is not None else None
+        put("two_year_minus_fed_funds", float(two.iloc[-1] - f.iloc[-1]) if f is not None and not f.empty else None,
+            two)
     put("usd_12m", change_12m(D.get("DX-Y.NYB")), D.get("DX-Y.NYB"))
     put("spy_drawdown", drawdown(D.get("SPY")), D.get("SPY"))
     for key, sym in (("gold_12m", "GC=F"), ("silver_12m", "SI=F"), ("copper_12m", "HG=F"),

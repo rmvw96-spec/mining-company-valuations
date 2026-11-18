@@ -155,7 +155,7 @@ is the working copy, and the code reads the Sheet's values when it runs against 
 
 | Tier | Signals | What the framework says |
 |---|---|---|
-| Physical metal | gold/silver ratio and its percentile since 2000; 10-year real yield (FRED DFII10) with its 12-month high and 3-month change; dollar index, 12 months | buy silver when the ratio is high; buy bullion more heavily when real yields peak and turn down; a falling dollar helps |
+| Physical metal | gold/silver ratio and its percentile since 2000; the 2-year Treasury yield's change over ~3 months (FRED DGS2: the market's expected Fed path). For context only (no status): the 2-year yield and its gap to the fed funds rate (DFF), the 10-year real yield (FRED DFII10) with its 12-month high and 3-month change, and the dollar index over 12 months | buy silver when the ratio is high; buy gold more heavily when the market turns towards rate cuts (2-year yield down 0.25 points or more in 3 months). The real-yield and dollar rules showed no edge in the backtest, so they're shown without a status |
 | Physical metal and royalty | S&P 500 below its 12-month high | panics are when to buy bullion and royalty companies |
 | Royalty | median independent P/NAV of the royalty companies (a formula over PNAV inputs) | buy at 1.1–1.4× NAV; 1.5–2.2× is normal |
 | Producers | gold, silver and copper against diesel over 12 months; gold price minus the industry AISC; GDX, SIL and COPX against their metal (percentile of 10 years); each fund's free-cash-flow yield from the Holdings tab | margins widen when metals outrun costs; buy miners when they're cheap against their metal |
@@ -212,8 +212,8 @@ hit rate, against all months as the baseline (`out/backtest-signals/report.txt`,
 and `outcomes.csv`). A threshold sweep shows the lean-in result at a few thresholds around the current one,
 so you can see whether the current choice sits on a plateau or a knife edge.
 
-What it measures, per signal: silver minus gold for the gold/silver ratio; gold for the real yield and the
-dollar; gold and royalty companies (RGLD, FNV and WPM, equal weight) for an S&P 500 sell-off; the miner ETF
+What it measures, per signal: silver minus gold for the gold/silver ratio; gold for the 2-year yield, the
+real yield and the dollar; gold and royalty companies (RGLD, FNV and WPM, equal weight) for an S&P 500 sell-off; the miner ETF
 minus its metal for the diesel, percentile and AISC-margin signals; GDXJ, SILJ and GDXJ minus GDX for the
 uptrends and junior timing; and GDXJ (and GDX) from the end of November or December to the end of February
 for the tax-loss window.
@@ -330,8 +330,10 @@ exactly as on the Holdings tab.
 - Yahoo quotes London prices in pence ("GBp") and Johannesburg prices in cents ("ZAc"). The Sheet
   calls these GBX and ZAC, because XLOOKUP ignores case and would match "GBp" to the pound rate.
 - **Signals** use Yahoo daily and monthly closes (COMEX futures, NYMEX heating oil and crude, the
-  dollar index, SPY and the miner ETFs) and the 10-year TIPS real yield from FRED
-  (`fredgraph.csv?id=DFII10`, no key needed; FRED's API instead when `FRED_API_KEY` is set).
+  dollar index, SPY and the miner ETFs) and three FRED series: the 10-year TIPS real yield (DFII10), the
+  2-year Treasury yield (DGS2) and the effective fed funds rate (DFF) (`fredgraph.csv`, no key needed;
+  FRED's API instead when `FRED_API_KEY` is set). CME FedWatch's probabilities would be the direct measure
+  of rate expectations, but their history isn't freely available; the 2-year yield is the standard proxy.
 - **Developers' resources** are each company's latest published estimate (Nov 2026), with source and
   date in the research file; pounds are worked out from tonnes and grade where that's all a source gives.
 - **Holdings** are from Sprott's ETF pages. **P/NAV research inputs** (stages, country risk, reserve

@@ -264,7 +264,8 @@ def truncate(data: dict, d) -> dict:
         return None if s is None else s[s.index <= ts]
     return {"daily": {k: cut(s) for k, s in data.get("daily", {}).items()},
             "monthly": {k: cut(s) for k, s in data.get("monthly", {}).items()},
-            "real_yield": cut(data.get("real_yield"))}
+            "real_yield": cut(data.get("real_yield")),
+            "rates": {k: cut(s) for k, s in (data.get("rates") or {}).items()}}
 
 
 def backfill_entries(data: dict, start, end) -> dict:

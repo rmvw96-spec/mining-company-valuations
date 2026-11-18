@@ -14,7 +14,7 @@ and Signals G:H.
 """
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 import pandas as pd
@@ -44,6 +44,8 @@ def tests() -> list[Test]:
     return [
         Test("gold_silver_ratio", ("SI=F-GC=F",), t("gold_silver_ratio")[0]),
         Test("real_yield_10y", ("GC=F",), t("real_yield_10y")[0]),
+        Test("two_year_3m_change", ("GC=F",), t("two_year_3m_change")[0]),
+        Test("two_year_minus_fed_funds", ("GC=F",), t("two_year_minus_fed_funds")[0]),
         Test("usd_12m", ("GC=F",), t("usd_12m")[0]),
         Test("spy_drawdown", ("GC=F", "ROYALTY"), t("spy_drawdown")[0]),
         Test("gold_vs_diesel_12m", ("GDX-GC=F",), t("gold_vs_diesel_12m")[0]),
@@ -75,6 +77,15 @@ def cfg() -> dict:
     return settings()["signal_backtest"]
 
 
+def rule(key: str):
+    """(signal with its status rule active, threshold 1, threshold 2). Context-only signals show "Info" on the
+    Sheet; the backtest still tests their rule, with [signal_backtest.context_thresholds]."""
+    sig = BY_KEY[key]
+    if sig.context:
+        return replace(sig, context=False), *cfg()["context_thresholds"][key]
+    return sig, *settings()["signals"]["thresholds"][key]
+
+
 # ---------- data ----------
 
 def _file(sym):
@@ -88,7 +99,7 @@ def symbols() -> list[str]:
 
 def fetch() -> list[str]:
     """Full daily histories for every series the backtest uses, and the FRED real yield."""
-    from .signals import fred_csv
+    from .signals import fred_all, fred_csv
     ensure(BT_CACHE)
     got = yahoo.pmap(lambda s: yahoo.history(s, "1d"), symbols())
     failed = []
@@ -98,11 +109,12 @@ def fetch() -> list[str]:
         else:
             failed.append(sym)
     S = settings()["signals"]
-    txt = fred_csv(S)
-    if txt and txt.startswith("observation_date"):
-        (BT_CACHE / f"{S['fred_series']}.csv").write_text(txt)
-    else:
-        failed.append(f"FRED {S['fred_series']}")
+    for series in fred_all(S):
+        txt = fred_csv(S, series)
+        if txt and txt.startswith("observation_date"):
+            (BT_CACHE / f"{series}.csv").write_text(txt)
+        else:
+            failed.append(f"FRED {series}")
     return [f"Download failed (cached copy used if there is one): {', '.join(failed)}"] if failed else []
 
 
@@ -129,12 +141,15 @@ def load() -> tuple[dict, dict]:
         for D in (closes, total):
             if sym in D:
                 D[sym] = D[sym][D[sym].index >= d]
-    fred = BT_CACHE / f"{S['fred_series']}.csv"
-    if not fred.exists():
-        fred = SIG_CACHE / f"{S['fred_series']}.csv"
+    def fred(series):
+        f = BT_CACHE / f"{series}.csv"
+        f = f if f.exists() else SIG_CACHE / f"{series}.csv"
+        return parse_fred(f.read_text()) if f.exists() else None
+    rates = {k: fred(k) for k in S.get("fred_rates", [])}
     data = {"daily": {s: closes[s] for s in S["daily"] if s in closes},
             "monthly": {s: closes[s] for s in S["monthly"] if s in closes},   # daily: month_end_ratio takes the last
-            "real_yield": parse_fred(fred.read_text()) if fred.exists() else None}
+            "real_yield": fred(S["fred_series"]),
+            "rates": {k: v for k, v in rates.items() if v is not None}}
     if not data["daily"]:                 # no backtest download yet: fall back to the daily signals cache
         data = load_cache()
     return data, total
@@ -161,6 +176,10 @@ def signal_table(data: dict, dates) -> pd.DataFrame:
         for r in out:
             rec[r["key"]] = r["value"]
             rec[r["key"] + "__status"] = r["status"]
+        for r in out:                                 # context-only signals: their rule, as backtest statuses
+            if BY_KEY[r["key"]].context:
+                sig, g, h = rule(r["key"])
+                rec[r["key"] + "__status"] = status(sig, r["value"], g, h, rec)
         gold = data["daily"].get("GC=F")
         m = rec.get("aisc_margin")
         g = gold[gold.index <= ts] if gold is not None else pd.Series(dtype=float)
@@ -295,9 +314,8 @@ def sweep_statuses(T: pd.DataFrame, key: str, which: str, value: float) -> pd.Se
         g, h = cfg()["aisc_margin_share"]
         g, h = (value, h) if which == "g" else (g, value)
         return T[key].map(lambda v: aisc_share_status(v, g, h))
-    g, h = settings()["signals"]["thresholds"][key]
+    sig, g, h = rule(key)
     g, h = (value, h) if which == "g" else (g, value)
-    sig = BY_KEY[key]
     out = []
     for _, r in T.iterrows():
         v = r[key]
@@ -341,7 +359,8 @@ def run(refresh: bool = False) -> list[str]:
         have = st[st.str.len() > 0]
         sig_name = BY_KEY[t.key].label if t.key in BY_KEY else "AISC margin as a share of the gold price"
         span = f"{have.index[0]:%b %Y} to {have.index[-1]:%b %Y}" if len(have) else "no history"
-        lines.append(f"\n{sig_name} [{t.key}], {span}. Lean-in status: \"{t.lean_in}\"")
+        ctx = " (context only on the Sheet: its old rule, tested)" if t.key in BY_KEY and BY_KEY[t.key].context else ""
+        lines.append(f"\n{sig_name} [{t.key}]{ctx}, {span}. Lean-in status: \"{t.lean_in}\"")
         for name in t.outcomes:
             for h in HORIZONS:
                 fwd = forward(series, name, T.index, h)
@@ -376,7 +395,7 @@ def run(refresh: bool = False) -> list[str]:
         t = next(x for x in tests() if x.key == key)
         which, values = spec["threshold"], spec["values"]
         cur = (cfg()["aisc_margin_share"] if key == "aisc_margin_share"
-               else settings()["signals"]["thresholds"][key])[0 if which == "g" else 1]
+               else rule(key)[1:])[0 if which == "g" else 1]
         name, h = t.outcomes[0], spec.get("horizon", 12)
         fwd = forward(series, name, T.index, h)
         lines.append(f"  {key}, threshold {1 if which == 'g' else 2}; {label(name)}, next {h} months")
