@@ -21,8 +21,9 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 
 | When | Command | Writes |
 |---|---|---|
-| Daily, after 4 pm New York | `prices` (`--dry-run` first if anything looks off); it runs `signals` at the end | Holdings R–T, FX table Y–AB; Metal prices reference C15:C17, C30; Signals E–F |
-| On its own, if needed | `signals` (`--dry-run`) | Signals E–F; out/signals/ |
+| Daily, after 4 pm New York | `prices` (`--dry-run` first if anything looks off); it runs `signals` at the end | Holdings R–T, FX table Y–AB; Metal prices reference C15:C17, C30; Signals E–F; Signal history and Company history (today's rows) |
+| On its own, if needed | `signals` (`--dry-run`) | Signals E–F; Signal history, Company history; out/signals/ |
+| Once, or after adding a signal | `history --backfill 2022-01-01` (`--dry-run` first) | Signal history (past dates) |
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
 | After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY |
@@ -83,6 +84,9 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
   a row added below 31 is outside every range.
 - Signals: column I (status) is a formula on every signal row, and so is E on the `royalty_pnav_median`,
   `junior_timing` and `implied_cost_increase` rows. Python writes E:F on the other signal rows, by the key in A.
+- Signal history and Company history are written by the code, which finds rows by the date in A (and, on
+  Signal history, columns by the key in row 1). Don't edit or sort them by hand; reordering Signal history's
+  columns is fine. Keep Signal history A1:B1 as "Date", "Source" and Company history A1:E1 as its headers.
 - Clear cells with an empty value; in Claude Sheets payloads that is `null`, never `""`.
 
 ### Holdings tab

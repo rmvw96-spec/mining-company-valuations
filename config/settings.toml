@@ -120,6 +120,8 @@ downside_last_row = 337
 portfolio_tab = "Model portfolio"
 portfolio_first_row = 6
 portfolio_last_row = 31
+signal_history_tab = "Signal history"     # one row per run date (history.py); the code manages these two tabs
+company_history_tab = "Company history"   # long format: date, holding, Yahoo symbol, metric, value
 
 # PNAV inputs columns: the existing ones the new formulas refer to, and the new ones (AR onwards).
 [sheet.pnav_inputs]
@@ -148,6 +150,7 @@ ev_per_aueq_oz = "BB"
 months_of_cash = "BC"
 cash_share = "BD"
 developer_check = "BE"
+yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 
 [sheet.pnav_tab_cols]
 royalty_band = "U"
@@ -170,6 +173,7 @@ months_of_cash = "Y"
 # Market signals for the Signals tab (`python -m minerval signals`, also run at the end of `prices`).
 daily = ["GC=F", "SI=F", "HG=F", "GDX", "GDXJ", "SIL", "SILJ", "COPX", "CL=F", "HO=F", "DX-Y.NYB", "SPY"]
 monthly = ["GC=F", "SI=F", "HG=F", "GDX", "SIL", "COPX"]      # full monthly history, for percentiles
+daily_range = "5y"                  # daily closes kept; 5 years lets `history --backfill` go back ~4 years
 fred_series = "DFII10"              # 10-year TIPS real yield, %, daily; no API key
 fred_url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
 fred_api_url = "https://api.stlouisfed.org/fred/series/observations"   # used when FRED_API_KEY is set

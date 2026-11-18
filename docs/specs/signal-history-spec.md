@@ -1,5 +1,10 @@
 # Signal history: record every run on the Sheet
 
+**Status: built** (branch `signal-history`). Where the build differs from the plan below: the source column is B
+(not last), so new signals can be added on the right; the history code creates and manages both tabs itself
+rather than `setup-sheet` (they're data tabs with nothing to protect); weekend runs and values kept stale from an
+earlier day aren't recorded; daily closes are now cached for five years so the backfill reaches back to 2022.
+
 Instructions for Claude Code. Roadmap item 1a. Follow CLAUDE.md (branch, tests, ruff, ask before `git push`,
 Sheet safety, `--dry-run`).
 

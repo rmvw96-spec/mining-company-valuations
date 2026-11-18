@@ -153,7 +153,7 @@ def fetch() -> list[str]:
     S = settings()["signals"]
     ensure(SIG_CACHE)
     failed = []
-    daily = yahoo.pmap(lambda s: yahoo.chart(s, range="2y", interval="1d"), S["daily"])
+    daily = yahoo.pmap(lambda s: yahoo.chart(s, range=S.get("daily_range", "2y"), interval="1d"), S["daily"])
     monthly = yahoo.pmap(lambda s: yahoo.history(s, "1mo"), S["monthly"])
     for interval, got in (("1d", daily), ("1mo", monthly)):
         for sym, j in got.items():
@@ -520,7 +520,8 @@ def _fmt(v, sig):
 
 
 def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | None = None) -> list[str]:
-    today = today or date.today()
+    from .history import record, today_ny
+    today = today or today_ny()
     out_dir = out_dir or OUT / "signals"
     ensure(out_dir)
     rep = fetch() if fetch_data else []
@@ -605,6 +606,10 @@ def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | 
                 mism.append(f"{r['key']}: Sheet '{c['I']}', Python '{r['status']}'")
         rep.append("Sheet and Python statuses differ (a formula or threshold drifted):\n  " + "\n  ".join(mism)
                    if mism else "Sheet and Python statuses agree.")
+
+    # Keep today's readings: Signal history and Company history tabs (never fails the run)
+    if tab is not None:
+        rep += record(sheet, rows, today, dry_run)
 
     (out_dir / "signals.json").write_text(json.dumps({"date": today.isoformat(), "signals": rows}, indent=1,
                                                      default=str))
