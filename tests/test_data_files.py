@@ -64,3 +64,16 @@ def test_overrides_and_corrections(holdings):
     assert set(C.ticker) <= set(holdings.ticker)
     assert set(C.field.dropna()) <= {"book", "ocf", "fcf", "ebitda", "revenue", "debt", "cash"}
     assert C.source.notna().all(), "every correction needs a source"
+
+
+def test_resource_research_columns():
+    from minerval.pnav import RESOURCE_CATEGORIES, RESOURCE_COLS, RESOURCE_UNITS
+    R = pd.read_csv(DATA / "research" / "pnav_companies.csv")
+    assert set(RESOURCE_COLS) <= set(R.columns)
+    filled = R[R.resource_amount.notna()]
+    assert (filled.resource_amount > 0).all()
+    assert set(filled.resource_unit) <= set(RESOURCE_UNITS)
+    assert set(filled.resource_category) <= set(RESOURCE_CATEGORIES)
+    assert filled.resource_source.notna().all() and filled.resource_date.notna().all(), "a filled amount needs a source and date"
+    blank = R[R.resource_amount.isna()]
+    assert blank[["resource_unit", "resource_category", "resource_source"]].isna().all().all()
