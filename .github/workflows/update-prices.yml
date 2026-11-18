@@ -7,8 +7,8 @@
 name: Update prices
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: "40 21 * * 1-5"    # 21:40 UTC on weekdays: 4:40 pm New York in winter, 5:40 pm in summer
+  schedule:
+    - cron: "40 21 * * 1-5"    # 21:40 UTC on weekdays: 4:40 pm New York in winter, 5:40 pm in summer
 jobs:
   prices:
     runs-on: ubuntu-latest
