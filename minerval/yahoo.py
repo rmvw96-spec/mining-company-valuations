@@ -1,4 +1,4 @@
-"""Small client for the Yahoo Finance endpoints that work without a login.
+"""Small client for the Yahoo Finance endpoints that work without a login (and plain downloads such as FRED).
 
 Works:   /v8/finance/chart (prices, history) and /ws/fundamentals-timeseries (financials).
 Blocked: /v10/finance/quoteSummary needs a "crumb" cookie and is refused, so it isn't used.
@@ -35,6 +35,21 @@ def get_json(url: str, params: dict | None = None, tries: int = 5, timeout: int 
             if r.status_code not in (429,) and r.status_code < 500:
                 return None                     # 404 and similar: retrying won't help
         except (requests.RequestException, ValueError):
+            pass
+        time.sleep(2 ** i + random.random())
+    return None
+
+
+def get_text(url: str, tries: int = 3, timeout: int = 30) -> str | None:
+    """GET a text file (FRED's CSV) through the same session, so the offline-test guard covers it too."""
+    for i in range(tries):
+        try:
+            r = session().get(url, timeout=timeout)
+            if r.status_code == 200:
+                return r.text
+            if r.status_code not in (429,) and r.status_code < 500:
+                return None
+        except requests.RequestException:
             pass
         time.sleep(2 ** i + random.random())
     return None

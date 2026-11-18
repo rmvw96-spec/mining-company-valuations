@@ -7,9 +7,11 @@ SLVR, COPP, COPJ), in the style of Rick Rule:
 - a metal-price stress test, with free-cash-flow breakevens, net cash and dilution
 - price to net asset value (P/NAV) for 143 companies
 - a model portfolio, with a backtest and a Monte Carlo projection
+- market signals for when to buy each tier (Signals tab), a royalty buy zone, a producer cost-increase
+  input, and cash and value-in-the-ground checks for developers
 
 The spreadsheet is meant to live in Google Sheets. The Python package `minerval` keeps it current:
-prices every day, company financials after each earnings season.
+prices and market signals every day, company financials after each earnings season.
 
 ## What's here
 
@@ -27,7 +29,9 @@ config/
 data/
   holdings.csv           the six funds' holdings (Sprott, Nov 13, 2026)
   research/pnav_companies.csv   P/NAV research inputs: stage, countries, risk add-on, reserve life,
-                                outside NAV estimates and study values, with notes
+                                outside NAV estimates and study values, and developers' resource
+                                estimates (amount, unit, category, source, date), with notes
+docs/specs/              specifications for larger changes
 tests/                   offline tests (pytest); run on every push and pull request by .github/workflows/tests.yml
 ```
 
@@ -106,6 +110,11 @@ Read `out/prices/report.txt` afterwards. It lists:
   count too, so update it (`--shares`, below).
 - **Currency not in the FX table**: add a row at the bottom of Holdings!Y:AB with the code; the next run fills it in.
 
+`prices` then refreshes the Signals tab (see [Signals tab](#signals-tab)) and adds its statuses to
+the report: which changed since the last run, and any row where the Sheet's status formula disagrees
+with Python's (a sign a formula or threshold was edited). `--no-signals` skips it; a failure there
+(FRED down, say) is reported but never stops the price update. `signals` on its own does just that part.
+
 To run it automatically, use cron (or Task Scheduler on Windows) on your computer, or the GitHub
 workflow in `.github/workflows/update-prices.yml`, which explains its setup.
 
@@ -125,11 +134,74 @@ writes, matching rows by fund and ticker rather than by position:
 |---|---|---|
 | Holdings | I–N (operating and free cash flow, EBITDA, book equity, net debt, report date) and Q (note) | fund + Sprott ticker |
 | Holdings downside | D–J (net cash, working capital, cash runway, dilution, breakeven) and M–Q (helpers for column K) | fund + Sprott ticker |
-| PNAV inputs | E–H (net cash, revenue, free and operating cash flow) and M–O (average metal prices over the reported period) | Yahoo symbol |
+| PNAV inputs | E–H (net cash, revenue, free and operating cash flow) and M–O (average metal prices over the reported period); AX–AY (cash, 12-month free cash flow) | Yahoo symbol |
+| Holdings downside | R (cost base: revenue − free cash flow, for the cost increase) | fund + Sprott ticker |
 
 It leaves the research inputs alone (PNAV inputs I–L and P–S). After writing, look over the
 companies whose Note says "Op. cash flow corrected" or that have new negative cash flows: Yahoo's
 data has gaps, and `config/corrections.csv` is where a company-reported figure replaces Yahoo's.
+
+## Signals tab
+
+One row per signal, grouped by tier. Python writes the value (E) and its date (F); the thresholds (G–H)
+and the inputs block below the signals are yours to edit; the status (I) is a formula over E, G and H.
+Rows are found by the key in column A, so you can reorder them or insert rows. The defaults, and why
+each was chosen, are in `config/settings.toml` `[signals.thresholds]`: that file is the record, the Sheet
+is the working copy, and the code reads the Sheet's values when it runs against it.
+
+| Tier | Signals | What the framework says |
+|---|---|---|
+| Physical metal | gold/silver ratio and its percentile since 2000; 10-year real yield (FRED DFII10) with its 12-month high and 3-month change; dollar index, 12 months | buy silver when the ratio is high; buy bullion more heavily when real yields peak and turn down; a falling dollar helps |
+| Physical metal and royalty | S&P 500 below its 12-month high | panics are when to buy bullion and royalty companies |
+| Royalty | median independent P/NAV of the royalty companies (a formula over PNAV inputs) | buy at 1.1–1.4× NAV; 1.5–2.2× is normal |
+| Producers | gold, silver and copper against diesel over 12 months; gold price minus the industry AISC; GDX, SIL and COPX against their metal (percentile of 10 years); each fund's free-cash-flow yield from the Holdings tab | margins widen when metals outrun costs; buy miners when they're cheap against their metal |
+| Juniors | the tax-loss selling window (Nov 1 – Dec 31); gold, GDX, silver and SIL against their 200-day average; GDXJ and SILJ below their 12-month high; and a formula combining them | buy juniors in the tax-loss window, or once the uptrend is confirmed |
+
+These are signals from a framework, not advice. The Model portfolio's column W shows the ones that apply
+to each bucket (set in `[signals.timing]`), and a royalty company's valuation band where there is one.
+
+### Royalty buy zone
+
+PNAV inputs AS classes each royalty/streaming company by its independent P/NAV (AJ): "Buy zone" up to
+1.4×, "Normal range" up to 2.2×, else "Rich", using the thresholds on the `royalty_pnav_median` Signals
+row; AR is the buy-below price (1.4 × the independent NAV per share). P/NAV U:V show both. AJ uses the
+independent model's NAV per share (PNAV inputs R), which assumes that model's own metal prices (P/NAV
+column K, mostly $4,000 gold): it's a research input refreshed by hand, not live.
+
+### Producer cost increase
+
+The model holds producers' costs at their reported 12 months. The Signals input `producer_cost_increase`
+(0% by default; PNAV inputs H7 follows it) raises them: free cash flow falls by 0.70 × (revenue − free
+cash flow) × the increase, in the P/NAV cash flows (Z:AC, producers valued on FCF only) and the
+Low-scenario cash flows on Holdings downside (K, using the cost base in R). Revenue − FCF counts all
+spending, including taxes, which don't inflate, so this slightly overstates the effect. Next to it,
+`energy_share_of_costs` (yours to fill in) and `implied_cost_increase` show what the diesel move implies.
+Offline, `compute --cost-increase 0.1` does the same for `data/derived/`.
+
+### Developer checks
+
+PNAV inputs AT:AW hold each developer's resource (millions of the unit: oz Au, oz AuEq, oz AgEq, lb Cu
+or lb CuEq), its category and source, seeded from `data/research/pnav_companies.csv`. From those and
+AX:AY: EV (AZ), EV per unit (BA), EV per gold-equivalent ounce (BB; silver ounces converted at the live
+gold/silver ratio, copper shown per pound in BA only), months of cash (BC), cash as a share of market
+value (BD), and a check (BE): "Short of cash: financing likely" under 12 months, "Watch" under 18, plus
+"trading near cash" when cash is at least half the market value. Companies building a mine on project
+loans (Skeena) show a short runway because the loan isn't counted as cash: check undrawn facilities
+before reading "Short of cash" literally. Model portfolio X:Y show EV per ounce and months of cash for
+the developers.
+
+### Setting up the layout: `setup-sheet`
+
+```
+uv run python -m minerval setup-sheet --dry-run   # report what it would add
+uv run python -m minerval setup-sheet             # add it
+```
+
+It creates the Signals tab and the columns above, and rewrites PNAV inputs Z:AC and Holdings downside
+K2 to include the cost increase. It checks every cell first: a target that holds anything unexpected
+skips that step and is reported, inputs are only filled when blank, and a rewrite only replaces the
+exact old formula. It saves a snapshot of every cell it touches to `out/layout/backup-<time>.json`
+first, and running it again changes nothing. Cell addresses are in `config/settings.toml` `[sheet]`.
 
 ## When Sprott's holdings change
 
@@ -154,9 +226,10 @@ exactly as on the Holdings tab.
 |---|---|
 | Holdings | `prices` daily (R–T, FX table), `financials` (I–N, Q); D–H and V are formulas |
 | Metal prices reference | `prices` (C15:C17, C30); scenario prices and peer multiples are yours to edit; the fund table at the top is a Nov 16 snapshot |
-| PNAV inputs, P/NAV | formulas over Holdings and Metal prices reference; `financials` (PNAV inputs E–H, M–O) |
-| Model portfolio | formulas over P/NAV; inputs in B3 (new money) and B4 (ounces held) |
-| Holdings downside | `financials` (D–J, M–Q); K is a formula that follows the Low scenario prices |
+| PNAV inputs, P/NAV | formulas over Holdings, Metal prices reference and Signals; `financials` (PNAV inputs E–H, M–O, AX–AY); resource inputs AT–AW are yours |
+| Signals | `prices` daily (E–F); thresholds (G–H) and inputs are yours; status (I) is a formula |
+| Model portfolio | formulas over P/NAV, PNAV inputs and Signals; inputs in B3 (new money) and B4 (ounces held) |
+| Holdings downside | `financials` (D–J, M–R); K is a formula that follows the Low scenario prices and the cost increase |
 | Summary, Stress test & downside | snapshots from Nov 16, 2026. `compute` writes the current figures to `data/derived/fund_multiples.csv` and `stress_funds.csv`; paste them in to update |
 | Backtest & projections | snapshot from Nov 17, 2026. `backtest` and `project` write the current figures to `out/backtest/` |
 
@@ -183,6 +256,11 @@ exactly as on the Holdings tab.
   four decimals, which puts small rates like the Indonesian rupiah far off.
 - Yahoo quotes London prices in pence ("GBp") and Johannesburg prices in cents ("ZAc"). The Sheet
   calls these GBX and ZAC, because XLOOKUP ignores case and would match "GBp" to the pound rate.
+- **Signals** use Yahoo daily and monthly closes (COMEX futures, NYMEX heating oil and crude, the
+  dollar index, SPY and the miner ETFs) and the 10-year TIPS real yield from FRED
+  (`fredgraph.csv?id=DFII10`, no key needed).
+- **Developers' resources** are each company's latest published estimate (Nov 2026), with source and
+  date in the research file; pounds are worked out from tonnes and grade where that's all a source gives.
 - **Holdings** are from Sprott's ETF pages. **P/NAV research inputs** (stages, country risk, reserve
   lives, outside NAV estimates, study values) came from company reports and analyst sources found by
   web search in November 2026; each row's notes say where a figure is uncertain.
@@ -194,6 +272,7 @@ uv run python -m minerval fetch-history   # monthly price histories for the back
 uv run python -m minerval backtest        # out/backtest/: recent windows, 2008-2011, since 2000
 uv run python -m minerval project         # out/backtest/projection_k15.json
 uv run python -m minerval prices --claude FILE --base REV   # payloads for the original Claude Sheet (see CLAUDE.md)
+uv run python -m minerval compute --cost-increase 0.1       # derived figures with producers' costs up 10%
 ```
 
 The backtest and projection use `private/portfolio.csv` (columns as in `config/portfolio.example.csv`):

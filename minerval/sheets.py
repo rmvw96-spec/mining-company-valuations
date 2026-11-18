@@ -75,12 +75,62 @@ class GoogleSheet:
 
     def __init__(self, sheet_id: str, credentials: str | None = None, oauth: bool = False):
         import gspread
+        from gspread.http_client import BackOffHTTPClient     # retries 429s (60 reads a minute) with back-off
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+        kw = {"scopes": scopes, "http_client": BackOffHTTPClient}
         if oauth:
-            gc = gspread.oauth(credentials_filename=credentials, scopes=scopes) if credentials else gspread.oauth(scopes)
+            gc = gspread.oauth(credentials_filename=credentials, **kw) if credentials else gspread.oauth(**kw)
         else:
-            gc = gspread.service_account(filename=credentials, scopes=scopes) if credentials else gspread.service_account(scopes)
+            gc = gspread.service_account(filename=credentials, **kw) if credentials else gspread.service_account(**kw)
         self.book = gc.open_by_key(sheet_id)
+        self._meta = None
+
+    def _tabs(self) -> dict:
+        """{title: worksheet}, read once (each lookup is otherwise an API read)."""
+        if self._meta is None:
+            self._meta = {w.title: w for w in self.book.worksheets()}
+        return self._meta
+
+    def _ws(self, tab: str):
+        return self._tabs()[tab]
+
+    def has_tab(self, tab: str) -> bool:
+        return tab in self._tabs()
+
+    def ensure_tab(self, tab: str, rows: int = 200, cols: int = 26) -> bool:
+        """Create the tab if it doesn't exist. Returns True if it was created."""
+        if self.has_tab(tab):
+            return False
+        self._tabs()[tab] = self.book.add_worksheet(title=tab, rows=rows, cols=cols)
+        return True
+
+    def ensure_cols(self, tab: str, ncols: int) -> int:
+        """Widen the tab to at least ncols columns (the API refuses writes beyond the grid). Returns columns added."""
+        ws = self._ws(tab)
+        add = ncols - ws.col_count
+        if add > 0:
+            ws.add_cols(add)
+            return add
+        return 0
+
+    def col_count(self, tab: str) -> int:
+        return self._ws(tab).col_count
+
+    def number_formats(self, formats) -> int:
+        """Apply [(tab, range, pattern)] number formats in one API call."""
+        reqs = []
+        for tab, rng, pattern in formats:
+            a, b = rng.split(":") if ":" in rng else (rng, rng)
+            (c1, r1), (c2, r2) = split_cell(a), split_cell(b)
+            kind = "PERCENT" if pattern.endswith("%") else "NUMBER"
+            reqs.append({"repeatCell": {
+                "range": {"sheetId": self._ws(tab).id, "startRowIndex": r1 - 1, "endRowIndex": r2,
+                          "startColumnIndex": col_to_num(c1) - 1, "endColumnIndex": col_to_num(c2)},
+                "cell": {"userEnteredFormat": {"numberFormat": {"type": kind, "pattern": pattern}}},
+                "fields": "userEnteredFormat.numberFormat"}})
+        if reqs:
+            self.book.batch_update({"requests": reqs})
+        return len(reqs)
 
     def read(self, tab: str, rng: str, formulas: bool = False) -> list[list]:
         """Values of a range as a list of rows (ragged: Google drops trailing empty cells)."""
@@ -155,9 +205,36 @@ class ClaudePayloads:
 class MemorySheet:
     """An in-memory sheet for dry runs and tests: {tab: {"A1": value}}."""
 
-    def __init__(self, cells: dict | None = None):
+    def __init__(self, cells: dict | None = None, sizes: dict | None = None):
         self.cells = cells or {}
         self.blocks = []
+        self.sizes = {t: list(v) for t, v in (sizes or {}).items()}   # {tab: [rows, cols]}; unknown = unlimited
+        self.formats = []
+
+    def has_tab(self, tab: str) -> bool:
+        return tab in self.cells or tab in self.sizes
+
+    def ensure_tab(self, tab: str, rows: int = 200, cols: int = 26) -> bool:
+        if self.has_tab(tab):
+            return False
+        self.cells[tab] = {}
+        self.sizes[tab] = [rows, cols]
+        return True
+
+    def ensure_cols(self, tab: str, ncols: int) -> int:
+        size = self.sizes.get(tab)
+        if size and size[1] < ncols:
+            add = ncols - size[1]
+            size[1] = ncols
+            return add
+        return 0
+
+    def col_count(self, tab: str) -> int:
+        return self.sizes.get(tab, [0, 10_000])[1]
+
+    def number_formats(self, formats) -> int:
+        self.formats += list(formats)
+        return len(formats)
 
     def read(self, tab: str, rng: str, formulas: bool = False) -> list[list]:
         a, b = rng.split(":") if ":" in rng else (rng, rng)
@@ -172,6 +249,11 @@ class MemorySheet:
         return out
 
     def write(self, blocks) -> int:
+        for tab, cell, rows in blocks:                  # the API refuses writes beyond the grid
+            c0, r0 = split_cell(cell)
+            size = self.sizes.get(tab)
+            if size and (r0 + len(rows) - 1 > size[0] or col_to_num(c0) + max(map(len, rows)) - 1 > size[1]):
+                raise ValueError(f"write to {tab}!{cell} goes beyond the grid {size}")
         self.blocks += blocks
         for tab, cell, rows in blocks:
             c0, r0 = split_cell(cell)

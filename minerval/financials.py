@@ -6,6 +6,8 @@ Rows are matched by key, not by position, so added or re-sorted rows are fine:
   PNAV inputs         columns E:H and M:O, matched on the Yahoo symbol (AP). Rows with a fixed price
                       (AQ, the physical trusts) are skipped, and F:H and M:O are written only where
                       column I names a cash-flow basis, since I:L and P:S are research inputs.
+                      Once `setup-sheet` has added them: AX:AY (cash, 12-month free cash flow) on every
+                      row, and Holdings downside R (cost base, revenue - FCF).
 Cells whose new value is missing are cleared, so stale figures don't linger.
 """
 import math
@@ -13,7 +15,7 @@ import math
 import pandas as pd
 
 from .config import DERIVED, OUT, settings
-from .sheets import CLEAR, blocks_by_row, column
+from .sheets import CLEAR, blocks_by_row, col_to_num, column, split_cell
 
 UNIT = {"gold": "gold $/oz", "silver": "silver $/oz", "copper": "copper $/lb"}
 
@@ -56,12 +58,13 @@ def downside_rows(M: pd.DataFrame) -> dict:
                      round(r.fcf_per_silver_m, 6), round(r.fcf_per_copper_m, 4)]
         else:
             right = [r.ticker, CLEAR, CLEAR, CLEAR, CLEAR]
+        right.append(_num(r.get("cost_base_m"), 4) if co else CLEAR)          # R, once setup-sheet has added it
         out[(r.fund, r.ticker)] = (left, right)
     return out
 
 
 def pnav_rows(I: pd.DataFrame) -> dict:
-    """{yahoo symbol: ([E], [F, G, H], [M, N, O])}."""
+    """{yahoo symbol: ([E], [F, G, H], [M, N, O], [AX, AY])}."""
     out = {}
     for _, r in I.iterrows():
         if not isinstance(r.yahoo, str):
@@ -69,8 +72,18 @@ def pnav_rows(I: pd.DataFrame) -> dict:
         e = [_num(r.get("net_cash_m"), 2)]
         fgh = [_num(r.get(k), 2) for k in ("revenue_m", "fcf_m", "ocf_m")]
         mno = [_num(r.get(f"avg_{m}"), 4) for m in ("gold", "silver", "copper")]
-        out.setdefault(r.yahoo, (e, fgh, mno))
+        cash = [_num(r.get("cash_m"), 2), _num(r.get("fcf_12m_m"), 2)]
+        out.setdefault(r.yahoo, (e, fgh, mno, cash))
     return out
+
+
+def _has_header(sheet, tab, cell, header) -> bool:
+    """True when the column exists and its header is in place (setup-sheet has run)."""
+    col, row = split_cell(cell)
+    if sheet.col_count(tab) < col_to_num(col):
+        return False
+    got = sheet.read(tab, cell)
+    return bool(got and got[0] and str(got[0][0]).strip() == header)
 
 
 def _keys(sheet, tab, first, last, key_cols):
@@ -140,6 +153,11 @@ def run(sheet, dry_run=False, out_dir=None):
     # Holdings downside
     tab = S["downside_tab"]
     want = downside_rows(M)
+    from .layout import DOWNSIDE_COST_HEADER, PNAV_HEADERS
+    D = S["downside_cols"]
+    if not _has_header(sheet, tab, f"{D['cost_base']}{S['downside_first_row'] - 1}", DOWNSIDE_COST_HEADER):
+        want = {k: (left, right[:-1]) for k, (left, right) in want.items()}
+        rep.append(f"  {tab}!{D['cost_base']} (cost base) not set up yet: run `setup-sheet` to add it.")
     keys = _keys(sheet, tab, 2, last, ["A", "L"])
     left = {r: want[k][0] for r, k in keys.items() if k in want}
     right = {r: want[k][1] for r, k in keys.items() if k in want}
@@ -157,7 +175,9 @@ def run(sheet, dry_run=False, out_dir=None):
     sym = column(sheet.read(tab, f"AP{a}:AQ{b}"), a)
     fixed = {r: v for r, v in column(sheet.read(tab, f"AP{a}:AQ{b}"), a, 1).items() if str(v).strip()}
     basis = column(sheet.read(tab, f"I{a}:I{b}"), a)
-    e, fgh, mno, unknown = {}, {}, {}, []
+    P = S["pnav_inputs"]
+    has_cash = _has_header(sheet, tab, f"{P['cash']}{a - 1}", PNAV_HEADERS["cash"])
+    e, fgh, mno, cash, unknown = {}, {}, {}, {}, []
     for r, s in sym.items():
         s = str(s).strip()
         if not s or r in fixed:
@@ -166,10 +186,16 @@ def run(sheet, dry_run=False, out_dir=None):
             unknown.append(s)
             continue
         e[r] = want[s][0]
+        cash[r] = want[s][3]
         if str(basis.get(r, "")).strip():
             fgh[r], mno[r] = want[s][1], want[s][2]
     ch = _changes(sheet, tab, "E", e) + _changes(sheet, tab, "F", fgh) + _changes(sheet, tab, "M", mno)
     blocks += blocks_by_row(tab, "E", e) + blocks_by_row(tab, "F", fgh) + blocks_by_row(tab, "M", mno)
+    if has_cash:
+        ch += _changes(sheet, tab, P["cash"], cash)
+        blocks += blocks_by_row(tab, P["cash"], cash)
+    else:
+        rep.append(f"  {tab}!{P['cash']}:{P['fcf_12m']} (cash, free cash flow) not set up yet: run `setup-sheet`.")
     rep.append(f"{tab}: {len(e)} rows matched, {ch} cells change.")
     if unknown:
         rep.append(f"  Yahoo symbols in {tab}!AP with no data (left as they were): " + ", ".join(unknown))
