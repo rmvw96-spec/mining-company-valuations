@@ -781,6 +781,21 @@ def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | 
     if tab is not None:
         rep += record(sheet, rows, today, dry_run)
 
+    # Alerts: status changes that have held for [alerts] hold_days recorded trading days (never fails the run)
+    confirmed = []
+    if tab is not None and not dry_run:
+        from .alerts import signal_changes
+        try:
+            confirmed = signal_changes(sheet, rows, thresholds, today)
+            hold = settings()["alerts"]["hold_days"]
+            rep.append(f"Confirmed changes (held {hold} trading days, for alerts):\n  " + "\n  ".join(
+                f"{c['label']}: {c['old']} -> {c['new']}" for c in confirmed) if confirmed
+                else f"No confirmed changes (held {hold} trading days) for alerts.")
+        except Exception as e:
+            rep.append(f"Alerts not worked out: {type(e).__name__}: {e}")
+    (out_dir / "changes.json").write_text(json.dumps({"date": today.isoformat(), "changes": confirmed}, indent=1,
+                                                     default=str))
+
     (out_dir / "signals.json").write_text(json.dumps({"date": today.isoformat(), "signals": rows}, indent=1,
                                                      default=str))
     if not dry_run:

@@ -5,12 +5,18 @@
 #   MINERVAL_SHEET_ID             the Google Sheet's ID
 # Optional: FRED_API_KEY (free, fred.stlouisfed.org > My Account > API Keys). FRED's CSV download often fails
 # from GitHub's servers; without a key the Signals tab keeps its last real-yield values and the report says so.
+# Optional: ALERT_SMTP_URL (e.g. smtps://you%40gmail.com:app-password@smtp.gmail.com:465) and ALERT_EMAIL_TO, to
+# email Model portfolio status changes (README, "Alerts"). Signal changes that hold 3 trading days open a public
+# issue labelled "signals" (GitHub emails the repo owner); that needs no secret.
 # Yahoo sometimes rate-limits cloud servers; if runs fail with "No price", run it from your computer instead.
 name: Update prices
 on:
   workflow_dispatch:
   schedule:
     - cron: "40 21 * * 1-5"    # 21:40 UTC on weekdays: 4:40 pm New York in winter, 5:40 pm in summer
+permissions:
+  contents: read
+  issues: write                # the "Signals changed" issue
 jobs:
   prices:
     runs-on: ubuntu-latest
@@ -25,7 +31,23 @@ jobs:
           MINERVAL_SHEET_ID: ${{ secrets.MINERVAL_SHEET_ID }}
           KEY_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          ALERT_SMTP_URL: ${{ secrets.ALERT_SMTP_URL }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
         run: |
           printf '%s' "$KEY_JSON" > "$RUNNER_TEMP/key.json"
-          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/key.json" uv run --no-sync python -m minerval prices
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/key.json" uv run --no-sync python -m minerval prices --notify
           cat out/prices/report.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Open an issue for confirmed signal changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          uv run --no-sync python -m minerval alerts
+          [ -f out/alerts/title.txt ] || exit 0
+          title="$(cat out/alerts/title.txt)"
+          day="${title#Signals changed: }"; day="${day%% *}"
+          if gh issue list --state all --label signals --search "Signals changed: $day in:title" --json title \
+               -q '.[].title' | grep -q "^Signals changed: $day "; then
+            echo "An issue for $day already exists."; exit 0
+          fi
+          gh label create signals --color 0E8A16 --description "Signals tab status changes" 2>/dev/null || true
+          gh issue create --title "$title" --body-file out/alerts/body.md --label signals

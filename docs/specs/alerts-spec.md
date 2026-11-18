@@ -2,6 +2,15 @@
 
 Instructions for Claude Code. Roadmap item 1b. Follow CLAUDE.md.
 
+**Status: built** (branch `alerts`). Decided with the user: public issues are fine for market signals, and a
+change is alerted once the new status has held **3 recorded trading days** (a replay of the last year gave 107
+alert days for every raw change, 47 with the 3-day hold). Where the build differs from the plan below:
+- The hold is worked out from Signal history (statuses recomputed from its values with today's thresholds), so
+  it needs no state on GitHub. `changes.json` holds the confirmed changes only; the report still lists all.
+- One issue per day at most: the workflow skips a day that already has a `signals` issue (reruns).
+- The Model portfolio email fires on any change within a run (no hold: there's no private place to keep
+  past statuses). The log says only how many changed.
+
 ## Goal
 
 The scheduled run reports "Changed since the last run" in `out/signals/report.txt` and the GitHub step summary,
