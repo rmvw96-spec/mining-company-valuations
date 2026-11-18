@@ -77,3 +77,16 @@ def test_resource_research_columns():
     assert filled.resource_source.notna().all() and filled.resource_date.notna().all(), "a filled amount needs a source and date"
     blank = R[R.resource_amount.isna()]
     assert blank[["resource_unit", "resource_category", "resource_source"]].isna().all().all()
+
+
+def test_industry_aisc_table():
+    A = pd.read_csv(DATA / "research" / "industry_aisc.csv", dtype={"quarter": str})
+    assert list(A.columns) == ["quarter", "aisc_usd_oz", "published", "source", "note"]
+    assert A.quarter.is_unique and A.quarter.str.fullmatch(r"20\d\dQ[1-4]").all()
+    assert list(A.quarter) == sorted(A.quarter)
+    assert (A.aisc_usd_oz > 0).all()
+    pub = pd.to_datetime(A.published)
+    assert pub.is_monotonic_increasing
+    quarter_end = pd.PeriodIndex(A.quarter, freq="Q").end_time
+    assert (pub > quarter_end).all()                     # published after the quarter it reports
+    assert A.source.str.contains("https://").all()

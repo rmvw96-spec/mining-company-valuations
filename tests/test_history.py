@@ -207,7 +207,8 @@ def test_backfill_matches_compute_on_the_truncated_data():
     want = {r["key"]: r["value"] for r in compute(truncate(data, d), d.date())}
     source, got = entries[d.date().isoformat()]
     assert source == "backfill" and got["gold_silver_ratio"] == pytest.approx(want["gold_silver_ratio"])
-    assert "aisc_margin" not in got and "fcf_yield_SGDM" not in got and "royalty_pnav_median" not in got
+    assert "fcf_yield_SGDM" not in got and "royalty_pnav_median" not in got
+    assert "aisc_margin" in got                            # the dated AISC table makes it backfillable
 
 
 def test_backfill_command_writes_rows(monkeypatch):

@@ -225,7 +225,10 @@ def test_run_writes_values_by_key_and_reports_drift(tmp_path, monkeypatch):
     keys = {v: k[1:] for k, v in tab.items() if k.startswith("A")}
     assert tab[f"E{keys['gold_silver_ratio']}"] == pytest.approx(80.0)
     assert tab[f"F{keys['gold_silver_ratio']}"] == "2026-11-17"
-    assert tab[f"E{keys['aisc_margin']}"] == pytest.approx(4000 - 2000)    # the Sheet's input wins
+    # The dated AISC table wins over the Sheet's input (2000), and is written back with its quarter
+    assert tab[f"E{keys['aisc_margin']}"] == pytest.approx(4000 - 1930)
+    assert tab[f"E{keys['industry_aisc']}"] == 1930
+    assert tab[f"F{keys['industry_aisc']}"].startswith("2026Q2, published 2026-11-03")
     for k in ("royalty_pnav_median", "junior_timing"):
         assert tab[f"E{keys[k]}"] == "=FORMULA()"                         # formula rows are never written
     written = {cell[0] for t, cell, rows_ in sh.blocks if t == "Signals"}

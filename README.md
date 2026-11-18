@@ -183,8 +183,55 @@ uv run python -m minerval history --backfill 2022-01-01 --dry-run
 uv run python -m minerval history --backfill 2022-01-01
 ```
 
-The fund free-cash-flow yields, the royalty median and the AISC margin need past fundamentals, P/NAVs or
-costs, so they aren't backfilled. A backfilled row never replaces a live one.
+The fund free-cash-flow yields and the royalty median need past fundamentals or P/NAVs, so they aren't
+backfilled. The AISC margin is, using the industry AISC that had been published by each date. A backfilled
+row never replaces a live one.
+
+### Industry AISC
+
+The AISC margin uses the World Gold Council's quarterly industry all-in sustaining cost (Metals Focus data),
+kept in `data/research/industry_aisc.csv` with the date each figure was published and its source. Each run
+uses the latest figure published by that day and writes it to the Signals tab's `industry_aisc` input row
+(value in E, quarter and publication date in F), so don't type over that cell: add a row to the CSV when
+the WGC publishes a new quarter (in its Gold Demand Trends report, about a month after each quarter ends,
+covering the quarter before). The table starts in 2021, when the reports began quoting a figure, and has
+gaps where they didn't. The figures are as first published: the WGC revises past quarters on its data page
+without saying so in the reports, and the notes column marks where a later report implies a revision.
+
+### Signal backtest
+
+```
+uv run python -m minerval backtest-signals             # first run downloads full histories (cache/signals/backtest/)
+uv run python -m minerval backtest-signals --refresh   # download them again
+```
+
+It recomputes every signal at each month-end since 2001 from the series as they stood then, and asks: when
+the signal said "lean in", did the tier it applies to do better over the next 3, 6 and 12 months than in
+other months? For each status it reports the number of months, the mean and median forward return and the
+hit rate, against all months as the baseline (`out/backtest-signals/report.txt`, with `signals_history.csv`
+and `outcomes.csv`). A threshold sweep shows the lean-in result at a few thresholds around the current one,
+so you can see whether the current choice sits on a plateau or a knife edge.
+
+What it measures, per signal: silver minus gold for the gold/silver ratio; gold for the real yield and the
+dollar; gold and royalty companies (RGLD, FNV and WPM, equal weight) for an S&P 500 sell-off; the miner ETF
+minus its metal for the diesel, percentile and AISC-margin signals; GDXJ, SILJ and GDXJ minus GDX for the
+uptrends and junior timing; and GDXJ (and GDX) from the end of November or December to the end of February
+for the tax-loss window.
+
+Read it with its limits in mind:
+
+- **One period.** 2001–2026 holds two or three metal cycles. Overlapping 12-month windows share 11 months
+  each, so the report counts non-overlapping windows too and marks any status with fewer than 12 as "too
+  few to judge". The "score" (difference from the other months over its standard error) is a rough guide:
+  about ±2 or more is unlikely to be chance.
+- **Survivorship.** The ETFs hold today's survivors, and the royalty basket is three companies that did well.
+- **Futures rolls.** Yahoo's continuous futures (GC=F and the rest) jump when contracts roll.
+- **Not tested:** the fund free-cash-flow yields and the royalty median P/NAV, which have no history; the AISC
+  margin from 2021 only (too short to judge for now).
+
+The report never changes a threshold. If you decide to move one, change it in `config/settings.toml`
+`[signals.thresholds]` and on the Signals tab (G:H) together; the next run should say "Sheet and Python
+statuses agree".
 
 ### Royalty buy zone
 
@@ -297,6 +344,7 @@ exactly as on the Holdings tab.
 uv run python -m minerval fetch-history   # monthly price histories for the backtest (cache/history/)
 uv run python -m minerval backtest        # out/backtest/: recent windows, 2008-2011, since 2000
 uv run python -m minerval project         # out/backtest/projection_k15.json
+uv run python -m minerval backtest-signals   # out/backtest-signals/: how each market signal did (see Signals tab)
 uv run python -m minerval prices --claude FILE --base REV   # payloads for the original Claude Sheet (see CLAUDE.md)
 uv run python -m minerval compute --cost-increase 0.1       # derived figures with producers' costs up 10%
 ```

@@ -15,6 +15,8 @@ Portfolio research (occasional)
   fetch-history   download monthly price histories for the backtest
   backtest        backtest the portfolio in private/portfolio.csv
   project         Monte Carlo projection of that portfolio
+Signal research (occasional)
+  backtest-signals  how each signal's statuses did against the outcomes they are meant to predict
 """
 import argparse
 from pathlib import Path
@@ -77,6 +79,8 @@ def main(argv=None):
     google(p)
     sub.add_parser("fetch-history", help="download monthly price histories")
     sub.add_parser("backtest", help="backtest the portfolio")
+    p = sub.add_parser("backtest-signals", help="backtest the market signals (out/backtest-signals/)")
+    p.add_argument("--refresh", action="store_true", help="download the full histories again")
     p = sub.add_parser("project", help="Monte Carlo projection")
     p.add_argument("--kappa", type=float, help="valuation catch-up speed (default: config/projection.toml)")
     a = ap.parse_args(argv)
@@ -120,6 +124,9 @@ def main(argv=None):
     if a.cmd == "backtest":
         from . import backtest
         lines = backtest.run()
+    if a.cmd == "backtest-signals":
+        from . import signal_backtest
+        lines = signal_backtest.run(refresh=a.refresh)
     if a.cmd == "project":
         from . import projection
         lines = projection.run(a.kappa)

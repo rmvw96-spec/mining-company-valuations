@@ -16,10 +16,12 @@ import os
 from dataclasses import dataclass
 from datetime import date
 
+from functools import lru_cache
+
 import pandas as pd
 
 from . import yahoo
-from .config import CACHE, DERIVED, OUT, ensure, settings
+from .config import CACHE, DERIVED, OUT, RESEARCH, ensure, settings
 from .sheets import blocks_by_row, col_to_num
 
 SIG_CACHE = CACHE / "signals"
@@ -260,6 +262,31 @@ def fcf_yield(rows, fund, exclude) -> float | None:
     return num / den if den else None
 
 
+@lru_cache(maxsize=1)
+def industry_aisc_table() -> pd.DataFrame:
+    """data/research/industry_aisc.csv: the World Gold Council's quarterly industry AISC, with publication dates."""
+    T = pd.read_csv(RESEARCH / "industry_aisc.csv", dtype={"quarter": str})
+    T["published"] = pd.to_datetime(T["published"])
+    return T.sort_values("published").reset_index(drop=True)
+
+
+def aisc_at(d) -> dict | None:
+    """The latest industry AISC that was public on date d: {"value", "quarter", "published", "source"}, or None.
+    A backtest on a past date uses the figure known then, not a later one."""
+    T = industry_aisc_table()
+    T = T[T["published"] <= pd.Timestamp(d)]
+    if T.empty:
+        return None
+    r = T.iloc[-1]
+    return {"value": float(r["aisc_usd_oz"]), "quarter": r["quarter"],
+            "published": r["published"].date().isoformat(), "source": r["source"]}
+
+
+def aisc_label(a: dict) -> str:
+    """Column F text for the industry_aisc input row, e.g. "2026Q2, published 2026-11-03 (World Gold Council)"."""
+    return f"{a['quarter']}, published {a['published']} ({a['source'].split(',')[0]})"
+
+
 def royalty_pnavs_from_sheet(sheet) -> list[float]:
     """Independent P/NAVs of the royalty/streaming rows on PNAV inputs, picked as the Sheet's median formula
     picks them (peer group "Royalty/streaming", a NAV per share). Works where data/derived/ doesn't exist."""
@@ -403,6 +430,9 @@ def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dic
     th.update(thresholds or {})
     inp = dict(S["inputs"])
     inp.update({k: v for k, v in (inputs or {}).items() if _num(v)})
+    if not _num(inp.get("industry_aisc")):          # the dated table is the record (published by `today`)
+        a = aisc_at(today)
+        inp["industry_aisc"] = a["value"] if a else None
     D, M, ry = data.get("daily", {}), data.get("monthly", {}), data.get("real_yield")
     vals, asof = {}, {}
 
@@ -436,7 +466,7 @@ def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dic
         m, dsl = vals.get(f"{metal}_12m"), vals.get("diesel_12m")
         sym = {"gold": "GC=F", "silver": "SI=F", "copper": "HG=F"}[metal]
         put(f"{metal}_vs_diesel_12m", m - dsl if m is not None and dsl is not None else None, D.get(sym))
-    if gold:
+    if gold and _num(inp["industry_aisc"]):
         put("aisc_margin", gold - inp["industry_aisc"], gs)
     years = S["percentile_years"]
     for key, etf, sym in (("gdx_gold_pctile10y", "GDX", "GC=F"), ("sil_silver_pctile10y", "SIL", "SI=F"),
@@ -536,6 +566,10 @@ def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | 
             thresholds[key] = [c["G"], c["H"]]
         if key not in BY_KEY:
             inputs[key] = c["E"]
+    aisc = aisc_at(today)                   # the record is data/research/industry_aisc.csv, not the Sheet
+    inputs.pop("industry_aisc", None)
+    if aisc:
+        inputs["industry_aisc"] = aisc["value"]
     fy = fcf_yields_from_sheet(sheet) if sheet is not None else {}
     royalty = royalty_pnavs_from_sheet(sheet) if tab is not None else royalty_pnavs_from_derived()
     fallback = {k: (c["E"], c["F"]) for k, c in (tab or {}).items() if k in BY_KEY}
@@ -556,6 +590,8 @@ def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | 
                 continue
             if r["value"] is not None:
                 vals[tab[r["key"]]["row"]] = [r["value"], r["asof"]]
+        if aisc and "industry_aisc" in tab:
+            vals[tab["industry_aisc"]["row"]] = [aisc["value"], aisc_label(aisc)]
         blocks = blocks_by_row(tabname, "E", vals)
         if missing_rows:
             rep.append(f"Rows missing on the {tabname} tab (not written): " + ", ".join(missing_rows))

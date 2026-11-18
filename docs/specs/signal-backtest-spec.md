@@ -2,6 +2,21 @@
 
 Instructions for Claude Code. Roadmap item 2a. Follow CLAUDE.md.
 
+**Status: built** (branch `signal-backtest`). Where the build differs from the plan below:
+- The AISC table holds figures **as first published**, not the latest revision. The WGC's revised series is
+  only on Goldhub's chart page, which can't be read without a browser, and first-published figures are what a
+  point-in-time backtest should use anyway. The notes column marks quarters a later report implies were revised.
+  The table starts in 2021Q1 (Gold Demand Trends reports quote no quarterly figure before then) and has no
+  2021Q3 or 2021Q4.
+- `[signals.inputs] industry_aisc` and its source are removed from settings.toml, with no override: the table is
+  the record. Q3 2026 is pending (due early December 2026).
+- The AISC margin's status is descriptive text, so the backtest buckets the margin as a share of the gold price
+  (`[signal_backtest] aisc_margin_share`, backtest only).
+- The royalty outcome is an equal-weight basket of RGLD, FNV and WPM (total return), not GDX.
+- Miners-against-metal percentiles count only once the ETF has 5 years of history.
+- Full daily histories are cached separately (`cache/signals/backtest/`); `cache/history/` isn't used. The AISC
+  margin is now backfilled in Signal history too.
+
 ## Goal
 
 The Signals tab's thresholds are judgment calls (framework rules of thumb). Test each signal on history:

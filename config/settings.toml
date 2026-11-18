@@ -205,8 +205,8 @@ fcf_yield_SLVR = [0.08, 0.03]
 
 # Inputs block on the Signals tab (key = value). Blank ones are left for you to fill in on the Sheet.
 [signals.inputs]
-industry_aisc = 1930                # all-in sustaining cost, $/oz, industry average
-industry_aisc_source = "World Gold Council, Q2 2026"
+# industry_aisc (the Signals input row) comes from data/research/industry_aisc.csv: the latest quarter published
+# by the run date. Python writes it to the Signals tab on every run; add new quarters to the CSV, not here.
 producer_cost_increase = 0.0        # used by the P/NAV and Low-scenario cash flows (Part 3 of the spec)
 near_cash_share = 0.5               # developer "trading near cash" when cash is at least this share of market value
 runway_short_months = 12            # framework: hold at least 12 to 18 months of cash
@@ -224,6 +224,32 @@ runway_ok_months = 18
 "Copper producers" = ["copper_vs_diesel_12m", "copx_copper_pctile10y"]
 "Silver and polymetallic producers" = ["silver_vs_diesel_12m", "sil_silver_pctile10y"]
 "Growth: developers" = ["junior_timing", "@developer_check"]
+
+[signal_backtest]
+# `python -m minerval backtest-signals`: each signal at every month-end since first_month_end, against the tier
+# outcome it is meant to predict over the next 3, 6 and 12 months. Reports only; never changes thresholds.
+first_month_end = "2001-08-01"      # 12 months after COMEX gold and silver start on Yahoo (Aug 2000)
+percentile_min_months = 60          # miners-against-metal percentiles count once the ETF has 5 years of history
+aisc_margin_share = [0.45, 0.30]    # backtest only: (gold − AISC) ÷ gold at/above 45% "wide", at/below 30% "thin"
+
+[signal_backtest.start]             # ignore a series before this date (first full month of trading)
+GDX = "2006-06-01"
+GDXJ = "2009-12-01"
+SIL = "2010-05-01"
+SILJ = "2012-03-01"
+COPX = "2010-05-01"
+
+# Threshold sweep: the lean-in status at each value of one threshold (g = Signals G, h = Signals H), other as set
+[signal_backtest.sweep]
+gold_silver_ratio = {threshold = "g", values = [70, 75, 80, 85, 90]}
+real_yield_10y = {threshold = "g", values = [0.10, 0.25, 0.40, 0.60]}
+usd_12m = {threshold = "g", values = [-0.01, -0.03, -0.05, -0.08]}
+spy_drawdown = {threshold = "h", values = [-0.15, -0.20, -0.25, -0.30]}
+gold_vs_diesel_12m = {threshold = "g", values = [0.0, 0.05, 0.10, 0.15, 0.20]}
+gdx_gold_pctile10y = {threshold = "g", values = [10, 15, 20, 25, 30]}
+sil_silver_pctile10y = {threshold = "g", values = [10, 15, 20, 25, 30]}
+copx_copper_pctile10y = {threshold = "g", values = [10, 15, 20, 25, 30]}
+aisc_margin_share = {threshold = "g", values = [0.35, 0.40, 0.45, 0.50, 0.55]}
 
 [report]
 stale_days = 6          # flag prices older than this
