@@ -12,13 +12,14 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
+from datetime import date
 
 import pandas as pd
 
 from .config import OUT, RESEARCH, ensure, settings
 from .pnav import RESOURCE_COLS
 from .sheets import col_to_num, num_to_col, split_cell
-from .signals import SIGNALS, look, status_formula, value_formula
+from .signals import SIGNALS, aisc_at, aisc_label, look, status_formula, value_formula
 
 DEST = OUT / "layout"
 
@@ -47,7 +48,8 @@ PORTFOLIO_HEADERS = {"timing": "Timing signal (framework)",
 SIGNALS_HEADERS = ["Key (code uses it to find rows; can be hidden)", "Tier", "Signal", "Unit", "Value", "As of",
                    "Threshold 1", "Threshold 2", "Status", "What the framework says", "Source"]
 INPUTS = [  # key, label, default (None = left blank), number format
-    ("industry_aisc", "Industry all-in sustaining cost, $/oz", "industry_aisc", "#,##0"),
+    ("industry_aisc", "Industry all-in sustaining cost, $/oz (written by Python from data/research/industry_aisc.csv)",
+     "aisc_table", "#,##0"),
     ("producer_cost_increase", "Producer cost increase since their reported 12 months (0% = as reported)",
      "producer_cost_increase", "0.0%"),
     ("energy_share_of_costs", "Energy's share of producers' costs (your estimate)", None, "0%"),
@@ -326,10 +328,14 @@ def step_signals(sheet) -> Step:
         if default == "formula":
             st.add(tab, f"E{r}", f'=IF({look("energy_share_of_costs")}="","",'
                                  f'{look("energy_share_of_costs")}*{look("diesel_12m")})')
+        elif default == "aisc_table":
+            a = aisc_at(date.today())
+            if a:
+                st.add(tab, f"E{r}", a["value"], "seed")
+                st.add(tab, f"F{r}", aisc_label(a), "seed")
+                st.add(tab, f"K{r}", "World Gold Council, Gold Demand Trends (Metals Focus data)", "seed")
         elif default is not None:
             st.add(tab, f"E{r}", inp[default], "seed")
-        if key == "industry_aisc":
-            st.add(tab, f"K{r}", inp["industry_aisc_source"], "seed")
         st.formats.append((tab, f"E{r}", fmt))
     return st
 

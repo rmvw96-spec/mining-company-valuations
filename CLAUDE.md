@@ -29,6 +29,8 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 | After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY |
 | Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:BE; P/NAV U:V; Holdings downside K2, R; Model portfolio W:Y |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
+| After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
+| When the WGC publishes a quarter's AISC (Gold Demand Trends, ~a month after quarter end) | add a row to `data/research/industry_aisc.csv` with its source and publication date | the next run writes it to Signals |
 
 `compute --today gold=..,silver=..,copper=..` reruns the offline analysis at chosen metal prices;
 `--cost-increase 0.1` raises producers' costs 10%.
@@ -83,7 +85,9 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
   write into W7:Y31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
   a row added below 31 is outside every range.
 - Signals: column I (status) is a formula on every signal row, and so is E on the `royalty_pnav_median`,
-  `junior_timing` and `implied_cost_increase` rows. Python writes E:F on the other signal rows, by the key in A.
+  `junior_timing` and `implied_cost_increase` rows. Python writes E:F on the other signal rows, by the key in A,
+  and on the `industry_aisc` input row: `data/research/industry_aisc.csv` is the record for it (the latest
+  figure published by the run date), so a value typed there is overwritten.
 - Signal history and Company history are written by the code, which finds rows by the date in A (and, on
   Signal history, columns by the key in row 1). Don't edit or sort them by hand; reordering Signal history's
   columns is fine. Keep Signal history A1:B1 as "Date", "Source" and Company history A1:E1 as its headers.
@@ -144,6 +148,13 @@ two companies (PCU CN 1-year, SVM 3-year) whose reporting dates sit exactly half
 broke the tie the other way. Since every series is now fetched for every company, a company whose
 reported operating cash flow is stale (MMG, 1208 HK) now uses free cash flow minus capital spending,
 as RSG AU and BVN already did.
+
+## Signal backtest
+
+`backtest-signals` reports; it never changes thresholds. When the user reads it and decides to move a threshold,
+change `[signals.thresholds]` in settings.toml and Signals G:H together, then run `signals` and check it says
+"Sheet and Python statuses agree". Don't suggest a threshold because it scored best in the sweep: on one 25-year
+period that is fitted noise. Point to plateaus, and to statuses marked "too few to judge".
 
 ## Data source notes
 
