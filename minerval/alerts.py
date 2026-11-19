@@ -187,6 +187,24 @@ def send_email(subject: str, body: str, env=None) -> bool:
     return True
 
 
+def test_email(env=None) -> tuple[bool, str]:
+    """The `test-email` command: send a fixed message (no portfolio content) to check the email secrets.
+    Returns (sent, a line for the log). The line never holds the address or password."""
+    env = os.environ if env is None else env
+    if not env.get("ALERT_SMTP_URL") or not env.get("ALERT_EMAIL_TO"):
+        return False, "Test email not sent: ALERT_SMTP_URL or ALERT_EMAIL_TO is not set."
+    try:
+        send_email("minerval: test email",
+                   "This is a test from the minerval price update. Model portfolio status changes will arrive "
+                   "like this.\n", env)
+        return True, "Test email sent: check the inbox (and spam) of ALERT_EMAIL_TO."
+    except Exception as e:
+        code = getattr(e, "smtp_code", None)
+        hint = " (the server refused the login: check the app password and the %40 in ALERT_SMTP_URL)" \
+            if isinstance(e, smtplib.SMTPAuthenticationError) else ""
+        return False, f"Test email not sent: {type(e).__name__}{f' {code}' if code else ''}{hint}."
+
+
 def notify_portfolio(sheet, before: dict, day: str, env=None) -> list[str]:
     """Email the Model portfolio rows whose status changed in this run. Report lines never name a holding."""
     try:

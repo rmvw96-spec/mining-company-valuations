@@ -256,6 +256,10 @@ The daily run on GitHub tells you when something changes, without you reading th
   2. Add `ALERT_SMTP_URL` = `smtps://YOU%40gmail.com:APPPASSWORD@smtp.gmail.com:465` (the `@` in your address
      written as `%40`, the app password without spaces), and `ALERT_EMAIL_TO` = the address to send to.
 
+  3. To check them, run the workflow by hand (Actions > Update prices > Run workflow) with "Send a test email"
+     ticked: a fixed message with no portfolio content is sent after the update, and the "Send a test email"
+     step fails, saying why, if it couldn't be. Locally: `python -m minerval test-email` with both set.
+
 Locally, `prices` sends nothing unless you add `--notify`; `python -m minerval alerts` writes the issue text it
 would post to `out/alerts/` without posting it.
 

@@ -5,6 +5,7 @@ Daily
   signals         refresh the Signals tab (market timing signals for each tier); records Signal history
   history         --backfill DATE: fill Signal history for past dates from the cached series
   alerts          issue text for signal changes that have held 3 trading days (the GitHub workflow posts it)
+  test-email      send a test message through ALERT_SMTP_URL to ALERT_EMAIL_TO
 After each earnings season (or when Sprott's holdings change)
   refresh         = fetch + compute
   fetch           download financials for every holding from Yahoo (cache/)
@@ -68,6 +69,7 @@ def main(argv=None):
     p.add_argument("--backfill", metavar="DATE", required=True, help="first date, e.g. 2023-01-01")
     p.add_argument("--end", metavar="DATE", help="last date (default: today)")
     sub.add_parser("alerts", help="write the GitHub issue text for confirmed signal changes (out/alerts/)")
+    sub.add_parser("test-email", help="send a test email to check ALERT_SMTP_URL and ALERT_EMAIL_TO")
     p = sub.add_parser("setup-sheet", help="add the Signals tab and new columns (idempotent)")
     google(p)
 
@@ -119,6 +121,11 @@ def main(argv=None):
     if a.cmd == "alerts":
         from . import alerts
         lines = alerts.write_issue()
+    if a.cmd == "test-email":
+        from . import alerts
+        sent, line = alerts.test_email()
+        print(line)
+        raise SystemExit(0 if sent else 1)
     if a.cmd == "setup-sheet":
         from . import layout
         lines = layout.run(open_sheet(a), dry_run=a.dry_run)
