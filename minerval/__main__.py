@@ -4,6 +4,7 @@ Daily
   prices          update share prices, FX, metal prices and the 10-year yield on the Sheet, then signals
   signals         refresh the Signals tab (market timing signals for each tier); records Signal history
   history         --backfill DATE: fill Signal history for past dates from the cached series
+  alerts          issue text for signal changes that have held 3 trading days (the GitHub workflow posts it)
 After each earnings season (or when Sprott's holdings change)
   refresh         = fetch + compute
   fetch           download financials for every holding from Yahoo (cache/)
@@ -58,12 +59,15 @@ def main(argv=None):
     p.add_argument("--old-shares", help="(Claude Sheet) saved read of Holdings!U1:U<last>, to flag big changes")
     p.add_argument("--no-metals", action="store_true", help="leave metal prices and the 10-year yield alone")
     p.add_argument("--no-signals", action="store_true", help="don't refresh the Signals tab afterwards")
+    p.add_argument("--notify", action="store_true",
+                   help="email Model portfolio status changes (needs ALERT_SMTP_URL and ALERT_EMAIL_TO)")
     p = sub.add_parser("signals", help="refresh the Signals tab")
     google(p)
     p = sub.add_parser("history", help="backfill the Signal history tab for past dates")
     google(p)
     p.add_argument("--backfill", metavar="DATE", required=True, help="first date, e.g. 2023-01-01")
     p.add_argument("--end", metavar="DATE", help="last date (default: today)")
+    sub.add_parser("alerts", help="write the GitHub issue text for confirmed signal changes (out/alerts/)")
     p = sub.add_parser("setup-sheet", help="add the Signals tab and new columns (idempotent)")
     google(p)
 
@@ -93,15 +97,28 @@ def main(argv=None):
                                base=a.base, shares=a.shares, old_shares=a.old_shares, metals=not a.no_metals)
         else:
             sheet = open_sheet(a)
-            lines = prices.run(sheet=sheet, shares=a.shares, metals=not a.no_metals, dry_run=a.dry_run)
+            before = None
+            if a.notify and not a.dry_run:
+                from . import alerts
+                try:
+                    before = alerts.portfolio_statuses(sheet)
+                except Exception as e:
+                    lines.append(f"Model portfolio alert not set up: {type(e).__name__}.")
+            lines += prices.run(sheet=sheet, shares=a.shares, metals=not a.no_metals, dry_run=a.dry_run)
             if not a.no_signals:
                 lines += prices.run_signals(sheet, dry_run=a.dry_run)
+            if before is not None:
+                from .history import today_ny
+                lines += alerts.notify_portfolio(sheet, before, today_ny().isoformat())
     if a.cmd == "signals":
         from . import signals
         lines = signals.run(open_sheet(a), dry_run=a.dry_run)
     if a.cmd == "history":
         from . import history
         lines = history.backfill(open_sheet(a), a.backfill, a.end, dry_run=a.dry_run)
+    if a.cmd == "alerts":
+        from . import alerts
+        lines = alerts.write_issue()
     if a.cmd == "setup-sheet":
         from . import layout
         lines = layout.run(open_sheet(a), dry_run=a.dry_run)

@@ -23,7 +23,7 @@ Written Nov 18, 2026, after the market-signals work (PR #5) and the scheduled Gi
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
 | 1a | **Signal history**: one row per run on a new Signal history tab, plus a daily snapshot of each royalty company's P/NAV and each developer's EV/oz and months of cash | [signal-history-spec.md](specs/signal-history-spec.md) | S | — |
-| 1b | **Alerts**: a GitHub issue (market signals) and an optional private email (Model portfolio rows) when a status changes | [alerts-spec.md](specs/alerts-spec.md) | S | 1a helps (dates of changes) |
+| 1b | **Built Nov 2026.** **Alerts**: a GitHub issue (market signals) and an optional private email (Model portfolio rows) when a status changes | [alerts-spec.md](specs/alerts-spec.md) | S | 1a helps (dates of changes) |
 
 ## Phase 2: test the framework (early December 2026)
 

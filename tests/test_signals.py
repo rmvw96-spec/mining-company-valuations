@@ -280,6 +280,7 @@ def test_run_writes_values_by_key_and_reports_drift(tmp_path, monkeypatch):
     text = "\n".join(rep)
     assert "Sheet and Python statuses differ" in text                      # MemorySheet has no formulas in I
     assert (tmp_path / "signals.json").exists() and (tmp_path / "last.json").exists()
+    assert json.loads((tmp_path / "changes.json").read_text())["changes"] == []   # no Signal history tab yet
 
 
 def test_run_dry_run_writes_nothing(tmp_path, monkeypatch):

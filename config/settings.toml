@@ -168,6 +168,7 @@ metal = "E"
 timing = "W"
 ev_per_aueq_oz = "X"
 months_of_cash = "Y"
+status = "T"                        # Status (Review: above level, ...): emailed when it changes (alerts)
 
 [signals]
 # Market signals for the Signals tab (`python -m minerval signals`, also run at the end of `prices`).
@@ -265,6 +266,11 @@ sil_silver_pctile10y = {threshold = "g", values = [10, 15, 20, 25, 30]}
 copx_copper_pctile10y = {threshold = "g", values = [10, 15, 20, 25, 30]}
 aisc_margin_share = {threshold = "g", values = [0.35, 0.40, 0.45, 0.50, 0.55]}
 breadth_sgdj = {threshold = "g", values = [0.5, 0.6, 0.7]}
+
+[alerts]
+# A signal's status change is alerted (a GitHub issue) once the new status has held this many recorded trading
+# days in Signal history. Every change, confirmed or not, is still in out/signals/report.txt.
+hold_days = 3
 
 [report]
 stale_days = 6          # flag prices older than this

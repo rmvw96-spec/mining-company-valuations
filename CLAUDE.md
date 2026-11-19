@@ -11,6 +11,8 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 - Never commit `private/`, `cache/`, `out/` or `data/derived/` (they're in .gitignore), or any credentials.
   The repo is public: no personal amounts, account details or names in committed files.
 - Ask the user before every `git push`.
+- Model portfolio content (holding names, statuses, weights) never goes into a GitHub issue, a log, a report or the
+  step summary: it is emailed only (`alerts.notify_portfolio`). Signal issues carry market data only.
 - The Google Sheet is the working copy of the research inputs (PNAV inputs I–L and P–S, scenario prices,
   peer multiples). `data/research/pnav_companies.csv` and `config/settings.toml` [scenarios] are the record:
   when the user changes one, offer to update the other.
@@ -47,7 +49,8 @@ Reports go to `out/<command>/report.txt`.
    - **Currency not in the FX table**: add a row at the bottom of Holdings!Y:AB with the code; the next run fills the rate.
 3. Tell the user the price date, the biggest movers, today's metal prices, any Model portfolio rows
    whose Status (column T) changed to "Review: above level", and the signals whose status changed
-   ("Changed since the last run" in `out/signals/report.txt`; on GitHub, the run's step summary). If a
+   ("Changed since the last run" in `out/signals/report.txt`; on GitHub, the run's step summary, and an issue
+   labelled `signals` once a change has held 3 trading days). If a
    line says "the Sheet's last values are kept", a download failed: say which and since when. If the report says the Sheet's and
    Python's statuses differ, a status formula or threshold on the Signals tab was edited: find out which. To read the Sheet from Python:
    `from minerval.sheets import open_google; open_google().read("Model portfolio", "B6:T31")`.

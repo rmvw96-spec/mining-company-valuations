@@ -238,6 +238,27 @@ The report never changes a threshold. If you decide to move one, change it in `c
 `[signals.thresholds]` and on the Signals tab (G:H) together; the next run should say "Sheet and Python
 statuses agree".
 
+### Alerts
+
+The daily run on GitHub tells you when something changes, without you reading the report:
+
+- **Signals (public):** when a signal's status changes and the new status holds for 3 recorded trading days
+  (`[alerts] hold_days`), the run opens a GitHub issue titled "Signals changed: <date> (<n>)", labelled
+  `signals`, with each change, its value and what the framework says. GitHub emails the repo owner about new
+  issues (Settings > Notifications to change that). The repo is public, so these issues are too: they hold
+  market data only. A 3-day hold keeps a signal sitting on its threshold from alerting every other day; every
+  change, confirmed or not, is still in `out/signals/report.txt`. One issue per day at most.
+- **Model portfolio (private):** when a row's Status (column T) changes during the run, it's emailed to you,
+  and only emailed: holding names never go into an issue, the log or the run summary (which only says how many
+  changed). This needs two repository secrets; without them nothing is sent:
+  1. In your Google account, turn on 2-Step Verification, then create an app password (Google Account >
+     Security > App passwords; name it e.g. "minerval"). Google shows a 16-letter password once.
+  2. Add `ALERT_SMTP_URL` = `smtps://YOU%40gmail.com:APPPASSWORD@smtp.gmail.com:465` (the `@` in your address
+     written as `%40`, the app password without spaces), and `ALERT_EMAIL_TO` = the address to send to.
+
+Locally, `prices` sends nothing unless you add `--notify`; `python -m minerval alerts` writes the issue text it
+would post to `out/alerts/` without posting it.
+
 ### Royalty buy zone
 
 PNAV inputs AS classes each royalty/streaming company by its independent P/NAV (AJ): "Buy zone" up to
