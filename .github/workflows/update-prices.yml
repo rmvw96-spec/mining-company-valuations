@@ -8,10 +8,17 @@
 # Optional: ALERT_SMTP_URL (e.g. smtps://you%40gmail.com:app-password@smtp.gmail.com:465) and ALERT_EMAIL_TO, to
 # email Model portfolio status changes (README, "Alerts"). Signal changes that hold 3 trading days open a public
 # issue labelled "signals" (GitHub emails the repo owner); that needs no secret.
+# Run by hand with "Send a test email" ticked to check those two secrets: a fixed message with no portfolio
+# content is sent after the update, and that step fails if it couldn't be sent.
 # Yahoo sometimes rate-limits cloud servers; if runs fail with "No price", run it from your computer instead.
 name: Update prices
 on:
   workflow_dispatch:
+    inputs:
+      test_email:
+        description: "Send a test email (checks ALERT_SMTP_URL and ALERT_EMAIL_TO)"
+        type: boolean
+        default: false
   schedule:
     - cron: "40 21 * * 1-5"    # 21:40 UTC on weekdays: 4:40 pm New York in winter, 5:40 pm in summer
 permissions:
@@ -51,3 +58,9 @@ jobs:
           fi
           gh label create signals --color 0E8A16 --description "Signals tab status changes" 2>/dev/null || true
           gh issue create --title "$title" --body-file out/alerts/body.md --label signals
+      - name: Send a test email
+        if: ${{ inputs.test_email }}
+        env:
+          ALERT_SMTP_URL: ${{ secrets.ALERT_SMTP_URL }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+        run: uv run --no-sync python -m minerval test-email

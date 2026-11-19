@@ -143,3 +143,20 @@ def test_workflow_permissions_and_steps():
     assert "secrets.ALERT_SMTP_URL" in y and "secrets.ALERT_EMAIL_TO" in y
     assert "gh issue create" in y and "--label signals" in y
     assert "\t" not in y
+    assert "test_email:" in y and "if: ${{ inputs.test_email }}" in y and "minerval test-email" in y
+
+
+def test_test_email(monkeypatch):
+    assert alerts.test_email(env={}) == (False, "Test email not sent: ALERT_SMTP_URL or ALERT_EMAIL_TO is not set.")
+    env = {"ALERT_SMTP_URL": "smtps://me%40example.com:secretpw@smtp.example.com:465", "ALERT_EMAIL_TO": "me@example.com"}
+    sent = []
+    monkeypatch.setattr(alerts, "send_email", lambda subject, body, env: sent.append((subject, body)) or True)
+    ok, line = alerts.test_email(env=env)
+    assert ok and "sent" in line and sent[0][0] == "minerval: test email"
+
+    def refused(*a, **k):
+        raise alerts.smtplib.SMTPAuthenticationError(535, b"me@example.com secretpw rejected")
+    monkeypatch.setattr(alerts, "send_email", refused)
+    ok, line = alerts.test_email(env=env)
+    assert not ok and "SMTPAuthenticationError 535" in line and "app password" in line
+    assert "example.com" not in line and "secretpw" not in line
