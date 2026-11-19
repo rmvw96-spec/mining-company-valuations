@@ -88,11 +88,14 @@ splits for Collective Mining and Viscaria, are open (small items below).
 
 ## Small items, any time
 
-- **Country weights for the remaining producers and royalty companies** (multi-country companies whose
-  `countries` text gives no shares, e.g. Barrick, Pan American, Hudbay): fill from each annual report's
-  production by mine, with the source. Until then they keep their hand-set add-on.
-- **Bulgaria in `country_risk.csv` is provisional** (the median add-on): it isn't ranked in the 2025 survey and
-  was dropped from the 2024 one for too few responses. Replace it if a later survey ranks it.
+- **Country weights: three companies left on the hand-set add-on** (filled Nov 19, 2026 for the other 30):
+  Royal Gold (fill if a 10-K or MD&A names revenue for its "Other" properties), Harmony (its FY2027 results or
+  20-F, if they split South Africa, Papua New Guinea and Australia) and Central Asia Metals (its 2026 results, if
+  they split Kounrad and Sasa revenue). When a weighted company's mix changes (a mine sold or started: Skouries for
+  Eldorado, Kurmuk for Allied, Bolañitos sold), refresh its weights from the next annual figures.
+- **Provisional median add-ons in `country_risk.csv`**: Bulgaria (dropped from the 2024 survey for too few
+  responses), Greece, Poland, Honduras and North Macedonia (in neither survey). Replace them if a later survey
+  ranks them.
 
 - **Developer financing: what's left.** Filled Nov 19, 2026 for Minerals 260, Faraday, Hycroft, Marimaca, New
   Pacific, Aldebaran, Viscaria (committed 0; no published cost-to-complete) and Panoro (committed 0; no current

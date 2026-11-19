@@ -15,14 +15,22 @@ Instructions for Claude Code. Roadmap item 4b. Follow CLAUDE.md.
 - `country_weights` is filled where the location is clear (one country, or shares already recorded in
   `countries`) and, for nine larger multi-country companies, from their 2025 production (or gross profit) by
   mine, each with `country_weights_source`.
-- Places outside the 2025 ranking: Mauritania, Turkey, Suriname and the Dominican Republic are scored from the
-  2024 survey's Table 2 (their 2023 and 2024 scores, the ones inside the three-year window; the scores-file row
-  carries its own `source` and `as_of`). Nicaragua (US sanctions on its gold sector) takes the top add-on;
-  Cambodia, Thailand and Azerbaijan (in neither survey) keep the hand-set add-on of the one company operating
-  only there; Bulgaria (dropped from the 2024 survey for too few responses) takes the median scored add-on,
-  provisionally. Other multi-country companies keep the hand-set add-on (basis
-  `manual`) until their annual reports are read: a roadmap small item. Developers don't use the add-on (they're
-  valued on their study NPV), so they have no weights.
+- Places outside the 2025 ranking: Mauritania, Turkey, Suriname, the Dominican Republic, Senegal, Zimbabwe and
+  California are scored from the 2024 survey's Table 2 (their 2023 and 2024 scores, the ones inside the three-year
+  window; the scores-file row carries its own `source` and `as_of`). Nicaragua (US sanctions on its gold sector)
+  takes the top add-on; Cambodia, Thailand and Azerbaijan (in neither survey) keep the hand-set add-on of the one
+  company operating only there; Bulgaria (dropped from the 2024 survey for too few responses), Greece, Poland,
+  Honduras and North Macedonia (in neither survey) take the median scored add-on, provisionally. Argentine
+  provinces neither survey ranks (Jujuy, Salta) are weighted as `Argentina`, the median of the ranked provinces;
+  US energy royalties and South Dakota as `United States`. Developers don't use the add-on (they're valued on their
+  study NPV), so they have no weights.
+- Weights for the remaining multi-country companies (Nov 2026): from each company's latest annual figures by mine
+  or segment (production, gold-equivalent production, revenue or EBITDA, whichever the company publishes), with the
+  source in `country_weights_source`. Where 2025 output misrepresents the business (Barrick: Loulo-Gounkoto
+  suspended and two mines sold; Endeavour Silver: two new mines part-year), the latest guidance by mine is used
+  instead, and the source says so. Royalty companies are weighted by revenue or GEOs by asset, named assets only.
+  Three stay manual, with the reason in `country_weights_source`: Royal Gold (about half its revenue unnamed by
+  property), Harmony and Central Asia Metals (no split published).
 - The override is `addon_override` with `addon_override_note`.
 - The sensitivity is PNAV inputs BX (and P/NAV W): today's P/NAV with the add-on raised by `[pnav]
   sensitivity_points` (2).
