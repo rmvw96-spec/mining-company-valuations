@@ -10,7 +10,9 @@ After each earnings season (or when Sprott's holdings change)
   refresh         = fetch + compute
   fetch           download financials for every holding from Yahoo (cache/)
   compute         rebuild data/derived/ from the cache (no network)
-  financials      write the refreshed company data to the Sheet
+  financials      write the refreshed company data to the Sheet (and the jurisdiction add-ons from the country table)
+  snapshots       rewrite the fund tables on Summary, Metal prices reference and Stress test & downside
+  jurisdiction    old vs new jurisdiction add-on for every company (out/jurisdiction/)
 Once (and after changing the layout settings)
   setup-sheet     add the Signals tab and the new columns to the Sheet
 Portfolio research (occasional)
@@ -83,6 +85,13 @@ def main(argv=None):
                             "(default: price_model.cost_increase in settings.toml)")
     p = sub.add_parser("financials", help="write refreshed company data to the Sheet")
     google(p)
+    p = sub.add_parser("snapshots", help="rewrite the fund tables from data/derived/")
+    google(p)
+    p = sub.add_parser("jurisdiction", help="compare the hand-set and country-table jurisdiction add-ons")
+    p.add_argument("--build", metavar="SCORES_CSV",
+                   help="first rewrite the table's scored rows from a private Fraser scores file")
+    p.add_argument("--source", help="(with --build) the survey edition, for the source column")
+    p.add_argument("--as-of", help="(with --build) its publication month, e.g. 2026-02")
     sub.add_parser("fetch-history", help="download monthly price histories")
     sub.add_parser("backtest", help="backtest the portfolio")
     p = sub.add_parser("backtest-signals", help="backtest the market signals (out/backtest-signals/)")
@@ -142,6 +151,12 @@ def main(argv=None):
     if a.cmd == "financials":
         from . import financials
         lines = financials.run(open_sheet(a), dry_run=a.dry_run)
+    if a.cmd == "snapshots":
+        from . import snapshots
+        lines = snapshots.run(open_sheet(a), dry_run=a.dry_run)
+    if a.cmd == "jurisdiction":
+        from . import jurisdiction
+        lines = jurisdiction.run(scores=a.build and Path(a.build), source=a.source, as_of=a.as_of)
     if a.cmd == "fetch-history":
         from . import backtest
         lines = backtest.fetch_history()

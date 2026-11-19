@@ -2,6 +2,30 @@
 
 Instructions for Claude Code. Roadmap item 4b. Follow CLAUDE.md.
 
+**Status: built** (branch `jurisdiction-snapshots`). Where the build differs from the plan below:
+- The add-on comes from the Policy Perception Index (Table 2), not the Investment Attractiveness Index: the IAI is
+  60% geology, and the discount-rate add-on prices policy risk. A first build used IAI quartiles (0/1/2/4) and was
+  dropped: near-ties a place apart got a point or two apart, and the average add-on rose from 0.97 to 1.45. Now:
+  the average of the last three years' scores (the survey is noisy year to year), 0 at 90 and above, 3 at 0, in
+  steps of 0.25. That keeps the average near the hand-set level and moves few companies by a point or more.
+  Each row has a `rule`: `score` (built from a private scores file; the survey is copyright, so only the
+  rounded add-ons are committed), `fixed`, `top` or `median`.
+- Fraser ranks provinces and states, not Canada, the US, Australia or Argentina as a whole. A weight on one of
+  those countries without a region (`Canada:0.4`) uses the median add-on of its ranked regions.
+- `country_weights` is filled where the location is clear (one country, or shares already recorded in
+  `countries`) and, for nine larger multi-country companies, from their 2025 production (or gross profit) by
+  mine, each with `country_weights_source`.
+- Places outside the 2025 ranking: Suriname and the Dominican Republic (near the bottom of the 2024 survey) and
+  Nicaragua (US sanctions on its gold sector) take the top add-on; Cambodia, Thailand, Turkey and Azerbaijan keep
+  the hand-set add-on of the one company operating only there; Mauritania and Bulgaria take the median scored
+  add-on, provisionally. Other multi-country companies keep the hand-set add-on (basis
+  `manual`) until their annual reports are read: a roadmap small item. Developers don't use the add-on (they're
+  valued on their study NPV), so they have no weights.
+- The override is `addon_override` with `addon_override_note`.
+- The sensitivity is PNAV inputs BX (and P/NAV W): today's P/NAV with the add-on raised by `[pnav]
+  sensitivity_points` (2).
+- Built with the `snapshots` command (roadmap small item) in the same PR.
+
 ## Goal
 
 The P/NAV discount rate is the 10-year Treasury yield + 3% + a **jurisdiction add-on** typed in per company

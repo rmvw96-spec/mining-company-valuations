@@ -32,10 +32,11 @@ def test_non_companies_get_cleared_rows():
     assert left[0] == CLEAR and right == ["PSLV", CLEAR, CLEAR, CLEAR, CLEAR, CLEAR]
 
 
-# Key columns and formula columns on each tab (see CLAUDE.md, "The Sheet: what not to touch").
+# Key columns and formula columns on each tab (see CLAUDE.md, "The Sheet: what not to touch"). PNAV inputs P (the
+# jurisdiction add-on) is written for country-table rows only: test_financials_writes_table_addons.
 PROTECTED = {"Holdings": {"A", "D", "E", "F", "G", "H", "O", "P", "V"},
              "Holdings downside": {"A", "K", "L"},
-             "PNAV inputs": {"C", "D", "I", "J", "K", "L", "P", "Q", "R", "S", "AL", "AM", "AN", "AO", "AP", "AQ",
+             "PNAV inputs": {"C", "D", "I", "J", "K", "L", "Q", "R", "S", "AL", "AM", "AN", "AO", "AP", "AQ",
                              "AR", "AS", "AT", "AU", "AV", "AW", "AZ", "BA", "BB", "BC", "BD", "BE"}}
 
 
@@ -127,3 +128,25 @@ def test_financials_before_setup_leaves_new_columns_alone(derived, tmp_path):
     rep = financials.run(sh, out_dir=tmp_path / "out")
     assert "R2" not in sh.cells["Holdings downside"] and "AX12" not in sh.cells["PNAV inputs"]
     assert sum("not set up yet" in line for line in rep) == 2
+
+
+def test_financials_writes_table_addons(derived, tmp_path):
+    I = pd.read_csv(derived / "pnav.csv")
+    I["addon_pct_points"], I["addon_basis"] = [1.5, 2.0], ["table", "manual"]
+    I.to_csv(derived / "pnav.csv", index=False)
+    sh = sheet()
+    sh.cells["PNAV inputs"].update({"P11": "Jurisdiction add-on", "I14": "FCF", "P14": 0.03})
+    rep = financials.run(sh, out_dir=tmp_path / "out")
+    p = sh.cells["PNAV inputs"]
+    assert p["P12"] == 0.015                                       # a fraction, as the Sheet holds it
+    assert p["P14"] == 0.03                                        # manual: the Sheet's figure is kept
+    assert any("1 rows from the country table" in line for line in rep)
+
+
+def test_financials_leaves_the_addon_alone_without_its_header(derived, tmp_path):
+    I = pd.read_csv(derived / "pnav.csv")
+    I["addon_pct_points"], I["addon_basis"] = [1.5, 2.0], ["table", "table"]
+    I.to_csv(derived / "pnav.csv", index=False)
+    sh = sheet()
+    rep = financials.run(sh, out_dir=tmp_path / "out")
+    assert "P12" not in sh.cells["PNAV inputs"] and any("was not written" in line for line in rep)

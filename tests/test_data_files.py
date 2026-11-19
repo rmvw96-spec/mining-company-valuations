@@ -105,3 +105,31 @@ def test_industry_aisc_table():
     quarter_end = pd.PeriodIndex(A.quarter, freq="Q").end_time
     assert (pub > quarter_end).all()                     # published after the quarter it reports
     assert A.source.str.contains("https://").all()
+
+
+def test_country_risk_table():
+    from minerval import jurisdiction as J
+    T = pd.read_csv(J.TABLE, keep_default_na=False, na_values=[""])
+    assert list(T.columns) == J.TABLE_COLS
+    T["region"] = T.region.fillna("")
+    assert not T.duplicated(["country", "region"]).any()
+    assert T.source.notna().all() and T.basis.notna().all() and T.as_of.notna().all()
+    assert T.rule.isin(J.RULES).all()
+    filled = T.rule.isin(["score", "fixed"])
+    assert (filled == T.addon_pct_points.notna()).all()          # top and median rows are worked out when loaded
+    c = J.cfg()
+    assert T.loc[filled, "addon_pct_points"].between(0, max(c["top_addon"], 4)).all()
+    sc = T.loc[T.rule == "score", "addon_pct_points"]
+    assert ((sc / c["step"]).round(9) % 1 == 0).all()             # only rounded add-ons are committed, not scores
+    assert T.addon_pct_points.dropna().ge(0).all()
+
+
+def test_country_weights():
+    from minerval import jurisdiction as J
+    R = pd.read_csv(DATA / "research" / "pnav_companies.csv")
+    table = J.load_table()
+    for _, r in R[R.country_weights.notna()].iterrows():
+        assert J.check_weights(J.parse_weights(r.country_weights), table) == [], r.ticker
+        assert isinstance(r.country_weights_source, str) and r.country_weights_source, r.ticker
+    ov = R[R.addon_override.notna()]
+    assert ov.addon_override.ge(0).all() and ov.addon_override_note.notna().all()

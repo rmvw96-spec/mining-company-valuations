@@ -75,7 +75,7 @@ splits for Collective Mining and Viscaria, are open (small items below).
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
 | 4a | **Producer costs from company AISC and energy share**, so the diesel signal feeds the cost scenario | [producer-costs-spec.md](specs/producer-costs-spec.md) | M | Q4 reports for company AISC; 2a (industry AISC table) |
-| 4b | **Jurisdiction risk from a country table** instead of a hand-set add-on per company | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | M | — (can move earlier) |
+| 4b | **Built Nov 2026.** **Jurisdiction risk from a country table** instead of a hand-set add-on per company | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | M | — (can move earlier) |
 | 4c | **Royalties against their own history** as well as the peer median | [royalty-history-spec.md](specs/royalty-history-spec.md) | S–M | 1a (needs months of recorded P/NAVs); the Yahoo-based fallback works from day one |
 
 ## Done in November 2026 (not in the original plan)
@@ -83,8 +83,16 @@ splits for Collective Mining and Viscaria, are open (small items below).
 - A "Send a test email" checkbox on the manual price-update run (`test-email` command), to check the email
   secrets without waiting for a Model portfolio status change.
 - Repo setting "Automatically delete head branches" turned on; merged branches cleaned up.
+- A `snapshots` command that rewrites the Summary, Metal prices reference and Stress test & downside fund
+  tables from `data/derived/` (the earnings-season refresh's last by-hand step).
 
 ## Small items, any time
+
+- **Country weights for the remaining producers and royalty companies** (multi-country companies whose
+  `countries` text gives no shares, e.g. Barrick, Pan American, Hudbay): fill from each annual report's
+  production by mine, with the source. Until then they keep their hand-set add-on.
+- **Mauritania and Bulgaria in `country_risk.csv` are provisional** (the median add-on): neither is scored in
+  the 2025 Fraser survey and no 2024 score was found. Check the 2024 report's Table 2 and replace them.
 
 - **Developer financing for the other developer rows** (BF:BI), each with a source. Resource splits (BP:BR) for Collective Mining and Viscaria ("Mixed" and
   "Measured, indicated & inferred" totals can't be weighted without them).
@@ -95,9 +103,6 @@ splits for Collective Mining and Viscaria, are open (small items below).
   2026 after a raise, against the older figure on the Sheet). The earnings-season `refresh` + `financials`
   catches up; a big raise in between can be put in BF with a note.
 
-- A `snapshots` command that rewrites the Summary and Stress test & downside fund tables (and the fund
-  table on Metal prices reference) from `data/derived/`, so step 6 of the earnings-season refresh stops
-  being a by-hand job.
 - Entrée Resources (ETG): read its attributable resource from the 2025 Oyu Tolgoi JV technical report.
 - Explorers expecting maiden resources: Southern Cross Gold (around Q1 2027), NGEx (Lunahuasi), Hercules
   Metals. Add them to `data/research/pnav_companies.csv` and PNAV inputs AT:AW when published.

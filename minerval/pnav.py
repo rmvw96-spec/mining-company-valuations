@@ -1,7 +1,8 @@
 """Rick Rule-style price to net asset value (P/NAV), as on the P/NAV and PNAV inputs tabs.
 
 NAV = cash flow x annuity factor over the reserve life (capped at 25 years) + net cash, where the
-discount rate = 10-year Treasury yield + 3% + a jurisdiction add-on. Cash flow is free cash flow
+discount rate = 10-year Treasury yield + 3% + a jurisdiction add-on (from the country table: minerval/jurisdiction.py;
+"pnav Today, add-on up" is today's P/NAV with it [pnav] sensitivity_points higher). Cash flow is free cash flow
 (operating cash flow for royalty companies), re-estimated at each scenario's metal prices.
 Developers have no cash flow: they are compared with their published study value instead.
 
@@ -23,6 +24,7 @@ Writes data/derived/pnav.csv.
 import numpy as np
 import pandas as pd
 
+from . import jurisdiction
 from .config import DERIVED, RESEARCH, ensure, settings
 from .price_model import METALS, Metals, cost_change, cost_increase_default, mix_for, mixes
 
@@ -42,7 +44,7 @@ def show(mcap, nav):
 def inputs(X: pd.DataFrame, metals: Metals) -> pd.DataFrame:
     """The data columns of the PNAV inputs tab (E:H and J:O), one row per research row."""
     P = settings()["pnav"]
-    R = pd.read_csv(RESEARCH / "pnav_companies.csv")
+    R = jurisdiction.apply(pd.read_csv(RESEARCH / "pnav_companies.csv"))
     D = X.drop_duplicates("ticker").set_index("ticker")
     mt = mixes()
     rows = []
@@ -63,7 +65,7 @@ def inputs(X: pd.DataFrame, metals: Metals) -> pd.DataFrame:
                 d[f"share_{mtl}"] = mix.get(mtl, 0.0) if rev > 0 else 0.0
                 d[f"avg_{mtl}"] = metals.average(mtl, m.fin_date) if isinstance(m.fin_date, str) else metals.spot[mtl]
         rows.append(d)
-    keep = ["sheet_row", "fund", "mix_fund", "addon_pct_points", "reserve_life_years", "model_nav_per_share_usd",
+    keep = ["sheet_row", "fund", "mix_fund", "addon_pct_points", "addon_manual", "addon_basis", "reserve_life_years", "model_nav_per_share_usd",
             "study_value_usd_m", "fixed_price_usd"] + [c for c in RESOURCE_COLS + FINANCING_COLS + SPLIT_COLS
                                                        if c in R.columns]
     return R[keep].merge(pd.DataFrame(rows), on="sheet_row")
@@ -219,6 +221,8 @@ def compute(I: pd.DataFrame, metals: Metals, ten_year_yield: float | None = None
                 if name == "Today":
                     d["pnav Today, 10 years"] = show(r.mcap_m, (base + chg) * ann10 + r.net_cash_m)
                     d["pnav Today, before capital spending"] = show(r.mcap_m, (r.ocf_m + chg) * ann + r.net_cash_m)
+                    up = rate + P["sensitivity_points"] / 100
+                    d["pnav Today, add-on up"] = show(r.mcap_m, (base + chg) * annuity(up, n) + r.net_cash_m)
         if pd.notna(r.model_nav_per_share_usd):
             d["independent or study pnav"] = r.price_usd / r.model_nav_per_share_usd
         elif pd.notna(r.study_value_usd_m):

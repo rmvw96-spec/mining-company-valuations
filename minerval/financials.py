@@ -17,6 +17,7 @@ import pandas as pd
 from .config import DERIVED, OUT, settings
 from .sheets import CLEAR, blocks_by_row, col_to_num, column, split_cell
 
+ADDON_HEADER = "Jurisdiction add-on"
 UNIT = {"gold": "gold $/oz", "silver": "silver $/oz", "copper": "copper $/lb"}
 
 
@@ -64,7 +65,8 @@ def downside_rows(M: pd.DataFrame) -> dict:
 
 
 def pnav_rows(I: pd.DataFrame) -> dict:
-    """{yahoo symbol: ([E], [F, G, H], [M, N, O], [AX, AY])}."""
+    """{yahoo symbol: ([E], [F, G, H], [M, N, O], [AX, AY], [P] or None)}. P (the jurisdiction add-on, as a fraction)
+    only for rows whose add-on comes from the country table or an override; manual rows keep the Sheet's value."""
     out = {}
     for _, r in I.iterrows():
         if not isinstance(r.yahoo, str):
@@ -73,7 +75,10 @@ def pnav_rows(I: pd.DataFrame) -> dict:
         fgh = [_num(r.get(k), 2) for k in ("revenue_m", "fcf_m", "ocf_m")]
         mno = [_num(r.get(f"avg_{m}"), 4) for m in ("gold", "silver", "copper")]
         cash = [_num(r.get("cash_m"), 2), _num(r.get("fcf_12m_m"), 2)]
-        out.setdefault(r.yahoo, (e, fgh, mno, cash))
+        addon = None
+        if str(r.get("addon_basis", "")) in ("table", "override") and pd.notna(r.get("addon_pct_points")):
+            addon = [round(float(r.addon_pct_points) / 100, 6)]
+        out.setdefault(r.yahoo, (e, fgh, mno, cash, addon))
     return out
 
 
@@ -177,7 +182,7 @@ def run(sheet, dry_run=False, out_dir=None):
     basis = column(sheet.read(tab, f"I{a}:I{b}"), a)
     P = S["pnav_inputs"]
     has_cash = _has_header(sheet, tab, f"{P['cash']}{a - 1}", PNAV_HEADERS["cash"])
-    e, fgh, mno, cash, unknown = {}, {}, {}, {}, []
+    e, fgh, mno, cash, addon, unknown = {}, {}, {}, {}, {}, []
     for r, s in sym.items():
         s = str(s).strip()
         if not s or r in fixed:
@@ -189,6 +194,8 @@ def run(sheet, dry_run=False, out_dir=None):
         cash[r] = want[s][3]
         if str(basis.get(r, "")).strip():
             fgh[r], mno[r] = want[s][1], want[s][2]
+            if want[s][4] is not None:
+                addon[r] = want[s][4]
     ch = _changes(sheet, tab, "E", e) + _changes(sheet, tab, "F", fgh) + _changes(sheet, tab, "M", mno)
     blocks += blocks_by_row(tab, "E", e) + blocks_by_row(tab, "F", fgh) + blocks_by_row(tab, "M", mno)
     if has_cash:
@@ -196,6 +203,14 @@ def run(sheet, dry_run=False, out_dir=None):
         blocks += blocks_by_row(tab, P["cash"], cash)
     else:
         rep.append(f"  {tab}!{P['cash']}:{P['fcf_12m']} (cash, free cash flow) not set up yet: run `setup-sheet`.")
+    if _has_header(sheet, tab, f"{P['addon']}{a - 1}", ADDON_HEADER):
+        n_add = _changes(sheet, tab, P["addon"], addon)
+        ch += n_add
+        blocks += blocks_by_row(tab, P["addon"], addon)
+        rep.append(f"  Jurisdiction add-on ({P['addon']}): {len(addon)} rows from the country table or an override "
+                   f"({n_add} change); the other rows keep the Sheet's hand-set figure.")
+    else:
+        rep.append(f"  {tab}!{P['addon']}{a - 1} isn't headed {ADDON_HEADER!r}: the add-on was not written.")
     rep.append(f"{tab}: {len(e)} rows matched, {ch} cells change.")
     if unknown:
         rep.append(f"  Yahoo symbols in {tab}!AP with no data (left as they were): " + ", ".join(unknown))

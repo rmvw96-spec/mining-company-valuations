@@ -74,6 +74,9 @@ def test_pnav_compute():
     assert T.loc[13, "independent or study pnav"] == pytest.approx(10 / 8)
     assert pd.isna(T.loc[13, "pnav Today"])                       # no basis: no model P/NAV
     assert T.loc[14, "pnav Today"] == pytest.approx(1000 / ((150 + chg_today) * ann + 100))   # OCF basis
+    up = annuity(rate + 0.02, 25)                                 # [pnav] sensitivity_points = 2
+    assert T.loc[12, "pnav Today, add-on up"] == pytest.approx(1000 / ((80 + chg_today) * up + 100))
+    assert T.loc[12, "pnav Today, add-on up"] > T.loc[12, "pnav Today"]
 
 
 # --- producers' cost increase ---
