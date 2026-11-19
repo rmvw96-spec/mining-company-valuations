@@ -3,6 +3,25 @@
 Instructions for Claude Code. Roadmap item 3. Follow CLAUDE.md (Sheet safety and the installer pattern in
 `minerval/layout.py`; never write into spill ranges).
 
+**Status: built** (branch `developer-financing`). Where the build differs from the plan below:
+- `undrawn_facilities_usd_m` is `committed_funding_usd_m` (BF): it also counts construction cash held in escrow,
+  which is how Skeena's financing now sits (restricted cash from its notes) and which Yahoo's cash leaves out.
+- `months_of_cash` (BC) keeps its column and now counts committed funding; the cash-only figure is BJ.
+  `setup-sheet` upgrades BC and BE (and Model portfolio Y5) in place only where they still hold the first
+  formulas and headers.
+- The funding gap is remaining capex − cash − committed funding, without the "12 months of corporate costs":
+  no source gives developers' corporate costs consistently, and studies' capex mostly includes owner's costs.
+- A third route for the check, `funded_per_company` (BH): Skeena says its cash covers the remaining capital to
+  commercial production but publishes no cost-to-complete, so the check says "Funded to production (company says)"
+  rather than estimating a capex figure.
+- The raise discount and the resource weights are Signals inputs (`[signals.inputs]`, seeded on the Signals tab),
+  not a `[developers]` table, so the Sheet formulas and Python read the same values.
+- Part 3 keeps AT as the total. A single-category total is weighted as that category; the split columns (BP:BR)
+  are only needed for "Mixed" and "Measured, indicated & inferred" rows, and Omai's is filled. Collective Mining
+  and Viscaria still need theirs.
+- Figures filled for a first set of developers (Nov 18, 2026), each with its source. FireFly's committed funding
+  is blank (not confirmed); Seabridge's gap is KSM's whole PFS capex, which a JV partner would largely fund.
+
 ## Goal
 
 The developer checks added in PR #5 (PNAV inputs AX:BE, Model portfolio X:Y) are a good first cut, with two gaps

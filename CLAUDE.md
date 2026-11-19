@@ -29,7 +29,7 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
 | After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY |
-| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:BE; P/NAV U:V; Holdings downside K2, R; Model portfolio W:Y |
+| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:BW; P/NAV U:V; Holdings downside K2, R; Model portfolio W:Z |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
 | When the WGC publishes a quarter's AISC (Gold Demand Trends, ~a month after quarter end) | add a row to `data/research/industry_aisc.csv` with its source and publication date | the next run writes it to Signals |
@@ -67,7 +67,11 @@ Reports go to `out/<command>/report.txt`.
 4. Check the companies with large changes and any new "Op. cash flow corrected" notes against company
    reports. Put verified replacements in `config/corrections.csv` (value in US$ millions, with source).
 5. `uv run python -m minerval financials`.
-6. The Summary and Stress test & downside tabs are snapshots. If the user wants them current, the figures
+6. Developers: check each Model portfolio developer's latest MD&A or quarterly for committed facilities,
+   cost-to-complete or a new study, and a "funded to production" statement. Update PNAV inputs BF:BI and the
+   same columns in `pnav_companies.csv` together, each with its source and date (convert at the stated date's
+   rate and say so). Blank where a filing doesn't say: never estimate.
+7. The Summary and Stress test & downside tabs are snapshots. If the user wants them current, the figures
    are in `data/derived/fund_multiples.csv` and `stress_funds.csv`.
 
 ## The Sheet: what not to touch
@@ -76,19 +80,21 @@ Single `ARRAYFORMULA`s in a column's first row spill down the column. Anything t
 spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
 
 - Holdings: D2:H2 and V2 (open-ended ranges to row 1000). Never write into D3:H1000 or V3:V1000.
-- PNAV inputs: C12 and D12 (to row 154), AL12:AO12 (to row 146 only), and AR12:AS12 and AZ12:BE12 (to row 154).
-  Never write into C13:D154, AL13:AO146, AR13:AS154 or AZ13:BE154. H7 is a formula (the Signals cost input).
-  AT:AW (resources) are inputs; AX:AY are written by `financials`.
+- PNAV inputs: C12 and D12 (to row 154), AL12:AO12 (to row 146 only), and AR12:AS12, AZ12:BE12, BJ12:BO12 and
+  BT12:BW12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146, AR13:AS154, AZ13:BE154, BJ13:BO154
+  or BT13:BW154. H7 is a formula (the Signals cost input). AT:AW (resources), BF:BI (developer financing) and
+  BP:BS (resource split) are inputs, recorded in `data/research/pnav_companies.csv` with a source for every
+  figure (blank where unknown, never estimated); AX:AY are written by `financials`.
 - Holdings downside: K2 (to row 337). Its ranges are fixed (`N2:N337` ...): extend them in K2 if rows are added below 337.
   R (cost base) is written by `financials`.
 - P/NAV (tab `P_NAV`): U2:V2 (to row 144). Never write into U3:V162.
 - Model portfolio: G6 (buy with new money: B3 split over the F weights after the silver in C4 fills PSLV, then
   the silver stocks) and H6:J6, L6:R6, T6 (to row 31). K has its own formula in each row. Never write into
-  G7:J31, L7:R31 or T7:T31. W6:Y6 (timing signal, EV per ounce, months of cash) spill to row 31 too: never
-  write into W7:Y31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
+  G7:J31, L7:R31 or T7:T31. W6:Z6 (timing signal, EV per ounce, months of funding, P/NAV after a raise) spill
+  to row 31 too: never write into W7:Z31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
   a row added below 31 is outside every range.
-- Signals: `setup-sheet` inserts a row for a new signal (below the signal before it in `SIGNALS`), so add new
-  signals in code and run it rather than adding rows by hand. Context-only signals (`context=True`) show "Info"
+- Signals: `setup-sheet` inserts a row for a new signal or input (below the key before it in `SIGNALS`, then
+  `layout.INPUTS`), so add new signals and inputs in code and run it rather than adding rows by hand. Context-only signals (`context=True`) show "Info"
   and have no G:H; their rule is tested by `backtest-signals` with `[signal_backtest.context_thresholds]`.
 - Signals: column I (status) is a formula on every signal row, and so is E on the `royalty_pnav_median`,
   `junior_timing` and `implied_cost_increase` rows. Python writes E:F on the other signal rows, by the key in A,

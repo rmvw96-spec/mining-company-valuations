@@ -30,7 +30,7 @@ def test_fresh_install(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     text = "\n".join(rep)
     assert "conflict" not in text and "Created the Signals tab." in text
-    assert sh.sizes["PNAV inputs"][1] == col_to_num("BE")
+    assert sh.sizes["PNAV inputs"][1] == col_to_num("BW")
     sig, p = sh.cells["Signals"], sh.cells["PNAV inputs"]
     keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit() and int(k[1:]) >= 5}
     assert set(s.key for s in SIGNALS) <= set(keys)
@@ -41,6 +41,8 @@ def test_fresh_install(tmp_path):
     assert f"E{keys['gold_silver_ratio']}" not in sig                       # values are written by `signals`
     assert p["H7"].startswith('=XLOOKUP("producer_cost_increase"')
     assert p["AR12"].startswith("=ARRAYFORMULA(") and p["BE12"].startswith("=ARRAYFORMULA(")
+    assert p["BE12"] == layout.pnav_formulas()["developer_check"] and p["BW12"].startswith("=MAP(")
+    assert p["BK11"].startswith("Funding gap") and sh.cells["Model portfolio"]["Z6"].startswith("=ARRAYFORMULA(")
     assert p["Z12"] == cash_flow_change_new("Z", 12) and p[f"AC{B}"] == cash_flow_change_new("AC", B)
     assert sh.cells["Holdings downside"]["K2"] == downside_new()
     assert sh.cells["P_NAV"]["U2"] == "=ARRAYFORMULA('PNAV inputs'!AS12:AS154)"
@@ -86,7 +88,8 @@ def test_occupied_cell_skips_the_step(tmp_path):
     assert any(line.startswith("Model portfolio") and "conflict" in line and "X20" in line for line in rep)
     assert any(line.startswith("P_NAV") and "U150" in line for line in rep)
     mp = sh.cells["Model portfolio"]
-    assert mp == {"A5": "Bucket", "X20": "my note"}                         # nothing written in the step
+    assert not any(k[0] in "WXY" for k in mp if k != "X20")                # nothing written in the W:Y step
+    assert mp["X20"] == "my note" and "Z6" in mp                           # column Z is a step of its own
     assert "U2" not in sh.cells["P_NAV"]
 
 
@@ -166,3 +169,58 @@ def test_new_signals_get_rows_inserted_in_their_tier(tmp_path):
     assert tab[f"I{r}"].startswith(f'=IF(E{r}="","",') and tab[f"G{r}"] == -0.25
     assert now["something below"] == 92 and tab["G7"] == "user's threshold"
     assert not layout.signal_inserts(sh)                             # idempotent
+
+
+def test_first_install_is_upgraded_in_place(tmp_path):
+    """A Sheet set up before the financing columns: BC and BE (and Model portfolio Y5) hold the first formulas and
+    headers, the Signals tab lacks the new inputs. setup-sheet replaces those exact cells and adds the rest."""
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, mp, sig = sh.cells["PNAV inputs"], sh.cells["Model portfolio"], sh.cells["Signals"]
+    P = S["pnav_inputs"]
+    v1 = layout.pnav_formulas_v1()
+    for name in layout.UPGRADED:
+        p[f"{P[name]}{A - 1}"], p[f"{P[name]}{A}"] = layout.PNAV_HEADERS_V1[name], v1[name]
+    for name in layout.FINANCING_HEADERS:
+        for r in range(A - 1, B + 1):
+            p.pop(f"{P[name]}{r}", None)
+    mp["Y5"] = layout.PORTFOLIO_HEADERS_V1["months_of_cash"]
+    for r in range(5, 32):
+        mp.pop(f"Z{r}", None)
+    keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit()}
+    for key in ("raise_discount", "resource_weight_reserves", "resource_weight_mi", "resource_weight_inferred"):
+        r = keys[key]
+        for ref in [x for x in sig if layout.split_cell(x)[1] == r]:
+            sig[ref] = ""
+    p["BF60"] = "my own note"                             # a value typed in an input column isn't a conflict
+    rep = layout.run(sh, out_dir=tmp_path)
+    text = "\n".join(rep)
+    assert "conflict" not in text, text
+    assert "Inserted rows" in text and "raise_discount" in text
+    assert p[f"{P['developer_check']}{A}"] == layout.pnav_formulas()["developer_check"]
+    assert p[f"{P['months_of_cash']}{A - 1}"] == layout.PNAV_HEADERS["months_of_cash"]
+    assert p[f"{P['funding_gap']}{A}"] == layout.financing_formulas()["funding_gap"]
+    assert mp["Y5"] == layout.PORTFOLIO_HEADERS["months_of_cash"] and mp["Z6"].startswith("=ARRAYFORMULA(")
+    now = {v: int(k[1:]) for k, v in sh.cells["Signals"].items() if k.startswith("A") and k[1:].isdigit() and v}
+    assert now["raise_discount"] == now["runway_ok_months"] + 1
+    assert sh.cells["Signals"][f"E{now['raise_discount']}"] == 0.15
+    n = len(sh.blocks)
+    layout.run(sh, out_dir=tmp_path)
+    assert len(sh.blocks) == n                            # idempotent
+
+
+def test_a_hand_edited_check_formula_is_left_alone(tmp_path):
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    ref = f"{S['pnav_inputs']['developer_check']}{A}"
+    sh.cells["PNAV inputs"][ref] = "=MY_OWN()"
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert sh.cells["PNAV inputs"][ref] == "=MY_OWN()"
+    assert any("conflict" in line and ref in line for line in rep)
+
+
+def test_financing_seeds_come_from_the_research_file():
+    seeds = layout.financing_seeds()
+    assert all(isinstance(v, (float, str)) for v in seeds.values())
+    names = {name for _, name in seeds}
+    assert {"remaining_capex", "financing_source", "resource_inferred"} <= names
