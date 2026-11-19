@@ -15,10 +15,12 @@ Instructions for Claude Code. Roadmap item 4b. Follow CLAUDE.md.
 - `country_weights` is filled where the location is clear (one country, or shares already recorded in
   `countries`) and, for nine larger multi-country companies, from their 2025 production (or gross profit) by
   mine, each with `country_weights_source`.
-- Places outside the 2025 ranking: Suriname and the Dominican Republic (near the bottom of the 2024 survey) and
-  Nicaragua (US sanctions on its gold sector) take the top add-on; Cambodia, Thailand, Turkey and Azerbaijan keep
-  the hand-set add-on of the one company operating only there; Mauritania and Bulgaria take the median scored
-  add-on, provisionally. Other multi-country companies keep the hand-set add-on (basis
+- Places outside the 2025 ranking: Mauritania, Turkey, Suriname and the Dominican Republic are scored from the
+  2024 survey's Table 2 (their 2023 and 2024 scores, the ones inside the three-year window; the scores-file row
+  carries its own `source` and `as_of`). Nicaragua (US sanctions on its gold sector) takes the top add-on;
+  Cambodia, Thailand and Azerbaijan (in neither survey) keep the hand-set add-on of the one company operating
+  only there; Bulgaria (dropped from the 2024 survey for too few responses) takes the median scored add-on,
+  provisionally. Other multi-country companies keep the hand-set add-on (basis
   `manual`) until their annual reports are read: a roadmap small item. Developers don't use the add-on (they're
   valued on their study NPV), so they have no weights.
 - The override is `addon_override` with `addon_override_note`.

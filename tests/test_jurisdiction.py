@@ -56,12 +56,18 @@ def test_build_table_rewrites_scored_rows_only(tmp_path):
     pd.DataFrame([{"country": "Chile", "region": "", "few_responses": "False", "ppi_2025": 77.93, "ppi_2024": 66.2,
                    "ppi_2023": 55.66},
                   {"country": "China", "region": "", "few_responses": "True", "ppi_2025": 0.0, "ppi_2024": None,
-                   "ppi_2023": 14.35}]).to_csv(tmp_path / "scores.csv", index=False)
+                   "ppi_2023": 14.35},
+                  {"country": "Turkey", "region": "", "few_responses": "True", "ppi_2025": None, "ppi_2024": 52.32,
+                   "ppi_2023": 58.5, "source": "Fraser 2024", "as_of": "2025-07"}]).to_csv(tmp_path / "scores.csv",
+                                                                                          index=False)
     J.build_table(tmp_path / "scores.csv", "Fraser 2025", "2026-02", path, C)
     T = pd.read_csv(path, keep_default_na=False, na_values=[""]).set_index("country")
     assert "Old" not in T.index and T.loc["Cambodia", "addon_pct_points"] == 2.0
     assert T.loc["Chile", "addon_pct_points"] == 0.75                  # average 66.6 -> 0.78 -> 0.75
     assert T.loc["China", "addon_pct_points"] == 2.75 and T.loc["China", "few_responses"] == "yes"
+    assert T.loc["Chile", "source"] == "Fraser 2025" and T.loc["Chile", "as_of"] == "2026-02"
+    assert T.loc["Turkey", "addon_pct_points"] == 1.25                 # 2024 and 2023 only: 55.41 -> 1.15
+    assert T.loc["Turkey", "source"] == "Fraser 2024" and T.loc["Turkey", "as_of"] == "2025-07"
 
 
 def test_parse_and_check_weights(table):
