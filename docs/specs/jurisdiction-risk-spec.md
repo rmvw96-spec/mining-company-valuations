@@ -9,7 +9,11 @@ Instructions for Claude Code. Roadmap item 4b. Follow CLAUDE.md.
 - Fraser ranks provinces and states, not Canada, the US, Australia or Argentina as a whole. A weight on one of
   those countries without a region (`Canada:0.4`) uses the median add-on of its ranked regions.
 - `country_weights` is filled where the location is clear (one country, or shares already recorded in
-  `countries`), with `country_weights_source`. Other multi-country companies keep the hand-set add-on (basis
+  `countries`) and, for nine larger multi-country companies, from their 2025 production (or gross profit) by
+  mine, each with `country_weights_source`.
+- Places outside the 2025 ranking: Suriname and the Dominican Republic take the 2024 survey's bottom quartile;
+  Cambodia, Thailand, Turkey and Azerbaijan keep the hand-set add-on of the one company operating only there;
+  Nicaragua takes 4 (US sanctions on its gold sector); Mauritania and Bulgaria are provisional at 2. Other multi-country companies keep the hand-set add-on (basis
   `manual`) until their annual reports are read: a roadmap small item. Developers don't use the add-on (they're
   valued on their study NPV), so they have no weights.
 - The override is `addon_override` with `addon_override_note`.
