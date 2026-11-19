@@ -2,58 +2,98 @@
 
 Discount rate = 10-year Treasury yield + risk premium + jurisdiction add-on. The add-on comes from
 data/research/country_risk.csv, weighted by where each company's value is (`country_weights` in
-data/research/pnav_companies.csv, e.g. "Canada/Ontario:0.6;Mexico:0.4"):
+data/research/pnav_companies.csv, e.g. "Canada/Ontario:0.6;Mexico:0.4").
 
-- A row of the country table ranked in the Fraser Institute's Investment Attractiveness Index records the quartile
-  of its rank (`iai_quartile`, 1 = top) and gets that quartile's add-on ([jurisdiction] quartile_addons in
-  settings.toml). Only the quartile is kept: the survey's ranks and scores are copyright and the repo is public.
-  A row with `addon_pct_points` filled (a place the survey doesn't rank) uses that figure, with its basis stated.
-- A country named without a region uses its own row when there is one, else the median add-on of its ranked
-  regions (Fraser ranks Canadian provinces, US and Australian states and Argentine provinces, not the countries).
-- A company's add-on: `addon_override` when filled (with a reason in `addon_override_note`); else the weighted
-  table figure; else the hand-set `addon_pct_points` ("manual").
+Each row of the country table has a `rule`:
+  score   the add-on from the Fraser Institute's Policy Perception Index: the average of the latest
+          [jurisdiction] years scores, mapped onto a straight line from 0 at `floor_score` (and above) to
+          `top_addon` at a score of 0, rounded to `step`. `build_table` writes these rows from a scores file kept in
+          private/ (the survey is copyright and the repo is public, so only the rounded add-ons are committed).
+  fixed   a figure with its reason in `basis` (a place the survey doesn't rank).
+  top     `top_addon` (places the survey ranks near the bottom in an earlier year, or under sanctions).
+  median  the median add-on of the `score` rows (provisional, until a ranking is checked).
+A country named without a region uses its own row when there is one, else the median add-on of its regions
+(Fraser ranks Canadian provinces, US and Australian states and Argentine provinces, not the countries).
+
+A company's add-on: `addon_override` when filled (with a reason in `addon_override_note`); else the weighted
+table figure; else the hand-set `addon_pct_points` ("manual").
 """
-import math
-
 import numpy as np
 import pandas as pd
 
 from .config import RESEARCH, settings
 
 TABLE = RESEARCH / "country_risk.csv"
-TABLE_COLS = ["country", "region", "iai_quartile", "addon_pct_points", "basis", "source", "as_of"]
+TABLE_COLS = ["country", "region", "rule", "addon_pct_points", "few_responses", "basis", "source", "as_of"]
+RULES = ("score", "fixed", "top", "median")
 
 
 def cfg() -> dict:
     return settings()["jurisdiction"]
 
 
-def quartile(rank: int, ranked: int) -> int:
-    """Quartile of an IAI rank among `ranked` places: 1 (top) to 4."""
-    return min(max(math.ceil(4 * rank / ranked), 1), 4)
+def addon_from_score(score: float, c: dict | None = None) -> float:
+    """0 at floor_score and above, rising in a straight line to top_addon at 0; rounded to step."""
+    c = c or cfg()
+    floor, top, step = c["floor_score"], c["top_addon"], c["step"]
+    raw = 0.0 if score >= floor else top * (floor - score) / floor
+    return round(round(raw / step) * step, 4)
 
 
-def quartile_addon(q: int, addons=None) -> float:
-    """Add-on for an IAI quartile: top quartile addons[0] ... bottom quartile addons[3]."""
-    addons = addons or cfg()["quartile_addons"]
-    return float(addons[int(q) - 1])
+def average_score(row, c: dict | None = None) -> float | None:
+    """The average of a scores-file row's latest `years` policy scores (columns ppi_<year>; blanks skipped)."""
+    c = c or cfg()
+    cols = sorted((k for k in row.keys() if str(k).startswith("ppi_")), reverse=True)[:c["years"]]
+    vals = [float(row[k]) for k in cols if row[k] is not None and pd.notna(row[k]) and str(row[k]).strip() != ""]
+    return sum(vals) / len(vals) if vals else None
 
 
-def load_table(path=None) -> dict:
+def build_table(scores_path, source: str, as_of: str, path=None, c: dict | None = None) -> list[str]:
+    """Rewrite the `score` rows of country_risk.csv from a private scores file (country, region, few_responses,
+    ppi_<year>...); rows with other rules are kept. Returns report lines."""
+    c = c or cfg()
+    path = path or TABLE
+    S = pd.read_csv(scores_path, keep_default_na=False, na_values=[""])
+    old = pd.read_csv(path, keep_default_na=False, na_values=[""]) if path.exists() else pd.DataFrame(columns=TABLE_COLS)
+    keep = old[old["rule"] != "score"]
+    years = sorted((k[4:] for k in S.columns if k.startswith("ppi_")), reverse=True)[:c["years"]]
+    basis = (f"Policy Perception Index, average of {', '.join(sorted(years))} where scored: 0 at {c['floor_score']:g} "
+             f"and above, {c['top_addon']:g} at 0, in steps of {c['step']:g}")
+    rows = []
+    for _, r in S.iterrows():
+        avg = average_score(r, c)
+        if avg is None:
+            continue
+        few = str(r.get("few_responses", "")).strip().lower() in ("true", "yes", "1")
+        rows.append({"country": r.country, "region": r.region if isinstance(r.region, str) else "", "rule": "score",
+                     "addon_pct_points": addon_from_score(avg, c), "few_responses": "yes" if few else "",
+                     "basis": basis, "source": source, "as_of": as_of})
+    T = pd.concat([pd.DataFrame(rows, columns=TABLE_COLS), keep[TABLE_COLS]], ignore_index=True)
+    T.to_csv(path, index=False)
+    return [f"Wrote {len(rows)} scored places and kept {len(keep)} other rows in {path}."]
+
+
+def load_table(path=None, c: dict | None = None) -> dict:
     """{(country, region): add-on in percentage points}; region "" for a whole country. Country rows that aren't
-    in the file but have ranked regions get the regions' median."""
+    in the file but have regions get the regions' median."""
     path = path or TABLE
     if not path.exists():
         return {}
+    c = c or cfg()
     T = pd.read_csv(path, keep_default_na=False, na_values=[""])
+    T["region"] = T.region.fillna("").astype(str).str.strip()
+    T["country"] = T.country.astype(str).str.strip()
+    scored = T.loc[T.rule == "score", "addon_pct_points"].astype(float)
+    med = float(np.median(scored)) if len(scored) else np.nan
     out = {}
     for _, r in T.iterrows():
-        region = r.region if isinstance(r.region, str) else ""
-        if pd.notna(r.addon_pct_points):
-            v = float(r.addon_pct_points)
+        if r.rule == "top":
+            v = float(c["top_addon"])
+        elif r.rule == "median":
+            v = med
         else:
-            v = quartile_addon(int(r.iai_quartile))
-        out[(r.country.strip(), region.strip())] = v
+            v = float(r.addon_pct_points)
+        out[(r.country, r.region)] = v
     regions = {}
     for (c, reg), v in out.items():
         if reg:
@@ -132,11 +172,17 @@ def comparison(R: pd.DataFrame, table: dict | None = None) -> pd.DataFrame:
     return out.rename(columns={"addon_manual": "old", "addon_pct_points": "new", "addon_basis": "basis"})
 
 
-def run(out_dir=None) -> list[str]:
-    """The `jurisdiction` command: out/jurisdiction/comparison.csv and a summary."""
+def run(out_dir=None, scores=None, source=None, as_of=None) -> list[str]:
+    """The `jurisdiction` command: out/jurisdiction/comparison.csv and a summary. With `scores`, first rebuild the
+    table's scored rows from that (private) file."""
     from .config import OUT, ensure
     out_dir = out_dir or OUT / "jurisdiction"
     ensure(out_dir)
+    pre = []
+    if scores:
+        if not source or not as_of:
+            return ["--build needs --source (the survey edition) and --as-of (its publication month)."]
+        pre = build_table(scores, source, as_of)
     R = pd.read_csv(RESEARCH / "pnav_companies.csv")
     table = load_table()
     C = comparison(R, table)
@@ -158,4 +204,4 @@ def run(out_dir=None) -> list[str]:
         lines.append("Add-ons moving 1 point or more:")
         lines += [f"  {r.ticker}: {r.old:g} -> {r.new:g}" for _, r in big.iterrows()]
     lines.append(f"Full table: {out_dir / 'comparison.csv'}.")
-    return lines
+    return pre + lines

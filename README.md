@@ -32,7 +32,7 @@ data/
                                 life, outside NAV estimates and study values, and developers' resource
                                 estimates (amount, unit, category, source, date), with notes
   research/country_risk.csv     jurisdiction add-on by country (or province/state), from the Fraser Institute
-                                mining survey ranking, with sources
+                                mining survey's policy scores, with sources
 docs/specs/              specifications for larger changes
 tests/                   offline tests (pytest); run on every push and pull request by .github/workflows/tests.yml
 ```
@@ -380,13 +380,16 @@ exactly as on the Holdings tab.
   discounted at the 10-year Treasury yield + 3% + a jurisdiction add-on. Royalty companies use
   operating cash flow. Developers are compared with their published study value instead.
 - **Jurisdiction add-on**: `data/research/country_risk.csv` gives each country (or province or state) an
-  add-on from its rank in the Fraser Institute's Investment Attractiveness Index: 0, 1, 2 or 4 percentage
-  points by quartile (`[jurisdiction]` in settings.toml). Places the survey doesn't rank carry their own figure
-  with the reason. A country named without a province or state takes the median of its ranked ones. A company's
+  add-on from the Fraser Institute's Policy Perception Index, the survey's measure of policy risk (taxation,
+  regulation, permitting, political stability, security): the average of the last three years' scores, 0
+  points at a score of 90 or more, rising in a straight line to 3 points at 0, in steps of 0.25
+  (`[jurisdiction]` in settings.toml). Only the rounded add-ons are committed: the survey is copyright, so the
+  scores stay in `private/`. Places the survey doesn't rank carry a stated figure. A country named without a
+  province or state takes the median of its ranked ones. A company's
   add-on is the average over `country_weights` in `pnav_companies.csv` (e.g. `Canada/Ontario:0.6;Mexico:0.4`,
   by share of production); `addon_override` wins when filled (with a note), and a company without weights keeps
   its hand-set add-on. `uv run python -m minerval jurisdiction` lists the old and new add-on for every company
-  (out/jurisdiction/comparison.csv). P/NAV column W (PNAV inputs BX) is today's P/NAV with the add-on 2 points
+  (out/jurisdiction/comparison.csv); `--build private/<scores>.csv` first rewrites the scored rows. P/NAV column W (PNAV inputs BX) is today's P/NAV with the add-on 2 points
   higher, to show which valuations lean most on the risk premium.
 - **Backtest and projection**: see the docstrings in `minerval/backtest.py` and
   `minerval/projection.py`, and the assumptions in `config/projection.toml`.

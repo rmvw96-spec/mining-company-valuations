@@ -114,9 +114,13 @@ def test_country_risk_table():
     T["region"] = T.region.fillna("")
     assert not T.duplicated(["country", "region"]).any()
     assert T.source.notna().all() and T.basis.notna().all() and T.as_of.notna().all()
-    ranked = T.iai_quartile.notna()
-    assert (ranked != T.addon_pct_points.notna()).all()          # a quartile or an explicit add-on, never both
-    assert T.loc[ranked, "iai_quartile"].isin([1, 2, 3, 4]).all()
+    assert T.rule.isin(J.RULES).all()
+    filled = T.rule.isin(["score", "fixed"])
+    assert (filled == T.addon_pct_points.notna()).all()          # top and median rows are worked out when loaded
+    c = J.cfg()
+    assert T.loc[filled, "addon_pct_points"].between(0, max(c["top_addon"], 4)).all()
+    sc = T.loc[T.rule == "score", "addon_pct_points"]
+    assert ((sc / c["step"]).round(9) % 1 == 0).all()             # only rounded add-ons are committed, not scores
     assert T.addon_pct_points.dropna().ge(0).all()
 
 

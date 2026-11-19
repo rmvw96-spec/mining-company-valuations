@@ -57,9 +57,13 @@ sensitivity_points = 2              # the P/NAV sensitivity column: today's P/NA
 
 # Jurisdiction add-on from data/research/country_risk.csv (roadmap 4b; see minerval/jurisdiction.py).
 [jurisdiction]
-# Percentage points added to the discount rate by quartile of the Fraser Institute Investment Attractiveness
-# Index rank (top quartile first). Countries the survey doesn't rank carry their own figure in the table.
-quartile_addons = [0.0, 1.0, 2.0, 4.0]
+# Scored places: the average of the latest `years` Fraser Institute Policy Perception Index scores (0-100, best
+# 100), mapped onto a straight line: 0 points at floor_score and above, top_addon at a score of 0, rounded to step.
+# Rebuild after changing these: `jurisdiction --build private/<scores>.csv --source ... --as-of ...`.
+years = 3
+top_addon = 3.0                     # also the add-on of `top` rows (sanctions, or near the bottom of an earlier survey)
+floor_score = 90.0                  # places scoring at least this get no add-on
+step = 0.25
 weight_tolerance = 0.02             # country_weights must sum to 1 within this (whole-percent shares round); they are rescaled to 1
 
 [yahoo]

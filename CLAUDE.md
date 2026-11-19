@@ -80,8 +80,13 @@ Reports go to `out/<command>/report.txt`.
    dates), tell the user which notes need editing.
 8. Jurisdictions: if a company's mix of countries changed (a mine sold, started or stopped), update its
    `country_weights` and source, run `jurisdiction`, and show the user what moved. When the Fraser Institute
-   publishes a new survey (usually in the first half of the year), refresh `country_risk.csv` from it, run
-   `jurisdiction`, and review the changes with the user before `financials` writes them.
+   publishes a new survey (usually in the first half of the year), ask the user to save the PDF to `private/`
+   (fraserinstitute.org refuses automated downloads), write the Policy Perception Index scores to
+   `private/fraser-<year>-scores.csv` (country, region, few_responses, ppi_<year> for the last three years;
+   `private/extract_fraser_scores.py` did this for the 2025 PDF's Table 2), then
+   `jurisdiction --build private/fraser-<year>-scores.csv --source "..." --as-of YYYY-MM`. Review the changes
+   with the user before `financials` writes them. Never commit the scores or the PDF: the survey is copyright,
+   and only the rounded add-ons go in the repo.
 
 ## The Sheet: what not to touch
 
