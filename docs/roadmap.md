@@ -94,8 +94,14 @@ splits for Collective Mining and Viscaria, are open (small items below).
 - **Bulgaria in `country_risk.csv` is provisional** (the median add-on): it isn't ranked in the 2025 survey and
   was dropped from the 2024 one for too few responses. Replace it if a later survey ranks it.
 
-- **Developer financing for the other developer rows** (BF:BI), each with a source. Resource splits (BP:BR) for Collective Mining and Viscaria ("Mixed" and
-  "Measured, indicated & inferred" totals can't be weighted without them).
+- **Developer financing: what's left.** Filled Nov 19, 2026 for Minerals 260, Faraday, Hycroft, Marimaca, New
+  Pacific, Aldebaran, Viscaria (committed 0; no published cost-to-complete) and Panoro (committed 0; no current
+  study). Still blank: Osisko Metals (no economic study yet) and Blue Moon (selling Nussir to ACG Metals,
+  closing expected Nov 30, 2026: once it closes, update its row's stage, resource and study). Viscaria's resource
+  split (BP:BR): the category table in its May 2025 releases is an image, so read it from the PDF by eye or wait
+  for an update. Collective Mining's split is filled.
+- **Minerals 260's BF counts placement tranche 1 and the Franco-Nevada royalty** as money not yet in the Sheet's
+  cash (June 30, 2026). After the next refresh brings in the September 30 cash, take out what that cash includes.
 - **Keep the filled developers current**: Perpetua's EXIM loan (move it into BF when definitive
   documentation closes, expected Q1 2027), AbraSilver's project financing (targeted Q4 2026), Seabridge's KSM
   joint venture, and Skeena's cost-to-complete if it publishes one.
