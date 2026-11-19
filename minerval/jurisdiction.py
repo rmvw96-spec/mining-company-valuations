@@ -50,7 +50,8 @@ def average_score(row, c: dict | None = None) -> float | None:
 
 def build_table(scores_path, source: str, as_of: str, path=None, c: dict | None = None) -> list[str]:
     """Rewrite the `score` rows of country_risk.csv from a private scores file (country, region, few_responses,
-    ppi_<year>...); rows with other rules are kept. Returns report lines."""
+    ppi_<year>..., and optional source and as_of for a row taken from an earlier edition, blank otherwise); rows
+    with other rules are kept. Returns report lines."""
     c = c or cfg()
     path = path or TABLE
     S = pd.read_csv(scores_path, keep_default_na=False, na_values=[""])
@@ -65,9 +66,11 @@ def build_table(scores_path, source: str, as_of: str, path=None, c: dict | None 
         if avg is None:
             continue
         few = str(r.get("few_responses", "")).strip().lower() in ("true", "yes", "1")
+        own = isinstance(r.get("source"), str) and r.get("source").strip()
         rows.append({"country": r.country, "region": r.region if isinstance(r.region, str) else "", "rule": "score",
                      "addon_pct_points": addon_from_score(avg, c), "few_responses": "yes" if few else "",
-                     "basis": basis, "source": source, "as_of": as_of})
+                     "basis": basis, "source": r.source if own else source,
+                     "as_of": str(r.as_of) if own and pd.notna(r.get("as_of")) else as_of})
     T = pd.concat([pd.DataFrame(rows, columns=TABLE_COLS), keep[TABLE_COLS]], ignore_index=True)
     T.to_csv(path, index=False)
     return [f"Wrote {len(rows)} scored places and kept {len(keep)} other rows in {path}."]

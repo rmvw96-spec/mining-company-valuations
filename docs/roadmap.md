@@ -91,8 +91,8 @@ splits for Collective Mining and Viscaria, are open (small items below).
 - **Country weights for the remaining producers and royalty companies** (multi-country companies whose
   `countries` text gives no shares, e.g. Barrick, Pan American, Hudbay): fill from each annual report's
   production by mine, with the source. Until then they keep their hand-set add-on.
-- **Mauritania and Bulgaria in `country_risk.csv` are provisional** (the median add-on): neither is scored in
-  the 2025 Fraser survey and no 2024 score was found. Check the 2024 report's Table 2 and replace them.
+- **Bulgaria in `country_risk.csv` is provisional** (the median add-on): it isn't ranked in the 2025 survey and
+  was dropped from the 2024 one for too few responses. Replace it if a later survey ranks it.
 
 - **Developer financing for the other developer rows** (BF:BI), each with a source. Resource splits (BP:BR) for Collective Mining and Viscaria ("Mixed" and
   "Measured, indicated & inferred" totals can't be weighted without them).

@@ -83,7 +83,8 @@ Reports go to `out/<command>/report.txt`.
    publishes a new survey (usually in the first half of the year), ask the user to save the PDF to `private/`
    (fraserinstitute.org refuses automated downloads), write the Policy Perception Index scores to
    `private/fraser-<year>-scores.csv` (country, region, few_responses, ppi_<year> for the last three years;
-   `private/extract_fraser_scores.py` did this for the 2025 PDF's Table 2), then
+   `private/extract_fraser_scores.py` did this for the 2025 PDF's Table 2; a place missing from the new survey
+   but scored in the one before keeps that row, with its own `source` and `as_of` columns), then
    `jurisdiction --build private/fraser-<year>-scores.csv --source "..." --as-of YYYY-MM`. Review the changes
    with the user before `financials` writes them. Never commit the scores or the PDF: the survey is copyright,
    and only the rounded add-ons go in the repo.
