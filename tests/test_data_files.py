@@ -79,6 +79,21 @@ def test_resource_research_columns():
     assert blank[["resource_unit", "resource_category", "resource_source"]].isna().all().all()
 
 
+def test_financing_and_split_columns():
+    from minerval.pnav import FINANCING_COLS, SPLIT_COLS
+    R = pd.read_csv(DATA / "research" / "pnav_companies.csv")
+    assert set(FINANCING_COLS + SPLIT_COLS) <= set(R.columns)
+    for c in ("committed_funding_usd_m", "remaining_capex_usd_m", "resource_reserves", "resource_mi_excl_reserves",
+              "resource_inferred"):
+        assert (R[c].dropna() >= 0).all(), c
+    money = R.committed_funding_usd_m.notna() | R.remaining_capex_usd_m.notna() | R.funded_per_company.notna()
+    assert R.loc[money, "financing_source"].notna().all(), "a financing figure needs a source"
+    assert set(R.funded_per_company.dropna()) <= {"Yes"}
+    split = R.resource_reserves.notna() | R.resource_mi_excl_reserves.notna() | R.resource_inferred.notna()
+    assert R.loc[split, "resource_split_source"].notna().all(), "a resource split needs a source"
+    assert R.loc[split, "resource_amount"].notna().all(), "a split row keeps its total in resource_amount"
+
+
 def test_industry_aisc_table():
     A = pd.read_csv(DATA / "research" / "industry_aisc.csv", dtype={"quarter": str})
     assert list(A.columns) == ["quarter", "aisc_usd_oz", "published", "source", "note"]

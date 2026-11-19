@@ -288,10 +288,32 @@ or lb CuEq), its category and source, seeded from `data/research/pnav_companies.
 AX:AY: EV (AZ), EV per unit (BA), EV per gold-equivalent ounce (BB; silver ounces converted at the live
 gold/silver ratio, copper shown per pound in BA only), months of cash (BC), cash as a share of market
 value (BD), and a check (BE): "Short of cash: financing likely" under 12 months, "Watch" under 18, plus
-"trading near cash" when cash is at least half the market value. Companies building a mine on project
-loans (Skeena) show a short runway because the loan isn't counted as cash: check undrawn facilities
-before reading "Short of cash" literally. Model portfolio X:Y show EV per ounce and months of cash for
-the developers.
+"trading near cash" when cash is at least half the market value. Model portfolio X:Z show EV per ounce,
+months of funding and P/NAV after a raise for the developers.
+
+**Financing** (inputs BF:BI, seeded from the research file with a source for every figure; blank where
+unknown, never estimated):
+
+- BF, committed funding not in cash: undrawn debt, stream or equity facilities, and construction cash held in
+  escrow (Skeena's note proceeds). BC's months of funding count it; BJ keeps the cash-only figure.
+- BG, remaining capex to first production (the latest study, or the company's cost-to-complete). When it's
+  filled in, the check uses the **funding gap** (BK = BG − cash − BF): "Fully funded" or "Funding gap $XM".
+- BH, "Yes" when the company states it is funded to production but publishes no cost-to-complete: the check
+  says "Funded to production (company says)".
+- Otherwise the check falls back to the runway rule above.
+
+For a gap, BL:BO assume it is all raised in equity at a 15% discount to today's price (Signals input
+`raise_discount`, the typical bought-deal discount): new shares, dilution, NAV per share after (NAV + raise
+over shares + new shares, NAV from the independent model in R or the study value in S plus net cash) and
+P/NAV after. Equity is the pessimistic case: debt, streams or a joint-venture partner dilute less. Seabridge's
+gap is KSM's whole capex, which a partner would largely fund; Perpetua's assumes no EXIM loan until it closes.
+
+**Resource quality** (BP:BW): an ounce in reserves counts 1, measured & indicated (excluding reserves) 0.5
+and inferred 0.2 (Signals inputs, conventional rules of thumb). A resource given as one category is weighted
+as that category; "Mixed" and "Measured, indicated & inferred" need the split in BP:BR (which then wins, a
+blank part counting as zero and named in BU). BV is EV per weighted unit (per gold-equivalent ounce for gold
+and silver, per pound for copper), BW its ratio to the peer group's median in the same unit family.
+Totals stated as M&I usually include reserves, so their weighted figure is conservative.
 
 ### Setting up the layout: `setup-sheet`
 

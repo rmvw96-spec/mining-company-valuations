@@ -159,3 +159,67 @@ def test_developer_columns_in_compute():
     assert d.months_of_cash == pytest.approx(4.0)
     assert d.developer_check == "Short of cash: financing likely"
     assert pd.isna(T.loc[12, "developer_check"])
+
+
+@pytest.mark.parametrize("gap,funded,months,want", [
+    (-5.0, False, 3.0, "Fully funded"), (0.0, False, 3.0, "Fully funded"),
+    (1234.4, False, 30.0, "Funding gap $1,234M"),                      # the gap wins over the runway
+    (None, True, 3.0, "Funded to production (company says)"),
+    (None, False, 3.0, "Short of cash: financing likely")])
+def test_developer_check_with_financing(gap, funded, months, want):
+    from minerval.pnav import developer_check
+    assert developer_check(months, 0.1, 12, 18, 0.5, gap, funded) == want
+    assert developer_check(months, 0.6, 12, 18, 0.5, gap, funded) == want + "; trading near cash"
+
+
+def test_runway_counts_committed_funding_and_the_gap():
+    from minerval.pnav import funding_gap, months_of_funding
+    assert months_of_funding(50.0, -150.0, 100.0) == pytest.approx(12.0)
+    assert months_of_funding(50.0, -150.0, float("nan")) == pytest.approx(4.0)      # blank counts as none
+    assert months_of_funding(None, -150.0, 100.0) is None
+    assert funding_gap(500.0, 120.0, 80.0) == pytest.approx(300.0)
+    assert funding_gap(500.0, 120.0, None) == pytest.approx(380.0)
+    assert funding_gap(float("nan"), 120.0, 80.0) is None
+
+
+def test_raise_maths_worked_example():
+    from minerval.pnav import raise_after
+    # gap $100M, price $10, discount 15%, 50M shares, NAV $800M
+    d = raise_after(100.0, 10.0, 500.0, 800.0, 0.15)
+    assert d["new_shares_m"] == pytest.approx(11.7647, rel=1e-4)
+    assert d["nav_per_share_after"] == pytest.approx(14.57, abs=0.005)
+    assert d["dilution"] == pytest.approx(11.7647 / 50, rel=1e-4)
+    assert d["pnav_after"] == pytest.approx(10 / 14.5714, rel=1e-4)
+    assert raise_after(-20.0, 10.0, 500.0, 800.0, 0.15)["new_shares_m"] == 0.0
+    assert "pnav_after" not in raise_after(100.0, 10.0, 500.0, None, 0.15)
+    assert raise_after(100.0, None, 500.0, 800.0, 0.15) == {}
+
+
+def test_weighted_resource():
+    from minerval.pnav import ev_per_weighted, weighted_resource
+    w = {"reserves": 1.0, "mi": 0.5, "inferred": 0.2}
+    assert weighted_resource(9.0, "Mixed", 2.0, 3.0, 5.0, w) == (pytest.approx(4.5), "Split")
+    assert weighted_resource(8.0, "Mixed", None, 2.5, 5.5, w) == (pytest.approx(2.35), "Split; no reserves")
+    assert weighted_resource(4.0, "Measured & indicated", None, None, None, w) == (2.0, "From category: Measured & indicated")
+    assert weighted_resource(4.0, "Reserves", None, None, None, w) == (4.0, "From category: Reserves")
+    assert weighted_resource(5.0, "Mixed", None, None, None, w) == (None, "Needs a split (Mixed)")
+    assert weighted_resource(None, None, None, None, None, w) == (None, "")
+    assert ev_per_weighted(900.0, 2.0, "oz Au", 80.0) == 450.0
+    assert ev_per_weighted(900.0, 100.0, "oz AgEq", 80.0) == pytest.approx(720.0)
+    assert ev_per_weighted(900.0, 3000.0, "lb Cu", 80.0) == pytest.approx(0.3)
+    assert pd.isna(ev_per_weighted(900.0, 0.0, "oz Au", 80.0))
+
+
+def test_financing_columns_in_compute():
+    I, metals = pnav_inputs()
+    I.loc[2, ["cash_m", "fcf_12m_m", "resource_amount", "resource_unit", "resource_category"]] = \
+        [50.0, -150.0, 4.0, "oz Au", "Measured & indicated"]
+    I["committed_funding_usd_m"], I["remaining_capex_usd_m"], I["funded_per_company"] = float("nan"), float("nan"), None
+    I.loc[2, ["committed_funding_usd_m", "remaining_capex_usd_m"]] = [100.0, 400.0]
+    T = compute(I, metals, ten_year_yield=0.05).set_index("sheet_row")
+    d = T.loc[14]
+    assert d.months_of_cash == pytest.approx(12.0) and d.months_of_cash_only == pytest.approx(4.0)
+    assert d.funding_gap_m == pytest.approx(250.0) and d.developer_check == "Funding gap $250M"
+    assert d.new_shares_m > 0 and isinstance(d.pnav_after, float)
+    assert d.weighted_amount == pytest.approx(2.0) and d.ev_per_weighted == pytest.approx(450.0)
+    assert d.peer_ev_ratio == pytest.approx(1.0)                            # the only developer: its own median

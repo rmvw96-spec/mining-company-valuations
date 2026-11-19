@@ -36,15 +36,49 @@ PNAV_HEADERS = {
     "ev": "EV $M (market cap − net cash)",
     "ev_per_unit": "EV per unit in the ground US$",
     "ev_per_aueq_oz": "EV per gold-equivalent oz US$",
-    "months_of_cash": "Months of cash (at the last 12 months' burn)",
+    "months_of_cash": "Months of funding (cash + committed funding in BF, at the last 12 months' burn)",
     "cash_share": "Cash, % of market value",
-    "developer_check": "Developer check (project loans aren't counted as cash: check undrawn facilities)",
+    "developer_check": "Developer check (funding gap when remaining capex is filled in; else the runway)",
 }
+# Columns whose header and formula changed after the first install: `setup-sheet` replaces the old ones (below).
+UPGRADED = {"months_of_cash", "developer_check"}
+PNAV_HEADERS_V1 = {"months_of_cash": "Months of cash (at the last 12 months' burn)",
+                   "developer_check": "Developer check (project loans aren't counted as cash: check undrawn "
+                                      "facilities)"}
+FINANCING_HEADERS = {
+    "committed_funding": "Committed funding not in cash $M (undrawn facilities, escrowed construction cash)",
+    "remaining_capex": "Remaining capex to production $M (latest study or company update)",
+    "funded_statement": "Company says funded to production (Yes / blank)",
+    "financing_source": "Financing sources and dates",
+    "months_of_cash_only": "Months of cash, cash only (at the last 12 months' burn)",
+    "funding_gap": "Funding gap $M (remaining capex − cash − committed funding)",
+    "new_shares": "New shares if the gap is raised in equity, millions (pessimistic: debt and streams dilute less)",
+    "dilution": "Dilution from that raise",
+    "nav_per_share_after": "NAV per share after the raise US$ (NAV: R × shares, or study value S + net cash)",
+    "pnav_after": "P/NAV after an equity raise for the gap (pessimistic), or funded",
+    "resource_reserves": "Reserves, millions of the unit in AU (optional split)",
+    "resource_mi": "M&I excluding reserves, millions of the unit (optional split)",
+    "resource_inferred": "Inferred, millions of the unit (optional split)",
+    "resource_split_source": "Split source and date",
+    "weighted_amount": "Weighted resource (weights on the Signals tab: reserves 1, M&I 0.5, inferred 0.2)",
+    "weighting_basis": "Weighting basis",
+    "ev_per_weighted": "EV per weighted unit US$ (per gold-equivalent oz for gold and silver; per lb for copper)",
+    "peer_ev_ratio": "EV per weighted unit ÷ peer-group median (same unit family)",
+}
+FINANCING_INPUTS = ["committed_funding", "remaining_capex", "funded_statement", "financing_source",
+                    "resource_reserves", "resource_mi", "resource_inferred", "resource_split_source"]
+FINANCING_FORMATS = {"committed_funding": "#,##0.0", "remaining_capex": "#,##0.0", "months_of_cash_only": "0.0",
+                     "funding_gap": "#,##0", "new_shares": "#,##0.0", "dilution": "0%", "nav_per_share_after": "0.00",
+                     "pnav_after": "0.00", "resource_reserves": "#,##0.0##", "resource_mi": "#,##0.0##",
+                     "resource_inferred": "#,##0.0##", "weighted_amount": "#,##0.0##", "ev_per_weighted": "#,##0.00",
+                     "peer_ev_ratio": "0.00"}
 PNAV_TAB_HEADERS = {"royalty_band": "Royalty band (framework)", "buy_below": "Buy-below price US$"}
 DOWNSIDE_COST_HEADER = "Helper: cost base $M (revenue − FCF)"
 PORTFOLIO_HEADERS = {"timing": "Timing signal (framework)",
                      "ev_per_aueq_oz": "EV per gold-equivalent oz (developers)",
-                     "months_of_cash": "Months of cash (developers)"}
+                     "months_of_cash": "Months of funding (developers; cash + committed)",
+                     "pnav_after": "P/NAV after an equity raise for the funding gap (developers)"}
+PORTFOLIO_HEADERS_V1 = {"months_of_cash": "Months of cash (developers)"}
 SIGNALS_HEADERS = ["Key (code uses it to find rows; can be hidden)", "Tier", "Signal", "Unit", "Value", "As of",
                    "Threshold 1", "Threshold 2", "Status", "What the framework says", "Source"]
 INPUTS = [  # key, label, default (None = left blank), number format
@@ -58,6 +92,14 @@ INPUTS = [  # key, label, default (None = left blank), number format
      "near_cash_share", "0%"),
     ("runway_short_months", "Developer runway: short of cash below (months)", "runway_short_months", "0"),
     ("runway_ok_months", "Developer runway: watch below (months)", "runway_ok_months", "0"),
+    ("raise_discount", "Developer raise: discount to today's price for an equity raise (typical bought deal)",
+     "raise_discount", "0%"),
+    ("resource_weight_reserves", "EV per weighted unit: weight of a reserve ounce", "resource_weight_reserves",
+     "0.00"),
+    ("resource_weight_mi", "EV per weighted unit: weight of an M&I ounce (excluding reserves)", "resource_weight_mi",
+     "0.00"),
+    ("resource_weight_inferred", "EV per weighted unit: weight of an inferred ounce", "resource_weight_inferred",
+     "0.00"),
 ]
 
 
@@ -66,8 +108,8 @@ class Cell:
     tab: str
     ref: str
     new: object
-    mode: str = "exact"          # exact, seed or replace
-    old: object = None           # for replace
+    mode: str = "exact"          # exact, seed, replace or upgrade (empty, the old content or the new one)
+    old: object = None           # for replace and upgrade
 
 
 @dataclass
@@ -155,9 +197,33 @@ def pnav_formulas() -> dict:
                           f'IF(({r("resource_unit")}="oz Au")+({r("resource_unit")}="oz AuEq"),{r("ev_per_unit")},'
                           f'IF({r("resource_unit")}="oz AgEq",{r("ev_per_unit")}*{sig("gold_silver_ratio")},""))),""))',
         "months_of_cash": f'=ARRAYFORMULA(IF(ISNUMBER({r("fcf_12m")})*ISNUMBER({r("cash")}),'
-                          f'IF({r("fcf_12m")}<0,{r("cash")}/-{r("fcf_12m")}*12,"Cash-generating"),""))',
+                          f'IF({r("fcf_12m")}<0,({r("cash")}+{n(r("committed_funding"))})/-{r("fcf_12m")}*12,'
+                          f'"Cash-generating"),""))',
         "cash_share": f'=ARRAYFORMULA(IF(ISNUMBER({r("cash")})*ISNUMBER({r("mcap")}),'
                       f'IF({r("mcap")}>0,{r("cash")}/{r("mcap")},""),""))',
+        "developer_check": f'=ARRAYFORMULA(LET(short,{sig("runway_short_months")},ok,{sig("runway_ok_months")},'
+                           f'near,{sig("near_cash_share")},gap,{r("funding_gap")},moc,{r("months_of_cash")},'
+                           f'txt,IF({r("peer_group")}<>"Developer","",IF(ISNUMBER(gap),IF(gap<=0,"Fully funded",'
+                           f'"Funding gap $"&TEXT(gap,"#,##0")&"M"),IF({r("funded_statement")}="Yes",'
+                           f'"Funded to production (company says)",IF(moc="","",IF(ISNUMBER(moc),'
+                           f'IF(moc<short,"Short of cash: financing likely",IF(moc<ok,"Watch","Enough cash")),'
+                           f'"Enough cash"))))),IF(txt="","",txt&IF(ISNUMBER({r("cash_share")}),'
+                           f'IF({r("cash_share")}>=near,"; trading near cash",""),""))))',
+    }
+
+
+def n(rng: str) -> str:
+    """A range's numbers with blanks and text as 0, element by element (N() takes only the first cell)."""
+    return f"IF(ISNUMBER({rng}),{rng},0)"
+
+
+def pnav_formulas_v1() -> dict:
+    """The first install's formulas for the UPGRADED columns, which `setup-sheet` replaces."""
+    def r(name):
+        return pnav_range(name)
+    return {
+        "months_of_cash": f'=ARRAYFORMULA(IF(ISNUMBER({r("fcf_12m")})*ISNUMBER({r("cash")}),'
+                          f'IF({r("fcf_12m")}<0,{r("cash")}/-{r("fcf_12m")}*12,"Cash-generating"),""))',
         "developer_check": f'=ARRAYFORMULA(LET(short,{sig("runway_short_months")},ok,{sig("runway_ok_months")},'
                            f'near,{sig("near_cash_share")},IF({r("peer_group")}<>"Developer","",'
                            f'IF({r("months_of_cash")}="","",IF(ISNUMBER({r("months_of_cash")}),'
@@ -165,6 +231,55 @@ def pnav_formulas() -> dict:
                            f'IF({r("months_of_cash")}<ok,"Watch","Enough cash")),"Enough cash")&'
                            f'IF(ISNUMBER({r("cash_share")}),IF({r("cash_share")}>=near,"; trading near cash",""),""'
                            f')))))',
+    }
+
+
+def financing_formulas() -> dict:
+    """{column name: formula for row pnav_first_row} for the developer financing and weighted-resource columns."""
+    def r(name):
+        return pnav_range(name)
+    dev = f'{r("peer_group")}<>"Developer"'
+    shares = f'{r("mcap")}/{r("price")}'
+    nav = (f'IF(ISNUMBER({r("nav_per_share")}),{r("nav_per_share")}*{shares},'
+           f'IF(ISNUMBER({r("study_value")}),{r("study_value")}+{n(r("net_cash"))},""))')
+    gap, new = r("funding_gap"), r("new_shares")
+    raise_ = f"IF({gap}>0,{gap},0)"
+    res, mi, inf = r("resource_reserves"), r("resource_mi"), r("resource_inferred")
+    anysplit = f"(ISNUMBER({res})+ISNUMBER({mi})+ISNUMBER({inf}))"
+    amt, cat, unit = r("resource_amount"), r("resource_category"), r("resource_unit")
+    wr, wm, wi = (sig(f"resource_weight_{k}") for k in ("reserves", "mi", "inferred"))
+    wt = r("weighted_amount")
+    pa, pb = _S()["pnav_first_row"], _S()["pnav_last_row"]
+
+    def col(name):
+        c = _S()["pnav_inputs"][name]
+        return f"${c}${pa}:${c}${pb}"
+    return {
+        "months_of_cash_only": f'=ARRAYFORMULA(IF(ISNUMBER({r("fcf_12m")})*ISNUMBER({r("cash")}),'
+                               f'IF({r("fcf_12m")}<0,{r("cash")}/-{r("fcf_12m")}*12,"Cash-generating"),""))',
+        "funding_gap": f'=ARRAYFORMULA(IF({dev},"",IF(ISNUMBER({r("remaining_capex")}),'
+                       f'{r("remaining_capex")}-{n(r("cash"))}-{n(r("committed_funding"))},"")))',
+        "new_shares": f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({gap})*({r("price")}>0),'
+                      f'{raise_}/({r("price")}*(1-{sig("raise_discount")})),""),""))',
+        "dilution": f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({new}),{new}/({shares}),""),""))',
+        "nav_per_share_after": f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({new}),({nav}+{raise_})/({shares}+{new}),""),""))',
+        "pnav_after": f'=ARRAYFORMULA(IF({dev},"",IF(ISNUMBER({gap}),IF({gap}<=0,"Fully funded",'
+                      f'IFERROR({r("price")}/{r("nav_per_share_after")},"")),'
+                      f'IF({r("funded_statement")}="Yes","Funded (company says)",""))))',
+        "weighted_amount": f'=ARRAYFORMULA(IF({anysplit},{n(res)}*{wr}+{n(mi)}*{wm}+{n(inf)}*{wi},'
+                           f'IF(ISNUMBER({amt}),IF({cat}="Reserves",{amt}*{wr},IF({cat}="Measured & indicated",'
+                           f'{amt}*{wm},IF({cat}="Inferred",{amt}*{wi},""))),"")))',
+        "weighting_basis": f'=ARRAYFORMULA(IF({anysplit},"Split"&IF(ISNUMBER({res}),"","; no reserves")&'
+                           f'IF(ISNUMBER({mi}),"","; no M&I")&IF(ISNUMBER({inf}),"","; no inferred"),'
+                           f'IF(ISNUMBER({amt}),IF(({cat}="Reserves")+({cat}="Measured & indicated")+'
+                           f'({cat}="Inferred"),"From category: "&{cat},"Needs a split ("&{cat}&")"),"")))',
+        "ev_per_weighted": f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({r("ev")})*ISNUMBER({wt}),IF({wt}>0,'
+                           f'IF(({unit}="oz Au")+({unit}="oz AuEq"),{r("ev")}/{wt},'
+                           f'IF({unit}="oz AgEq",{r("ev")}/{wt}*{sig("gold_silver_ratio")},'
+                           f'IF(LEFT({unit},2)="lb",{r("ev")}/{wt},""))),""),""),""))',
+        "peer_ev_ratio": f'=MAP({r("peer_group")},{unit},{r("ev_per_weighted")},LAMBDA(p,u,v,IF(NOT(ISNUMBER(v)),"",'
+                         f'IFERROR(v/MEDIAN(FILTER({col("ev_per_weighted")},{col("peer_group")}=p,'
+                         f'LEFT({col("resource_unit")},2)=LEFT(u,2),ISNUMBER({col("ev_per_weighted")}))),""))))',
     }
 
 
@@ -278,8 +393,9 @@ def fresh_rows() -> dict:
 
 
 def signal_inserts(sheet) -> list[tuple[str, int]]:
-    """(key, row) for each signal missing from an existing Signals tab: a new row just below the signal before it
-    in SIGNALS order, so it lands in its tier. Rows are given as they'll be once the earlier inserts are done."""
+    """(key, row) for each signal or input missing from an existing Signals tab: a new row just below the key before
+    it (SIGNALS order, then INPUTS), so it lands in its tier or in the inputs block. Rows are given as they'll be once
+    the earlier inserts are done."""
     S = _S()
     tab = S["signals_tab"]
     if not sheet.has_tab(tab):
@@ -291,13 +407,13 @@ def signal_inserts(sheet) -> list[tuple[str, int]]:
     if not any(s.key in found for s in SIGNALS):
         return []
     out, prev = [], None
-    for s in SIGNALS:
-        if s.key not in found:
+    for key in [s.key for s in SIGNALS] + [k for k, *_ in INPUTS]:
+        if key not in found:
             at = (found[prev] if prev else S["signals_first_row"] - 1) + 1
             found = {k: r + 1 if r >= at else r for k, r in found.items()}
-            found[s.key] = at
-            out.append((s.key, at))
-        prev = s.key
+            found[key] = at
+            out.append((key, at))
+        prev = key
     return out
 
 
@@ -392,14 +508,52 @@ def step_pnav(sheet) -> Step:
     st.add(tab, S["pnav_cost_cell"], f'=XLOOKUP("producer_cost_increase",\'{S["signals_tab"]}\'!$A:$A,'
                                      f'\'{S["signals_tab"]}\'!$E:$E,0)')
     st.formats.append((tab, S["pnav_cost_cell"], "0.0%"))
+    v1 = pnav_formulas_v1()
     for name, h in PNAV_HEADERS.items():
-        st.add(tab, f"{P[name]}{a - 1}", h)
+        if name in UPGRADED:
+            st.add(tab, f"{P[name]}{a - 1}", h, "upgrade", PNAV_HEADERS_V1[name])
+        else:
+            st.add(tab, f"{P[name]}{a - 1}", h)
     for name, f in pnav_formulas().items():
         _spill(st, tab, P[name], a, b, f)
+        if name in UPGRADED:
+            st.cells[-(b - a + 1)] = Cell(tab, f"{P[name]}{a}", f, "upgrade", v1[name])
     for row, vals in research_seeds().items():
         for name, v in zip(("resource_amount", "resource_unit", "resource_category", "resource_source"), vals):
             st.add(tab, f"{P[name]}{row}", v, "seed")
     for name, fmt in PNAV_FORMATS.items():
+        st.formats.append((tab, f"{P[name]}{a}:{P[name]}{b}", fmt))
+    return st
+
+
+def financing_seeds() -> dict:
+    """{(sheet_row, column name): value} for the financing and resource-split inputs in pnav_companies.csv."""
+    R = pd.read_csv(RESEARCH / "pnav_companies.csv")
+    cols = {"committed_funding": "committed_funding_usd_m", "remaining_capex": "remaining_capex_usd_m",
+            "funded_statement": "funded_per_company", "financing_source": "financing_source",
+            "resource_reserves": "resource_reserves", "resource_mi": "resource_mi_excl_reserves",
+            "resource_inferred": "resource_inferred", "resource_split_source": "resource_split_source"}
+    out = {}
+    for _, r in R.iterrows():
+        for name, c in cols.items():
+            if c in R.columns and pd.notna(r[c]) and str(r[c]).strip():
+                v = r[c]
+                out[(int(r.sheet_row), name)] = float(v) if isinstance(v, (int, float)) else str(v)
+    return out
+
+
+def step_financing() -> Step:
+    S = _S()
+    tab, a, b, P = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs"]
+    st = Step(f"{tab}: developer financing and weighted resource columns "
+              f"{P['committed_funding']}:{P['peer_ev_ratio']}")
+    for name, h in FINANCING_HEADERS.items():
+        st.add(tab, f"{P[name]}{a - 1}", h)
+    for name, f in financing_formulas().items():
+        _spill(st, tab, P[name], a, b, f)
+    for (row, name), v in financing_seeds().items():
+        st.add(tab, f"{P[name]}{row}", v, "seed")
+    for name, fmt in FINANCING_FORMATS.items():
         st.formats.append((tab, f"{P[name]}{a}:{P[name]}{b}", fmt))
     return st
 
@@ -445,10 +599,23 @@ def step_portfolio() -> Step:
     st = Step(f"{tab}: columns {C['timing']}:{C['months_of_cash']}")
     for name, f in (("timing", timing_formula()), ("ev_per_aueq_oz", portfolio_lookup("ev_per_aueq_oz")),
                     ("months_of_cash", portfolio_lookup("months_of_cash"))):
-        st.add(tab, f"{C[name]}{a - 1}", PORTFOLIO_HEADERS[name])
+        if name in PORTFOLIO_HEADERS_V1:
+            st.add(tab, f"{C[name]}{a - 1}", PORTFOLIO_HEADERS[name], "upgrade", PORTFOLIO_HEADERS_V1[name])
+        else:
+            st.add(tab, f"{C[name]}{a - 1}", PORTFOLIO_HEADERS[name])
         _spill(st, tab, C[name], a, b, f)
     st.formats.append((tab, f"{C['ev_per_aueq_oz']}{a}:{C['ev_per_aueq_oz']}{b}", "#,##0"))
     st.formats.append((tab, f"{C['months_of_cash']}{a}:{C['months_of_cash']}{b}", "0.0"))
+    return st
+
+
+def step_portfolio_after() -> Step:
+    S = _S()
+    tab, a, b, C = S["portfolio_tab"], S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"]
+    st = Step(f"{tab}: column {C['pnav_after']} (P/NAV after a raise)")
+    st.add(tab, f"{C['pnav_after']}{a - 1}", PORTFOLIO_HEADERS["pnav_after"])
+    _spill(st, tab, C["pnav_after"], a, b, portfolio_lookup("pnav_after"))
+    st.formats.append((tab, f"{C['pnav_after']}{a}:{C['pnav_after']}{b}", "0.00"))
     return st
 
 
@@ -492,6 +659,8 @@ def plan(step: Step, current: dict):
             continue
         elif c.mode == "replace" and same(cur, c.old):
             writes.append(c)
+        elif c.mode == "upgrade" and (_norm(cur) == "" or same(cur, c.old)):
+            writes.append(c)
         elif c.mode == "exact" and _norm(cur) == "":
             writes.append(c)
         else:
@@ -505,8 +674,8 @@ def _short(v, n=70):
 
 
 def steps(sheet) -> list[Step]:
-    return [step_signals(sheet), step_pnav(sheet), step_cash_flow_change(), step_pnav_tab(), step_downside(),
-            step_portfolio()]
+    return [step_signals(sheet), step_pnav(sheet), step_financing(), step_cash_flow_change(), step_pnav_tab(),
+            step_downside(), step_portfolio(), step_portfolio_after()]
 
 
 def run(sheet, dry_run=False, out_dir=None) -> list[str]:
@@ -519,16 +688,23 @@ def run(sheet, dry_run=False, out_dir=None) -> list[str]:
     if inserts:
         names = ", ".join(f"{k} (row {r})" for k, r in inserts)
         if dry_run:
-            rep.append(f"Would insert rows on the {S['signals_tab']} tab for new signals: {names}.")
+            rep.append(f"Would insert rows on the {S['signals_tab']} tab for new signals and inputs: {names}.")
         else:
             for key, r in inserts:
                 sheet.insert_rows(S["signals_tab"], r)
                 sheet.write([(S["signals_tab"], f"A{r}", [[key]])])        # the key, so the step below finds it
-                sig_ = next(x for x in SIGNALS if x.key == key)
-                sheet.number_formats([(S["signals_tab"], f"E{r}", sig_.fmt), (S["signals_tab"], f"G{r}:H{r}", sig_.fmt)])
-            rep.append(f"Inserted rows on the {S['signals_tab']} tab for new signals: {names}.")
+                sig_ = next((x for x in SIGNALS if x.key == key), None)
+                if sig_:
+                    sheet.number_formats([(S["signals_tab"], f"E{r}", sig_.fmt),
+                                          (S["signals_tab"], f"G{r}:H{r}", sig_.fmt)])
+                else:
+                    fmt = next(f for k, _, _, f in INPUTS if k == key)
+                    sheet.number_formats([(S["signals_tab"], f"E{r}", fmt)])
+            rep.append(f"Inserted rows on the {S['signals_tab']} tab for new signals and inputs: {names}.")
     all_steps = steps(sheet)
-    pnav_tab, need_cols = S["pnav_inputs_tab"], col_to_num(S["pnav_inputs"]["developer_check"])
+    pnav_tab = S["pnav_inputs_tab"]
+    last_col = max(S["pnav_inputs"].values(), key=col_to_num)
+    need_cols = col_to_num(last_col)
 
     # 1. Snapshot every range the installer touches, and the values the post-install check compares.
     check_ranges = [(pnav_tab, f"AD{S['pnav_first_row']}:AJ{S['pnav_last_row']}"),
@@ -551,7 +727,7 @@ def run(sheet, dry_run=False, out_dir=None) -> list[str]:
     if sheet.col_count(pnav_tab) < need_cols:
         n = need_cols - sheet.col_count(pnav_tab)
         if dry_run:
-            rep.append(f"Would add {n} columns to {pnav_tab} (to {S['pnav_inputs']['developer_check']}).")
+            rep.append(f"Would add {n} columns to {pnav_tab} (to {last_col}).")
         else:
             sheet.ensure_cols(pnav_tab, need_cols)
             rep.append(f"Added {n} columns to {pnav_tab}.")

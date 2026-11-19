@@ -150,6 +150,27 @@ ev_per_aueq_oz = "BB"
 months_of_cash = "BC"
 cash_share = "BD"
 developer_check = "BE"
+# Developer financing (roadmap 3): inputs BF:BI, formulas BJ:BO
+committed_funding = "BF"            # input: undrawn facilities and escrowed construction cash, US$M
+remaining_capex = "BG"              # input: capex still to spend to first production, US$M
+funded_statement = "BH"             # input: "Yes" when the company says it is funded to production
+financing_source = "BI"             # input: sources and dates for BF:BH
+months_of_cash_only = "BJ"
+funding_gap = "BK"
+new_shares = "BL"
+dilution = "BM"
+nav_per_share_after = "BN"
+pnav_after = "BO"
+# Resource split (optional inputs BP:BS) and EV per weighted unit (BT:BW)
+resource_reserves = "BP"
+resource_mi = "BQ"
+resource_inferred = "BR"
+resource_split_source = "BS"
+weighted_amount = "BT"
+weighting_basis = "BU"
+ev_per_weighted = "BV"
+peer_ev_ratio = "BW"
+study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 
 [sheet.pnav_tab_cols]
@@ -168,6 +189,7 @@ metal = "E"
 timing = "W"
 ev_per_aueq_oz = "X"
 months_of_cash = "Y"
+pnav_after = "Z"                    # P/NAV after an equity raise for the funding gap, or "Fully funded"
 status = "T"                        # Status (Review: above level, ...): emailed when it changes (alerts)
 
 [signals]
@@ -218,6 +240,13 @@ producer_cost_increase = 0.0        # used by the P/NAV and Low-scenario cash fl
 near_cash_share = 0.5               # developer "trading near cash" when cash is at least this share of market value
 runway_short_months = 12            # framework: hold at least 12 to 18 months of cash
 runway_ok_months = 18
+# Developer financing (roadmap 3). A developer with a funding gap is assumed to raise it all in equity at this
+# discount to today's price: the typical bought-deal discount, and the pessimistic case (debt and streams dilute less).
+raise_discount = 0.15
+# EV per weighted unit: conventional rules of thumb for how much an ounce in each category is worth against a reserve.
+resource_weight_reserves = 1.0
+resource_weight_mi = 0.5            # measured & indicated, excluding reserves
+resource_weight_inferred = 0.2
 
 # Model portfolio column W: which signals each bucket shows (keys on the Signals tab, joined with " / ").
 # "Bucket|Metal" entries win over "Bucket". "=text" shows the text itself; "@developer_check" is this row's

@@ -10,7 +10,10 @@ cash_flow_share x (revenue - FCF) x c, on FCF-basis rows only (royalty companies
 
 Royalty/streaming companies (OCF basis) also get a band from their independent P/NAV (buy zone up to 1.4x,
 normal range up to 2.2x, else rich: signals.thresholds.royalty_pnav_median) and a buy-below price.
-Developers get EV per ounce in the ground (resource columns in the research file) and months of cash.
+Developers get EV per ounce in the ground (resource columns in the research file) and months of funding
+(cash plus committed funding). When the remaining capex to production is known, the check uses the funding gap
+instead, and a gap is assumed raised in equity at a discount: the NAV per share and P/NAV after that raise
+(the pessimistic case). EV per weighted unit counts reserves, M&I and inferred at different weights.
 
 Research inputs (stage, add-on, reserve life, outside NAVs and study values) are in
 data/research/pnav_companies.csv. The Sheet holds the working copy of those inputs; this file is
@@ -61,13 +64,22 @@ def inputs(X: pd.DataFrame, metals: Metals) -> pd.DataFrame:
                 d[f"avg_{mtl}"] = metals.average(mtl, m.fin_date) if isinstance(m.fin_date, str) else metals.spot[mtl]
         rows.append(d)
     keep = ["sheet_row", "fund", "mix_fund", "addon_pct_points", "reserve_life_years", "model_nav_per_share_usd",
-            "study_value_usd_m", "fixed_price_usd"] + [c for c in RESOURCE_COLS if c in R.columns]
+            "study_value_usd_m", "fixed_price_usd"] + [c for c in RESOURCE_COLS + FINANCING_COLS + SPLIT_COLS
+                                                       if c in R.columns]
     return R[keep].merge(pd.DataFrame(rows), on="sheet_row")
 
 
 RESOURCE_COLS = ["resource_amount", "resource_unit", "resource_category", "resource_source", "resource_date"]
 RESOURCE_UNITS = ["oz Au", "oz AuEq", "oz AgEq", "lb Cu", "lb CuEq"]
 RESOURCE_CATEGORIES = ["Reserves", "Measured & indicated", "Measured, indicated & inferred", "Mixed", "Inferred"]
+FINANCING_COLS = ["committed_funding_usd_m", "remaining_capex_usd_m", "funded_per_company", "financing_source"]
+SPLIT_COLS = ["resource_reserves", "resource_mi_excl_reserves", "resource_inferred", "resource_split_source"]
+# A single-category resource is weighted as that category; "Mixed" and "M, I & I" need the split columns.
+CATEGORY_WEIGHT = {"Reserves": "reserves", "Measured & indicated": "mi", "Inferred": "inferred"}
+
+
+def _num(v) -> bool:
+    return v is not None and not isinstance(v, str) and not pd.isna(v)
 
 
 def royalty_band(pnav, g: float, h: float) -> str:
@@ -83,16 +95,90 @@ def months_of_cash(cash_m, fcf_m):
     return cash_m / -fcf_m * 12 if fcf_m < 0 else "Cash-generating"
 
 
-def developer_check(months, cash_share, short: float, ok: float, near_cash: float) -> str:
-    if months is None:
+def months_of_funding(cash_m, fcf_m, committed_m):
+    """Months of cash plus committed funding (undrawn facilities, escrowed construction cash) at the last 12
+    months' burn; a blank commitment counts as none."""
+    if not _num(cash_m):
+        return months_of_cash(cash_m, fcf_m)
+    return months_of_cash(cash_m + (committed_m if _num(committed_m) else 0.0), fcf_m)
+
+
+def funding_gap(remaining_capex_m, cash_m, committed_m):
+    """Remaining capex to production − cash − committed funding, US$M; None without a capex figure."""
+    if not _num(remaining_capex_m):
+        return None
+    return remaining_capex_m - (cash_m if _num(cash_m) else 0.0) - (committed_m if _num(committed_m) else 0.0)
+
+
+def developer_check(months, cash_share, short: float, ok: float, near_cash: float, gap=None,
+                    funded: bool = False) -> str:
+    """The funding gap when the remaining capex is known; else the company's own "funded" statement; else the
+    runway at the last 12 months' burn."""
+    if gap is not None:
+        txt = "Fully funded" if gap <= 0 else f"Funding gap ${gap:,.0f}M"
+    elif funded:
+        txt = "Funded to production (company says)"
+    elif months is None:
         return ""
-    if isinstance(months, str):
+    elif isinstance(months, str):
         txt = "Enough cash"
     else:
         txt = "Short of cash: financing likely" if months < short else "Watch" if months < ok else "Enough cash"
     if cash_share is not None and not pd.isna(cash_share) and cash_share >= near_cash:
         txt += "; trading near cash"
     return txt
+
+
+def raise_after(gap_m, price, mcap_m, nav_m, discount: float) -> dict:
+    """An equity raise for the gap at `discount` to today's price: new shares (millions), dilution, NAV per share
+    and P/NAV after. NAV is the developer's independent NAV or study value plus net cash, US$M."""
+    if gap_m is None or not (_num(price) and price > 0 and _num(mcap_m) and mcap_m > 0):
+        return {}
+    shares = mcap_m / price
+    raise_m = max(gap_m, 0.0)
+    new = raise_m / (price * (1 - discount))
+    out = {"new_shares_m": new, "dilution": new / shares}
+    if _num(nav_m):
+        out["nav_per_share_after"] = (nav_m + raise_m) / (shares + new)
+        out["pnav_after"] = price / out["nav_per_share_after"] if out["nav_per_share_after"] > 0 else None
+    return out
+
+
+def weighted_resource(amount, category, reserves, mi, inferred, w: dict):
+    """(weighted amount, basis text). The split columns win when any is filled (a blank one counts as zero and is
+    named); otherwise a single-category total is weighted as that category."""
+    split = {"reserves": reserves, "mi": mi, "inferred": inferred}
+    if any(_num(v) for v in split.values()):
+        total = sum(w[k] * v for k, v in split.items() if _num(v))
+        names = {"reserves": "reserves", "mi": "M&I", "inferred": "inferred"}
+        missing = "".join(f"; no {names[k]}" for k, v in split.items() if not _num(v))
+        return total, "Split" + missing
+    if not _num(amount):
+        return None, ""
+    if category in CATEGORY_WEIGHT:
+        return amount * w[CATEGORY_WEIGHT[category]], f"From category: {category}"
+    return None, f"Needs a split ({category})"
+
+
+def ev_per_weighted(ev_m, weighted, unit, gold_silver_ratio):
+    """EV per weighted unit: per gold-equivalent oz for gold and silver units, per lb for copper."""
+    if not (_num(ev_m) and _num(weighted) and weighted > 0) or not isinstance(unit, str):
+        return np.nan
+    v = ev_m / weighted
+    if unit in ("oz Au", "oz AuEq"):
+        return v
+    if unit == "oz AgEq":
+        return v * gold_silver_ratio
+    return v if unit.startswith("lb") else np.nan
+
+
+def peer_ratios(T: pd.DataFrame) -> pd.Series:
+    """Each row's EV per weighted unit ÷ the median of its peer group (same unit family: oz or lb)."""
+    if "ev_per_weighted" not in T or "peer_group" not in T:
+        return pd.Series(np.nan, index=T.index)
+    fam = T["resource_unit"].astype(str).str[:2]
+    med = T.groupby([T["peer_group"], fam])["ev_per_weighted"].transform("median")
+    return T["ev_per_weighted"] / med
 
 
 def ev_per_aueq_oz(ev_per_unit, unit, gold_silver_ratio):
@@ -143,7 +229,7 @@ def compute(I: pd.DataFrame, metals: Metals, ten_year_yield: float | None = None
             d["royalty_band"] = royalty_band(ind, g, h)
             if pd.notna(r.model_nav_per_share_usd):
                 d["buy_below_price_usd"] = g * r.model_nav_per_share_usd
-        # Part 4: EV per unit in the ground and months of cash (PNAV inputs AZ:BE)
+        # EV per unit in the ground and months of funding (PNAV inputs AZ:BE)
         mcap, nc = r.get("mcap_m"), r.get("net_cash_m")
         if pd.notna(mcap) and pd.notna(nc):
             d["ev_m"] = mcap - nc
@@ -151,7 +237,11 @@ def compute(I: pd.DataFrame, metals: Metals, ten_year_yield: float | None = None
             if pd.notna(amt) and amt > 0:
                 d["ev_per_unit"] = d["ev_m"] / amt
                 d["ev_per_aueq_oz"] = ev_per_aueq_oz(d["ev_per_unit"], r.get("resource_unit"), gsr)
-        moc = months_of_cash(r.get("cash_m"), r.get("fcf_12m_m"))
+        cash, committed = r.get("cash_m"), r.get("committed_funding_usd_m")
+        only = months_of_cash(cash, r.get("fcf_12m_m"))
+        if only is not None:
+            d["months_of_cash_only"] = only
+        moc = months_of_funding(cash, r.get("fcf_12m_m"), committed)
         if moc is not None:
             d["months_of_cash"] = moc
         if pd.notna(mcap) and mcap > 0 and pd.notna(r.get("cash_m")):
@@ -159,10 +249,35 @@ def compute(I: pd.DataFrame, metals: Metals, ten_year_yield: float | None = None
         developer = (not isinstance(r.basis, str) or not r.basis) and pd.isna(r.get("fixed_price_usd")) \
             and ind is not None and pd.notna(ind)
         if developer:
+            gap = funding_gap(r.get("remaining_capex_usd_m"), cash, committed)
+            funded = str(r.get("funded_per_company") or "").strip().lower() == "yes"
             d["developer_check"] = developer_check(moc, d.get("cash_share"), inp["runway_short_months"],
-                                                   inp["runway_ok_months"], inp["near_cash_share"])
+                                                   inp["runway_ok_months"], inp["near_cash_share"], gap, funded)
+            if gap is not None:
+                d["funding_gap_m"] = gap
+                nav = (r.model_nav_per_share_usd * mcap / r.price_usd if pd.notna(r.model_nav_per_share_usd)
+                       else r.study_value_usd_m + nc if pd.notna(r.study_value_usd_m) and pd.notna(nc) else None)
+                d.update(raise_after(gap, r.price_usd, mcap, nav, inp["raise_discount"]))
+                if gap <= 0:
+                    d["pnav_after"] = "Fully funded"
+            elif funded:
+                d["pnav_after"] = "Funded (company says)"
+            # Part 3: EV per weighted unit (reserves, M&I and inferred at different weights)
+            w = {k: inp[f"resource_weight_{k}"] for k in ("reserves", "mi", "inferred")}
+            wt, basis = weighted_resource(r.get("resource_amount"), r.get("resource_category"),
+                                          r.get("resource_reserves"), r.get("resource_mi_excl_reserves"),
+                                          r.get("resource_inferred"), w)
+            d["weighting_basis"] = basis
+            if wt is not None:
+                d["weighted_amount"] = wt
+                d["ev_per_weighted"] = ev_per_weighted(d.get("ev_m"), wt, r.get("resource_unit"), gsr)
         out.append(d)
-    return I.merge(pd.DataFrame(out), on="sheet_row")
+    T = I.merge(pd.DataFrame(out), on="sheet_row")
+    if "ev_per_weighted" in T:
+        T["peer_group"] = "Developer"           # the research file has no peer group: developers compare among themselves
+        T["peer_ev_ratio"] = peer_ratios(T)
+        T = T.drop(columns="peer_group")
+    return T
 
 
 def run(today: dict | None = None, cost_increase: float | None = None):
