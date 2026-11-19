@@ -105,3 +105,27 @@ def test_industry_aisc_table():
     quarter_end = pd.PeriodIndex(A.quarter, freq="Q").end_time
     assert (pub > quarter_end).all()                     # published after the quarter it reports
     assert A.source.str.contains("https://").all()
+
+
+def test_country_risk_table():
+    from minerval import jurisdiction as J
+    T = pd.read_csv(J.TABLE, keep_default_na=False, na_values=[""])
+    assert list(T.columns) == J.TABLE_COLS
+    T["region"] = T.region.fillna("")
+    assert not T.duplicated(["country", "region"]).any()
+    assert T.source.notna().all() and T.basis.notna().all() and T.as_of.notna().all()
+    ranked = T.iai_quartile.notna()
+    assert (ranked != T.addon_pct_points.notna()).all()          # a quartile or an explicit add-on, never both
+    assert T.loc[ranked, "iai_quartile"].isin([1, 2, 3, 4]).all()
+    assert T.addon_pct_points.dropna().ge(0).all()
+
+
+def test_country_weights():
+    from minerval import jurisdiction as J
+    R = pd.read_csv(DATA / "research" / "pnav_companies.csv")
+    table = J.load_table()
+    for _, r in R[R.country_weights.notna()].iterrows():
+        assert J.check_weights(J.parse_weights(r.country_weights), table) == [], r.ticker
+        assert isinstance(r.country_weights_source, str) and r.country_weights_source, r.ticker
+    ov = R[R.addon_override.notna()]
+    assert ov.addon_override.ge(0).all() and ov.addon_override_note.notna().all()

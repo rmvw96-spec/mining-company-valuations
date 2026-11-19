@@ -73,6 +73,15 @@ FINANCING_FORMATS = {"committed_funding": "#,##0.0", "remaining_capex": "#,##0.0
                      "resource_inferred": "#,##0.0##", "weighted_amount": "#,##0.0##", "ev_per_weighted": "#,##0.00",
                      "peer_ev_ratio": "0.00"}
 PNAV_TAB_HEADERS = {"royalty_band": "Royalty band (framework)", "buy_below": "Buy-below price US$"}
+
+
+def sensitivity_headers() -> tuple[str, str]:
+    """(PNAV inputs header, P/NAV tab header) for the add-on sensitivity column."""
+    pts = settings()["pnav"]["sensitivity_points"]
+    return (f"P/NAV: Medium, add-on +{pts:g} points (how much the valuation leans on the risk premium)",
+            f"My P/NAV: medium prices, jurisdiction add-on +{pts:g} points")
+
+
 DOWNSIDE_COST_HEADER = "Helper: cost base $M (revenue − FCF)"
 PORTFOLIO_HEADERS = {"timing": "Timing signal (framework)",
                      "ev_per_aueq_oz": "EV per gold-equivalent oz (developers)",
@@ -281,6 +290,17 @@ def financing_formulas() -> dict:
                          f'IFERROR(v/MEDIAN(FILTER({col("ev_per_weighted")},{col("peer_group")}=p,'
                          f'LEFT({col("resource_unit")},2)=LEFT(u,2),ISNUMBER({col("ev_per_weighted")}))),""))))',
     }
+
+
+def sensitivity_formula() -> str:
+    """Today's P/NAV (AD) with the discount rate (U) raised by [pnav] sensitivity_points."""
+    def r(c):
+        S = _S()
+        return f"{c}{S['pnav_first_row']}:{c}{S['pnav_last_row']}"
+    pts = settings()["pnav"]["sensitivity_points"] / 100
+    return (f'=ARRAYFORMULA(IF({pnav_range("basis")}="","",IFERROR(LET(rate,{r("U")}+{pts:g},'
+            f'nav,({r("Y")}+{r("Z")})*(1-(1+rate)^-{r("V")})/rate+{pnav_range("net_cash")},'
+            f'IF(nav<=0,"negative",IF({pnav_range("mcap")}/nav>20,">20",{pnav_range("mcap")}/nav))),"")))')
 
 
 PNAV_FORMATS = {"buy_below": "0.00", "resource_amount": "#,##0.0", "cash": "#,##0.0", "fcf_12m": "#,##0.0",
@@ -584,6 +604,24 @@ def step_pnav_tab() -> Step:
     return st
 
 
+def step_sensitivity() -> Step:
+    """PNAV inputs BX (P/NAV with the add-on raised) and its copy on the P/NAV tab (W)."""
+    S = _S()
+    tab, a, b, P = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs"]
+    ptab, pa, pb, col = S["pnav_tab"], S["pnav_tab_first_row"], S["pnav_tab_last_row"], S["pnav_tab_cols"]["pnav_addon_up"]
+    h_in, h_tab = sensitivity_headers()
+    st = Step(f"{tab}: column {P['pnav_addon_up']} and {ptab}: column {col} (P/NAV with a higher add-on)")
+    st.add(tab, f"{P['pnav_addon_up']}{a - 1}", h_in)
+    _spill(st, tab, P["pnav_addon_up"], a, b, sensitivity_formula())
+    st.add(ptab, f"{col}{pa - 1}", h_tab)
+    _spill(st, ptab, col, pa, pb, f"=ARRAYFORMULA('{tab}'!{P['pnav_addon_up']}{a}:{P['pnav_addon_up']}{b})")
+    for r in range(pb + 1, pb + 19):                    # the notes below the table must not block the spill
+        st.add(ptab, f"{col}{r}", "")
+    st.formats += [(tab, f"{P['pnav_addon_up']}{a}:{P['pnav_addon_up']}{b}", "0.00"),
+                   (ptab, f"{col}{pa}:{col}{pb}", "0.00")]
+    return st
+
+
 def step_downside() -> Step:
     S = _S()
     tab, D = S["downside_tab"], S["downside_cols"]
@@ -675,7 +713,7 @@ def _short(v, n=70):
 
 def steps(sheet) -> list[Step]:
     return [step_signals(sheet), step_pnav(sheet), step_financing(), step_cash_flow_change(), step_pnav_tab(),
-            step_downside(), step_portfolio(), step_portfolio_after()]
+            step_sensitivity(), step_downside(), step_portfolio(), step_portfolio_after()]
 
 
 def run(sheet, dry_run=False, out_dir=None) -> list[str]:

@@ -5,7 +5,10 @@ capital). Writes to data/derived/:
   stress_holdings.csv   one row per fund holding (feeds the Holdings downside tab)
   stress_funds.csv      fund-level results (the Stress test & downside tab)
   multiples_today.csv   fund multiples re-estimated at today's metal prices (Metal prices reference tab)
+  metals_today.json     the "Today" metal prices used, and their date (for the `snapshots` titles)
 """
+import json
+
 import numpy as np
 import pandas as pd
 
@@ -169,6 +172,7 @@ def multiples_today(M: pd.DataFrame) -> pd.DataFrame:
         for base, lab in (("ocf", "P/OCF"), ("fcf", "P/FCF")):
             res[lab] = agg(c, base)[0]
             res[lab + " today"] = agg(c, f"{base}_Today")[0]
+        res["P/OCF today (positive only)"] = agg(c[c.ocf_Today > 0], "ocf_Today")[0]
         for col, lab in (("ebitda", "EV/EBITDA"), ("ebitda_Today", "EV/EBITDA today")):
             _, cc, y = agg(c, col)
             res[lab] = (cc.weight_pct * cc.ev / cc.mcap).sum() / y if y > 0 else np.nan
@@ -189,4 +193,5 @@ def run(today: dict | None = None, cost_increase: float | None = None):
     F.to_csv(DERIVED / "stress_funds.csv")
     T = multiples_today(M)
     T.to_csv(DERIVED / "multiples_today.csv")
+    (DERIVED / "metals_today.json").write_text(json.dumps({**metals.spot, "date": metals.date()}, indent=1))
     return M, F, T

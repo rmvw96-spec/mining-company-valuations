@@ -53,6 +53,14 @@ max_years = 25                      # reserve life used is capped at this
 short_years = 10                    # the "10-year horizon" column
 scenarios = ["Today", "Low", "High", "All-time high"]
 no_metal_adjustment = ["VALT LN", "661 HK"]   # platinum producer and a smelter: cash flow is left as reported
+sensitivity_points = 2              # the P/NAV sensitivity column: today's P/NAV with the add-on this many points higher
+
+# Jurisdiction add-on from data/research/country_risk.csv (roadmap 4b; see minerval/jurisdiction.py).
+[jurisdiction]
+# Percentage points added to the discount rate by quartile of the Fraser Institute Investment Attractiveness
+# Index rank (top quartile first). Countries the survey doesn't rank carry their own figure in the table.
+quartile_addons = [0.0, 1.0, 2.0, 4.0]
+weight_tolerance = 0.02             # country_weights must sum to 1 within this (whole-percent shares round); they are rescaled to 1
 
 [yahoo]
 user_agent = "Mozilla/5.0 (X11; Linux x86_64)"
@@ -170,12 +178,15 @@ weighted_amount = "BT"
 weighting_basis = "BU"
 ev_per_weighted = "BV"
 peer_ev_ratio = "BW"
+addon = "P"                         # existing: jurisdiction add-on (a fraction: 0.01 = 1 point); `financials` writes table rows
+pnav_addon_up = "BX"                # P/NAV at today's prices with the add-on raised by [pnav] sensitivity_points
 study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 
 [sheet.pnav_tab_cols]
 royalty_band = "U"
 buy_below = "V"
+pnav_addon_up = "W"
 
 [sheet.downside_cols]
 low_fcf = "K"                       # the one ARRAYFORMULA on Holdings downside

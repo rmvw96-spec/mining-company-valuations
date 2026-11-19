@@ -15,7 +15,9 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
   step summary: it is emailed only (`alerts.notify_portfolio`). Signal issues carry market data only.
 - The Google Sheet is the working copy of the research inputs (PNAV inputs I–L and P–S, scenario prices,
   peer multiples). `data/research/pnav_companies.csv` and `config/settings.toml` [scenarios] are the record:
-  when the user changes one, offer to update the other.
+  when the user changes one, offer to update the other. The exception is the jurisdiction add-on (PNAV inputs P)
+  of a company with `country_weights`: `data/research/country_risk.csv` is its record and `financials` writes it,
+  so change the table, the weights or `addon_override` (with a note), not the cell.
 - Sheet layout is configured in `config/settings.toml` [sheet]. The commands check headers and stop if they
   don't match; if that happens, find out what moved before changing the config.
 
@@ -28,8 +30,10 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 | Once, or after adding a signal | `history --backfill 2022-01-01` (`--dry-run` first) | Signal history (past dates) |
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
-| After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY |
-| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:BW; P/NAV U:V; Holdings downside K2, R; Model portfolio W:Z |
+| After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, and P for country-table rows |
+| After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
+| After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
+| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:BX; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
 | When the WGC publishes a quarter's AISC (Gold Demand Trends, ~a month after quarter end) | add a row to `data/research/industry_aisc.csv` with its source and publication date | the next run writes it to Signals |
@@ -71,8 +75,13 @@ Reports go to `out/<command>/report.txt`.
    cost-to-complete or a new study, and a "funded to production" statement. Update PNAV inputs BF:BI and the
    same columns in `pnav_companies.csv` together, each with its source and date (convert at the stated date's
    rate and say so). Blank where a filing doesn't say: never estimate.
-7. The Summary and Stress test & downside tabs are snapshots. If the user wants them current, the figures
-   are in `data/derived/fund_multiples.csv` and `stress_funds.csv`.
+7. `snapshots --dry-run`, then `snapshots`: the fund tables on Summary, Metal prices reference and Stress test &
+   downside. Their notes are text: if the report's facts changed (corrections, excluded holdings, reporting
+   dates), tell the user which notes need editing.
+8. Jurisdictions: if a company's mix of countries changed (a mine sold, started or stopped), update its
+   `country_weights` and source, run `jurisdiction`, and show the user what moved. When the Fraser Institute
+   publishes a new survey (usually in the first half of the year), refresh `country_risk.csv` from it, run
+   `jurisdiction`, and review the changes with the user before `financials` writes them.
 
 ## The Sheet: what not to touch
 
@@ -81,13 +90,13 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
 
 - Holdings: D2:H2 and V2 (open-ended ranges to row 1000). Never write into D3:H1000 or V3:V1000.
 - PNAV inputs: C12 and D12 (to row 154), AL12:AO12 (to row 146 only), and AR12:AS12, AZ12:BE12, BJ12:BO12 and
-  BT12:BW12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146, AR13:AS154, AZ13:BE154, BJ13:BO154
-  or BT13:BW154. H7 is a formula (the Signals cost input). AT:AW (resources), BF:BI (developer financing) and
+  BT12:BX12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146, AR13:AS154, AZ13:BE154, BJ13:BO154
+  or BT13:BX154. H7 is a formula (the Signals cost input). AT:AW (resources), BF:BI (developer financing) and
   BP:BS (resource split) are inputs, recorded in `data/research/pnav_companies.csv` with a source for every
   figure (blank where unknown, never estimated); AX:AY are written by `financials`.
 - Holdings downside: K2 (to row 337). Its ranges are fixed (`N2:N337` ...): extend them in K2 if rows are added below 337.
   R (cost base) is written by `financials`.
-- P/NAV (tab `P_NAV`): U2:V2 (to row 144). Never write into U3:V162.
+- P/NAV (tab `P_NAV`): U2:W2 (to row 144). Never write into U3:W162.
 - Model portfolio: G6 (buy with new money: B3 split over the F weights after the silver in C4 fills PSLV, then
   the silver stocks) and H6:J6, L6:R6, T6 (to row 31). K has its own formula in each row. Never write into
   G7:J31, L7:R31 or T7:T31. W6:Z6 (timing signal, EV per ounce, months of funding, P/NAV after a raise) spill
@@ -133,8 +142,8 @@ because XLOOKUP ignores case.
   Row 43 (Minsur) has no data.
 - P/NAV and Model portfolio are formulas over PNAV inputs and Metal prices reference.
 - Metal prices reference H15:K17 (Low/Medium/High/ATH scenario prices) feed PNAV inputs and Holdings downside K.
-- Snapshots that don't follow Holdings: Summary, the fund table on Metal prices reference (B5:I11), the
-  fund tables on Stress test & downside, Backtest & projections.
+- Snapshots that don't follow Holdings: Summary, the fund table on Metal prices reference (B5:K11), the
+  fund tables on Stress test & downside (all rewritten by `snapshots`), Backtest & projections.
 
 ## The original Claude Sheet (until the move to Google Sheets is done)
 

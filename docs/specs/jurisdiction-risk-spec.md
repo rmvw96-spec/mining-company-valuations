@@ -2,6 +2,21 @@
 
 Instructions for Claude Code. Roadmap item 4b. Follow CLAUDE.md.
 
+**Status: built** (branch `jurisdiction-snapshots`). Where the build differs from the plan below:
+- The table stores the IAI rank (`iai_rank`, `iai_ranked`) and the code maps it to the quartile add-on, so a
+  change to `[jurisdiction] quartile_addons` needs no edit to the table. `addon_pct_points` is filled only for
+  places the survey doesn't rank, with the reason in `basis`.
+- Fraser ranks provinces and states, not Canada, the US, Australia or Argentina as a whole. A weight on one of
+  those countries without a region (`Canada:0.4`) uses the median add-on of its ranked regions.
+- `country_weights` is filled where the location is clear (one country, or shares already recorded in
+  `countries`), with `country_weights_source`. Other multi-country companies keep the hand-set add-on (basis
+  `manual`) until their annual reports are read: a roadmap small item. Developers don't use the add-on (they're
+  valued on their study NPV), so they have no weights.
+- The override is `addon_override` with `addon_override_note`.
+- The sensitivity is PNAV inputs BX (and P/NAV W): today's P/NAV with the add-on raised by `[pnav]
+  sensitivity_points` (2).
+- Built with the `snapshots` command (roadmap small item) in the same PR.
+
 ## Goal
 
 The P/NAV discount rate is the 10-year Treasury yield + 3% + a **jurisdiction add-on** typed in per company

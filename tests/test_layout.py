@@ -30,7 +30,7 @@ def test_fresh_install(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     text = "\n".join(rep)
     assert "conflict" not in text and "Created the Signals tab." in text
-    assert sh.sizes["PNAV inputs"][1] == col_to_num("BW")
+    assert sh.sizes["PNAV inputs"][1] == col_to_num("BX")
     sig, p = sh.cells["Signals"], sh.cells["PNAV inputs"]
     keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit() and int(k[1:]) >= 5}
     assert set(s.key for s in SIGNALS) <= set(keys)
@@ -46,6 +46,8 @@ def test_fresh_install(tmp_path):
     assert p["Z12"] == cash_flow_change_new("Z", 12) and p[f"AC{B}"] == cash_flow_change_new("AC", B)
     assert sh.cells["Holdings downside"]["K2"] == downside_new()
     assert sh.cells["P_NAV"]["U2"] == "=ARRAYFORMULA('PNAV inputs'!AS12:AS154)"
+    assert p["BX12"] == layout.sensitivity_formula() and p["BX11"].startswith("P/NAV: Medium, add-on +2 points")
+    assert sh.cells["P_NAV"]["W2"] == "=ARRAYFORMULA('PNAV inputs'!BX12:BX154)"
     assert sh.cells["Model portfolio"]["W6"].startswith("=ARRAYFORMULA(LET(band,")
     assert any(f[0] == "Signals" for f in sh.formats)
     assert list(tmp_path.glob("backup-*.json"))
@@ -224,3 +226,16 @@ def test_financing_seeds_come_from_the_research_file():
     assert all(isinstance(v, (float, str)) for v in seeds.values())
     names = {name for _, name in seeds}
     assert {"remaining_capex", "financing_source", "resource_inferred"} <= names
+
+
+def test_sensitivity_formula_raises_the_discount_rate():
+    f = layout.sensitivity_formula()
+    assert f.startswith('=ARRAYFORMULA(IF(I12:I154="","",IFERROR(LET(rate,U12:U154+0.02,')
+    assert "(Y12:Y154+Z12:Z154)*(1-(1+rate)^-V12:V154)/rate+E12:E154" in f
+
+
+def test_notes_in_the_sensitivity_column_skip_its_step(tmp_path):
+    sh = existing_sheet(P_NAV={"W150": "a note"})
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert any("P/NAV with a higher add-on" in line and "conflict" in line for line in rep)
+    assert "BX12" not in sh.cells["PNAV inputs"]

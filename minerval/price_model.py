@@ -31,6 +31,11 @@ class Metals:
         if today:
             self.spot.update(today)
 
+    def date(self) -> str:
+        """Date (New York) of the latest close in the cache."""
+        t = max(s.index.max() for s in self.px.values())
+        return t.strftime("%Y-%m-%d")
+
     def average(self, metal: str, end) -> float:
         """Average close over the window ending on a company's reporting date."""
         end = pd.Timestamp(end)

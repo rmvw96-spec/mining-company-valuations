@@ -28,9 +28,11 @@ config/
   local.example.toml     template for your own settings (private/local.toml)
 data/
   holdings.csv           the six funds' holdings (Sprott, Nov 13, 2026)
-  research/pnav_companies.csv   P/NAV research inputs: stage, countries, risk add-on, reserve life,
-                                outside NAV estimates and study values, and developers' resource
+  research/pnav_companies.csv   P/NAV research inputs: stage, countries and their weights, risk add-on, reserve
+                                life, outside NAV estimates and study values, and developers' resource
                                 estimates (amount, unit, category, source, date), with notes
+  research/country_risk.csv     jurisdiction add-on by country (or province/state), from the Fraser Institute
+                                mining survey ranking, with sources
 docs/specs/              specifications for larger changes
 tests/                   offline tests (pytest); run on every push and pull request by .github/workflows/tests.yml
 ```
@@ -129,6 +131,8 @@ uv run python -m minerval prices --shares          # share counts (review change
 uv run python -m minerval refresh                  # download financials, rebuild data/derived/
 uv run python -m minerval financials --dry-run     # report what would change on the Sheet
 uv run python -m minerval financials               # write it
+uv run python -m minerval snapshots --dry-run      # the fund tables on Summary, Metal prices reference, Stress test
+uv run python -m minerval snapshots                # write them
 ```
 
 `refresh` is `fetch` (download, about a minute) followed by `compute` (no network). `financials`
@@ -140,8 +144,13 @@ writes, matching rows by fund and ticker rather than by position:
 | Holdings downside | D–J (net cash, working capital, cash runway, dilution, breakeven) and M–Q (helpers for column K) | fund + Sprott ticker |
 | PNAV inputs | E–H (net cash, revenue, free and operating cash flow) and M–O (average metal prices over the reported period); AX–AY (cash, 12-month free cash flow) | Yahoo symbol |
 | Holdings downside | R (cost base: revenue − free cash flow, for the cost increase) | fund + Sprott ticker |
+| PNAV inputs | P (jurisdiction add-on), only for companies whose add-on comes from the country table | Yahoo symbol |
 
-It leaves the research inputs alone (PNAV inputs I–L and P–S). After writing, look over the
+It leaves the other research inputs alone (PNAV inputs I–L, Q–S, and P where the add-on is hand-set).
+
+`snapshots` rewrites the fund tables that aren't formulas: Summary A4:K9, Metal prices reference B6:K11 and
+the Stress test & downside tables (scenario prices and the four fund tables), with their titles' dates. It checks
+each table's header row first and skips a table whose headers have moved; the notes below are left alone. After writing, look over the
 companies whose Note says "Op. cash flow corrected" or that have new negative cash flows: Yahoo's
 data has gaps, and `config/corrections.csv` is where a company-reported figure replaces Yahoo's.
 
@@ -350,12 +359,12 @@ exactly as on the Holdings tab.
 | Tab | Kept current by |
 |---|---|
 | Holdings | `prices` daily (R–T, FX table), `financials` (I–N, Q); D–H and V are formulas |
-| Metal prices reference | `prices` (C15:C17, C30); scenario prices and peer multiples are yours to edit; the fund table at the top is a Nov 16 snapshot |
-| PNAV inputs, P/NAV | formulas over Holdings, Metal prices reference and Signals; `financials` (PNAV inputs E–H, M–O, AX–AY); resource inputs AT–AW are yours |
+| Metal prices reference | `prices` (C15:C17, C30); scenario prices and peer multiples are yours to edit; the fund table at the top is written by `snapshots` |
+| PNAV inputs, P/NAV | formulas over Holdings, Metal prices reference and Signals; `financials` (PNAV inputs E–H, M–O, AX–AY, and P for country-table add-ons); resource inputs AT–AW are yours |
 | Signals | `prices` daily (E–F); thresholds (G–H) and inputs are yours; status (I) is a formula |
 | Model portfolio | formulas over P/NAV, PNAV inputs and Signals; inputs in B3 (new money) and B4 (ounces held) |
 | Holdings downside | `financials` (D–J, M–R); K is a formula that follows the Low scenario prices and the cost increase |
-| Summary, Stress test & downside | snapshots from Nov 16, 2026. `compute` writes the current figures to `data/derived/fund_multiples.csv` and `stress_funds.csv`; paste them in to update |
+| Summary, Stress test & downside | fund tables written by `snapshots` from `data/derived/` (run it after `compute` or `refresh`); the notes are text |
 | Backtest & projections | snapshot from Nov 17, 2026. `backtest` and `project` write the current figures to `out/backtest/` |
 
 ## How the numbers are worked out
@@ -368,8 +377,17 @@ exactly as on the Holdings tab.
   EBITDA and 70% reaches cash flow (after about 30% tax). Costs, output and capital spending are held
   fixed, so these are sensitivities, not forecasts.
 - **P/NAV**: NAV = cash flow × an annuity over the reserve life (capped at 25 years) + net cash,
-  discounted at the 10-year Treasury yield + 3% + a country risk add-on. Royalty companies use
+  discounted at the 10-year Treasury yield + 3% + a jurisdiction add-on. Royalty companies use
   operating cash flow. Developers are compared with their published study value instead.
+- **Jurisdiction add-on**: `data/research/country_risk.csv` gives each country (or province or state) an
+  add-on from its rank in the Fraser Institute's Investment Attractiveness Index: 0, 1, 2 or 4 percentage
+  points by quartile (`[jurisdiction]` in settings.toml). Places the survey doesn't rank carry their own figure
+  with the reason. A country named without a province or state takes the median of its ranked ones. A company's
+  add-on is the average over `country_weights` in `pnav_companies.csv` (e.g. `Canada/Ontario:0.6;Mexico:0.4`,
+  by share of production); `addon_override` wins when filled (with a note), and a company without weights keeps
+  its hand-set add-on. `uv run python -m minerval jurisdiction` lists the old and new add-on for every company
+  (out/jurisdiction/comparison.csv). P/NAV column W (PNAV inputs BX) is today's P/NAV with the add-on 2 points
+  higher, to show which valuations lean most on the risk premium.
 - **Backtest and projection**: see the docstrings in `minerval/backtest.py` and
   `minerval/projection.py`, and the assumptions in `config/projection.toml`.
 
