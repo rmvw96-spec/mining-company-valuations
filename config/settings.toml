@@ -66,6 +66,20 @@ floor_score = 90.0                  # places scoring at least this get no add-on
 step = 0.25
 weight_tolerance = 0.02             # country_weights must sum to 1 within this (whole-percent shares round); they are rescaled to 1
 
+[royalty_history]
+# Royalty companies against their own history (roadmap 4c). P/OCF = month-end price of the US listing x shares
+# outstanding / the latest annual operating cash flow filed with the SEC by then (data/research/royalty_ocf.csv,
+# written by `royalty-ocf`). Today's value uses the same basis, so it compares like with like.
+years = 5                           # the window today's P/OCF is ranked in (month-ends)
+min_months = 36                     # fewer month-ends with positive cash flow than this: no percentile
+pnav_min_days = 250                 # recorded independent P/NAV days (Company history) before that percentile shows
+annual_forms = ["10-K", "40-F", "20-F", "10-K/A", "40-F/A", "20-F/A"]
+edgar_url = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
+edgar_user_agent = "minerval research admin@example.org"   # the SEC asks automated clients for a contact
+# US listing -> SEC CIK. Sheet rows with another Yahoo symbol map to these in `sheet_symbols`.
+companies = { WPM = 1323404, FNV = 1456346, RGLD = 85535, OR = 1627272, TFPM = 1829726, MTA = 1722606 }
+sheet_symbols = { "WPM.TO" = "WPM", "FNV.TO" = "FNV", "OR.TO" = "OR", "TFPM.TO" = "TFPM" }
+
 [yahoo]
 user_agent = "Mozilla/5.0 (X11; Linux x86_64)"
 workers = 6                         # parallel requests
@@ -184,6 +198,11 @@ ev_per_weighted = "BV"
 peer_ev_ratio = "BW"
 addon = "P"                         # existing: jurisdiction add-on (a fraction: 0.01 = 1 point); `financials` writes table rows
 pnav_addon_up = "BX"                # P/NAV at today's prices with the add-on raised by [pnav] sensitivity_points
+# Royalties against their own history (roadmap 4c): BY:CA written by `signals`, CB a formula
+pocf = "BY"                         # P/OCF on the latest annual operating cash flow filed (royalty rows)
+pocf_pctile = "BZ"                  # where that sits in the company's own last [royalty_history] years, 0-100
+pnav_pctile = "CA"                  # independent P/NAV against its own recorded history (blank until enough days)
+own_band = "CB"                     # "Cheap for itself" / "Normal for itself" / "Expensive for itself"
 study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 
@@ -234,6 +253,8 @@ two_year_3m_change = [-0.25, 0.25]  # a 0.25-point move in 3 months is one Fed s
 # are kept under [signal_backtest.context_thresholds].
 spy_drawdown = [-0.10, -0.20]       # 10% off the high is a pullback, 20% a bear market ("panic")
 royalty_pnav_median = [1.4, 2.2]    # framework: buy royalties at 1.1-1.4x NAV; 1.5-2.2x is their normal range
+royalty_own_pctile_median = [25, 75]   # each company against its own history: bottom quarter cheap, top quarter
+                                       # expensive (also the bands in PNAV inputs CB)
 gold_vs_diesel_12m = [0.10, -0.10]  # a 10-point gap between the metal and diesel moves margins visibly
 copper_vs_diesel_12m = [0.10, -0.10]
 silver_vs_diesel_12m = [0.10, -0.10]

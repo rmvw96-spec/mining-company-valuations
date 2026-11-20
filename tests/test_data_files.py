@@ -133,3 +133,17 @@ def test_country_weights():
         assert isinstance(r.country_weights_source, str) and r.country_weights_source, r.ticker
     ov = R[R.addon_override.notna()]
     assert ov.addon_override.ge(0).all() and ov.addon_override_note.notna().all()
+
+
+def test_royalty_ocf_record():
+    """data/research/royalty_ocf.csv (written by `royalty-ocf`): one row per company and year, all sourced, and every
+    company in [royalty_history] covered."""
+    T = pd.read_csv(DATA / "research" / "royalty_ocf.csv")
+    C = S["royalty_history"]
+    assert not T.duplicated(["symbol", "fiscal_end"]).any()
+    assert set(T.symbol) == set(C["companies"])
+    assert T.source.str.startswith("SEC EDGAR").all() and T.shares_m.gt(0).all()
+    assert (pd.to_datetime(T.filed) > pd.to_datetime(T.fiscal_end)).all()
+    usd = T.currency == "USD"
+    assert (T.usd_per_unit[usd] == 1).all() and T.usd_per_unit[~usd].between(0.5, 1.0).all()
+    assert set(C["sheet_symbols"].values()) <= set(C["companies"])

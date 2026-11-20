@@ -124,6 +124,13 @@ SIGNALS = [
            ("Buy zone", "Normal range", "Rich"),
            "Buy royalty companies at 1.1-1.4× NAV; 1.5-2.2× is their normal range. Uses the independent model's "
            "NAV per share (PNAV inputs R), refreshed by hand.", "PNAV inputs AJ (formula)", "0.00", formula=True),
+    Signal("royalty_own_pctile_median", "Royalty", "Royalty companies: median percentile against their own history",
+           "percentile (0-100)", "pctile_band",
+           ("Cheap for themselves", "Normal for themselves", "Expensive for themselves"),
+           "Each company against its own past: its P/NAV percentile once a year of days is recorded, until then its "
+           "P/OCF (on the latest annual operating cash flow filed) against its own last 5 years. Some companies "
+           "always trade above the framework's bands; this says whether they are cheap for themselves.",
+           "PNAV inputs BZ:CA (formula)", "0", formula=True),
     _vs_diesel("gold"), _vs_diesel("copper"), _vs_diesel("silver"),
     Signal("gold_12m", "Producers", "Gold, 12-month change", "% change", "info", (), "", "Yahoo, GC=F", "0.0%"),
     Signal("silver_12m", "Producers", "Silver, 12-month change", "% change", "info", (), "", "Yahoo, SI=F", "0.0%"),
@@ -200,7 +207,7 @@ def fetch(breadth: list[dict] | None = None) -> list[str]:
         if bad:
             failed.append(f"{len(bad)} junior-breadth symbols ({', '.join(bad[:8])}{'...' if len(bad) > 8 else ''})")
     daily = yahoo.pmap(lambda s: yahoo.chart(s, range=S.get("daily_range", "2y"), interval="1d"), S["daily"])
-    monthly = yahoo.pmap(lambda s: yahoo.history(s, "1mo"), S["monthly"])
+    monthly = yahoo.pmap(lambda s: yahoo.history(s, "1mo"), list(dict.fromkeys(S["monthly"] + royalty_symbols())))
     for interval, got in (("1d", daily), ("1mo", monthly)):
         for sym, j in got.items():
             if j and (j.get("chart") or {}).get("result"):
@@ -236,14 +243,23 @@ def fred_csv(S, series: str | None = None) -> str | None:
     return yahoo.get_text(S["fred_url"].format(series=series))
 
 
+def royalty_symbols() -> list[str]:
+    """The royalty companies' US listings, whose monthly prices give their own P/OCF history (royalty_history)."""
+    return list(settings().get("royalty_history", {}).get("companies", {}))
+
+
 def load_cache() -> dict:
     S = settings()["signals"]
-    out = {"daily": {}, "monthly": {}, "real_yield": None, "rates": {}}
+    out = {"daily": {}, "monthly": {}, "real_yield": None, "rates": {}, "royalty_monthly": {}}
     for interval, key in (("1d", "daily"), ("1mo", "monthly")):
         for sym in S[key]:
             f = _cache_name(sym, interval)
             if f.exists():
                 out[key][sym] = closes(json.loads(f.read_text()))
+    for sym in royalty_symbols():
+        f = _cache_name(sym, "1mo")
+        if f.exists():
+            out["royalty_monthly"][sym] = closes(json.loads(f.read_text()))
     f = SIG_CACHE / f"{S['fred_series']}.csv"
     if f.exists():
         out["real_yield"] = parse_fred(f.read_text())
@@ -450,6 +466,8 @@ def status(sig: Signal, v, g, h, ctx: dict) -> str:
         return t[0] if v <= h else t[1] if v <= g else t[2]
     if k == "band":
         return t[0] if v <= g else t[1] if v <= h else t[2]
+    if k == "pctile_band":
+        return t[0] if v <= g else t[2] if v >= h else t[1]
     if k == "real_yield":
         peak, chg = ctx.get("real_yield_12m_high"), ctx.get("real_yield_3m_change")
         if not (_num(peak) and _num(chg)):
@@ -497,6 +515,8 @@ def status_formula(sig: Signal, r: int) -> str:
         body = f"IF({E}<={H},{t[0]},IF({E}<={G},{t[1]},{t[2]}))"
     elif k == "band":
         body = f"IF({E}<={G},{t[0]},IF({E}<={H},{t[1]},{t[2]}))"
+    elif k == "pctile_band":
+        body = f"IF({E}<={G},{t[0]},IF({E}>={H},{t[2]},{t[1]}))"
     elif k == "real_yield":
         body = (f"LET(peak,{look('real_yield_12m_high')},change,{look('real_yield_3m_change')},"
                 f'IF(OR(peak="",change=""),"",IF(AND({E}<=peak-{G},change<0),{t[0]},'
@@ -527,6 +547,15 @@ def value_formula(sig: Signal) -> str:
             return f"'{tab}'!{P[c]}{a}:{P[c]}{b}"
         return (f'=IFERROR(MEDIAN(FILTER({rng("independent_pnav")},{rng("peer_group")}="Royalty/streaming",'
                 f'{rng("nav_per_share")}<>"")),"")')
+    if sig.key == "royalty_own_pctile_median":
+        S = settings()["sheet"]
+        P, a, b, tab = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs_tab"]
+
+        def rng(c):
+            return f"'{tab}'!{P[c]}{a}:{P[c]}{b}"
+        nav, ocf = rng("pnav_pctile"), rng("pocf_pctile")
+        return (f'=IFERROR(MEDIAN(FILTER(ARRAYFORMULA(IF(ISNUMBER({nav}),{nav},{ocf})),'
+                f'{rng("peer_group")}="Royalty/streaming",ISNUMBER({nav})+ISNUMBER({ocf}))),"")')
     if sig.key == "junior_timing":
         return (f"=LET(window,{look('tax_loss_window')},gold_up,{look('uptrend_gold')},gdx_up,{look('uptrend_gdx')},"
                 f'IF(OR(window="",gold_up="",gdx_up=""),"",N(window=1)+N(AND(gold_up>0,gdx_up>0))))')
@@ -537,8 +566,10 @@ def value_formula(sig: Signal) -> str:
 
 def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dict | None = None,
             fcf_yields: dict | None = None, royalty_pnavs: list | None = None,
-            fallback: dict | None = None) -> list[dict]:
+            fallback: dict | None = None, royalty_pctiles: list | None = None) -> list[dict]:
     """Every signal's value, as-of date and status. Pure: no network, no files, no Sheet.
+
+    royalty_pctiles: the own-history percentile each royalty row's band uses (royalty_history.update_sheet).
 
     fallback: {key: (value, as-of date)} used, and marked stale, when a series is missing (the Sheet's last
     values, say, when FRED can't be reached and there's no cached copy)."""
@@ -624,6 +655,8 @@ def compute(data: dict, today: date, thresholds: dict | None = None, inputs: dic
     # Formula rows: the Sheet computes these; Python works out the same to check them.
     rp = [v for v in (royalty_pnavs or []) if _num(v)]
     vals["royalty_pnav_median"] = float(pd.Series(rp).median()) if rp else None
+    op = [v for v in (royalty_pctiles or []) if _num(v)]
+    vals["royalty_own_pctile_median"] = float(pd.Series(op).median()) if op else None
     w, ug, ux = vals.get("tax_loss_window"), vals.get("uptrend_gold"), vals.get("uptrend_gdx")
     vals["junior_timing"] = (int(w == 1) + int(ug > 0 and ux > 0)) if None not in (w, ug, ux) else None
 
@@ -707,7 +740,15 @@ def run(sheet=None, dry_run=False, out_dir=None, fetch_data=True, today: date | 
     fy = fcf_yields_from_sheet(sheet) if sheet is not None else {}
     royalty = royalty_pnavs_from_sheet(sheet) if tab is not None else royalty_pnavs_from_derived()
     fallback = {k: (c["E"], c["F"]) for k, c in (tab or {}).items() if k in BY_KEY}
-    rows = compute(data, today, thresholds, inputs, fy, royalty, fallback)
+    own = None
+    if tab is not None:                     # PNAV inputs BY:CA, before the Signals formulas are read back
+        from .royalty_history import update_sheet
+        try:
+            more, own = update_sheet(sheet, data.get("royalty_monthly", {}), today, dry_run)
+            rep += more
+        except Exception as e:              # never fails the run
+            rep.append(f"Royalty own-history columns not written: {type(e).__name__}: {e}")
+    rows = compute(data, today, thresholds, inputs, fy, royalty, fallback, own)
     stale = [f"{r['key']} ({r['asof'] or 'no date'})" for r in rows if r["stale"]]
     if stale:
         rep.append("No new data, so the Sheet's last values are kept: " + ", ".join(stale))

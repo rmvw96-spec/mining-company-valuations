@@ -30,7 +30,7 @@ def test_fresh_install(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     text = "\n".join(rep)
     assert "conflict" not in text and "Created the Signals tab." in text
-    assert sh.sizes["PNAV inputs"][1] == col_to_num("BX")
+    assert sh.sizes["PNAV inputs"][1] == col_to_num("CB")
     sig, p = sh.cells["Signals"], sh.cells["PNAV inputs"]
     keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit() and int(k[1:]) >= 5}
     assert set(s.key for s in SIGNALS) <= set(keys)

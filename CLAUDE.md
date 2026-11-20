@@ -25,17 +25,18 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 
 | When | Command | Writes |
 |---|---|---|
-| Daily, after 4 pm New York | `prices` (`--dry-run` first if anything looks off); it runs `signals` at the end | Holdings R–T, FX table Y–AB; Metal prices reference C15:C17, C30; Signals E–F; Signal history and Company history (today's rows) |
-| On its own, if needed | `signals` (`--dry-run`) | Signals E–F; Signal history, Company history; out/signals/ |
+| Daily, after 4 pm New York | `prices` (`--dry-run` first if anything looks off); it runs `signals` at the end | Holdings R–T, FX table Y–AB; Metal prices reference C15:C17, C30; Signals E–F; PNAV inputs BY:CA; Signal history and Company history (today's rows) |
+| On its own, if needed | `signals` (`--dry-run`) | Signals E–F; PNAV inputs BY:CA (royalty P/OCF and own-history percentiles); Signal history, Company history; out/signals/ |
 | Once, or after adding a signal | `history --backfill 2022-01-01` (`--dry-run` first) | Signal history (past dates) |
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
 | After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, and P for country-table rows |
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
-| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:BX; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
+| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CB; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
+| After the royalty companies' annual filings (10-K in February, 40-F in March) | `royalty-ocf`, then review the diff of `data/research/royalty_ocf.csv` with the user and commit it | data/research/royalty_ocf.csv |
 | When the WGC publishes a quarter's AISC (Gold Demand Trends, ~a month after quarter end) | add a row to `data/research/industry_aisc.csv` with its source and publication date | the next run writes it to Signals |
 
 `compute --today gold=..,silver=..,copper=..` reruns the offline analysis at chosen metal prices;
@@ -96,8 +97,10 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
 
 - Holdings: D2:H2 and V2 (open-ended ranges to row 1000). Never write into D3:H1000 or V3:V1000.
 - PNAV inputs: C12 and D12 (to row 154), AL12:AO12 (to row 146 only), and AR12:AS12, AZ12:BE12, BJ12:BO12 and
-  BT12:BX12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146, AR13:AS154, AZ13:BE154, BJ13:BO154
-  or BT13:BX154. H7 is a formula (the Signals cost input). AT:AW (resources), BF:BI (developer financing) and
+  BT12:BX12 and CB12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146, AR13:AS154, AZ13:BE154,
+  BJ13:BO154, BT13:BX154 or CB13:CB154. BY:CA (royalty P/OCF and own-history percentiles) are written by `signals`
+  on every run, from `data/research/royalty_ocf.csv` (annual operating cash flow from SEC filings, the record,
+  written by `royalty-ocf`) and the Company history tab. H7 is a formula (the Signals cost input). AT:AW (resources), BF:BI (developer financing) and
   BP:BS (resource split) are inputs, recorded in `data/research/pnav_companies.csv` with a source for every
   figure (blank where unknown, never estimated); AX:AY are written by `financials`.
 - Holdings downside: K2 (to row 337). Its ranges are fixed (`N2:N337` ...): extend them in K2 if rows are added below 337.

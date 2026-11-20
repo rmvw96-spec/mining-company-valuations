@@ -253,7 +253,7 @@ def record(sheet, rows: list[dict], today: date, dry_run: bool = False) -> list[
 def no_backfill(key: str) -> bool:
     """Signals that can't be recomputed for past dates: they need past fundamentals or past P/NAVs. (The AISC
     margin can: compute() uses the industry AISC published by each date, from data/research/industry_aisc.csv.)"""
-    return key.startswith("fcf_yield_") or key == "royalty_pnav_median"
+    return key.startswith("fcf_yield_") or key in ("royalty_pnav_median", "royalty_own_pctile_median")
 
 
 def truncate(data: dict, d) -> dict:

@@ -2,6 +2,21 @@
 
 Instructions for Claude Code. Roadmap item 4c. Follow CLAUDE.md.
 
+**Status: built** (branch `royalty-history`). Where the build differs from the plan below:
+- Yahoo's free fundamentals endpoint returns only 5 quarters and 4 fiscal years of operating cash flow, not five
+  years of quarters. The annual figures come from SEC EDGAR's XBRL facts instead (10-K for Royal Gold, 40-F for
+  the others; about 10 years each, Triple Flag 5), kept as a record in `data/research/royalty_ocf.csv` and written
+  by a new `royalty-ocf` command, so the daily GitHub run needs no EDGAR request. 40-F filers' quarterly reports
+  (6-K) carry no XBRL, so the series steps once a year: each month-end uses the latest annual cash flow filed by
+  then, and today's value uses the same basis (not Yahoo's trailing 12 months), so it compares like with like.
+- Python-written values (PNAV inputs BY P/OCF, BZ its percentile, CA the P/NAV percentile) and formulas for the
+  band (CB) and the Signals row (`royalty_own_pctile_median`, thresholds 25 and 75). Simpler than a helper range:
+  the history is monthly prices and a few annual figures, which a Sheet formula can't rank without a large hidden
+  table. `signals` writes BY:CA before the Signals formulas are read back, so the Sheet/Python check covers it.
+- Model portfolio W (royalty rows): "framework band / own-history band"; `setup-sheet` upgrades the old formula.
+- Known distortions, in the README: a fast rise in cash flow (2026) and acquisitions paid in shares (Royal Gold
+  after Sandstorm) make the latest annual P/OCF read high until the next annual report.
+
 ## Goal
 
 The royalty buy zone compares each company's independent P/NAV with fixed framework bands (buy 1.1–1.4×,

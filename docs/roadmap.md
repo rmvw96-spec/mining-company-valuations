@@ -76,7 +76,7 @@ splits for Collective Mining and Viscaria, are open (small items below).
 |---|---|---|---|---|
 | 4a | **Producer costs from company AISC and energy share**, so the diesel signal feeds the cost scenario | [producer-costs-spec.md](specs/producer-costs-spec.md) | M | Q4 reports for company AISC; 2a (industry AISC table) |
 | 4b | **Built Nov 2026.** **Jurisdiction risk from a country table** instead of a hand-set add-on per company | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | M | — (can move earlier) |
-| 4c | **Royalties against their own history** as well as the peer median | [royalty-history-spec.md](specs/royalty-history-spec.md) | S–M | 1a (needs months of recorded P/NAVs); the Yahoo-based fallback works from day one |
+| 4c | **Built Nov 2026.** **Royalties against their own history** as well as the peer median | [royalty-history-spec.md](specs/royalty-history-spec.md) | S–M | 1a (needs months of recorded P/NAVs); the Yahoo-based fallback works from day one |
 
 ## Done in November 2026 (not in the original plan)
 
@@ -124,5 +124,7 @@ splits for Collective Mining and Viscaria, are open (small items below).
 | Early December 2026 | WGC Q3 2026 industry AISC: add to the AISC table (2a) |
 | Q1 2027 | Perpetua's EXIM loan expected to close: update its committed funding (BF) |
 | Mid-February to March 2027 | Q4 / full-year reports: earnings-season refresh (CLAUDE.md), then 4a |
+| End of March 2027 | Royalty companies' 10-K and 40-F filed: `royalty-ocf`, review and commit the new year (4c) |
+| Late 2027 | 250 days of recorded royalty P/NAVs: PNAV inputs CA fills in and replaces P/OCF in the own-history band |
 | May, August, November | Quarterly earnings-season refreshes |
 | November 1 to December 31 | Tax-loss window: junior timing signal is live |

@@ -25,11 +25,12 @@ def session() -> requests.Session:
     return _session
 
 
-def get_json(url: str, params: dict | None = None, tries: int = 5, timeout: int = 30):
-    """GET with retries and backoff. Returns parsed JSON, or None after the last failure."""
+def get_json(url: str, params: dict | None = None, tries: int = 5, timeout: int = 30, headers: dict | None = None):
+    """GET with retries and backoff. Returns parsed JSON, or None after the last failure. `headers` replace the
+    session's for this request (the SEC wants its own User-Agent)."""
     for i in range(tries):
         try:
-            r = session().get(url, params=params, timeout=timeout)
+            r = session().get(url, params=params, timeout=timeout, **({"headers": headers} if headers else {}))
             if r.status_code == 200:
                 return r.json()
             if r.status_code not in (429,) and r.status_code < 500:
