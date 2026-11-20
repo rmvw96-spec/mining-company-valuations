@@ -78,6 +78,16 @@ splits for Collective Mining and Viscaria, are open (small items below).
 | 4b | **Built Nov 2026.** **Jurisdiction risk from a country table** instead of a hand-set add-on per company | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | M | — (can move earlier) |
 | 4c | **Built Nov 2026.** **Royalties against their own history** as well as the peer median | [royalty-history-spec.md](specs/royalty-history-spec.md) | S–M | 1a (needs months of recorded P/NAVs); the Yahoo-based fallback works from day one |
 
+## Phase 5: Model portfolio from a screen (any time; before the first purchase)
+
+| # | Item | Spec | Size | Depends on |
+|---|---|---|---|---|
+| 5 | **Model portfolio from a screen**: rank PNAV inputs companies within each bucket and propose the holdings and target weights (Model portfolio A–F), set the review levels (S) from a rule, and write `private/portfolio.csv` from the tab so the backtest tests what the Sheet shows | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | M | — (4a later improves the breakeven measure) |
+
+Why: the user holds no miners yet, so the holdings needn't be a fixed hand-picked list. The rules are committed;
+bucket sizes, names and weights stay private (Sheet and email only). Four questions for the user are at the end
+of the spec.
+
 ## Done in November 2026 (not in the original plan)
 
 - A "Send a test email" checkbox on the manual price-update run (`test-email` command), to check the email
