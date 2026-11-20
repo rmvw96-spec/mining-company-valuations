@@ -147,3 +147,35 @@ def test_royalty_ocf_record():
     usd = T.currency == "USD"
     assert (T.usd_per_unit[usd] == 1).all() and T.usd_per_unit[~usd].between(0.5, 1.0).all()
     assert set(C["sheet_symbols"].values()) <= set(C["companies"])
+
+
+def test_listing_columns():
+    """pnav_companies.csv us_listing / canada_listing / us_otc_symbol (roadmap 5): well formed, all sourced."""
+    R = pd.read_csv(DATA / "research" / "pnav_companies.csv", keep_default_na=False)
+    us = R.us_listing[R.us_listing != ""]
+    assert us.str.match(r"^(NYSE|NYSE American|Nasdaq|OTC ADR): [A-Z.\-]+$").all(), list(us)
+    ca = R.canada_listing[R.canada_listing != ""]
+    assert ca.str.match(r"^(TSX|TSX-V|CSE): [A-Z.\-]+$").all(), list(ca)
+    otc = R.us_otc_symbol[R.us_otc_symbol != ""]
+    assert otc.str.match(r"^[A-Z]{4,5}$").all(), list(otc)
+    assert (R.listing_source != "").all()
+    assert (R.ticker.str.endswith(" CN") <= (R.canada_listing != "")).all()   # every Canadian ticker has its listing
+
+
+def test_screen_settings():
+    C = S["portfolio_screen"]
+    timing = {k.split("|")[0] for k in S["signals"]["timing"]}
+    assert set(C["bucket_order"]) <= timing | {"Royalty"}
+    assert set(C["buckets"].values()) <= set(C["bucket_order"])
+    assert set(C["speculation"]) <= set(C["bucket_order"])
+    assert set(C["review"]["by_bucket"]) <= set(C["bucket_order"])
+    from minerval.screen import MEASURES
+    assert {m for ms in MEASURES.values() for m, _ in ms} <= set(C["score"])
+    for k in ("financials_max_days", "price_max_days", "min_mcap_m", "min_mcap_developer_m", "max_addon_points"):
+        assert C["filters"][k] > 0
+
+
+def test_example_portfolio_is_neutral():
+    """The committed example holds Sprott funds and a bullion trust only, never Model portfolio names."""
+    E = pd.read_csv(CONFIG / "portfolio.example.csv")
+    assert set(E.key) <= {"PHYS", "PSLV", "COP", "SGDM", "SGDJ", "COPP", "COPJ", "SLVR"}

@@ -34,6 +34,8 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
 | Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CB; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
+| After `financials`, before buying | `screen` (report only; show the user out/screen/report.txt), then `screen --write` (`--email` for a private summary) | Model portfolio A–F, S, U–V; private/portfolio.csv, private/screen_state.json |
+| After editing the Model portfolio by hand | `portfolio-file` | private/portfolio.csv (for `backtest` and `project`) |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
 | After the royalty companies' annual filings (10-K in February, 40-F in March) | `royalty-ocf`, then review the diff of `data/research/royalty_ocf.csv` with the user and commit it | data/research/royalty_ocf.csv |
@@ -110,7 +112,11 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
   the silver stocks) and H6:J6, L6:R6, T6 (to row 31). K has its own formula in each row. Never write into
   G7:J31, L7:R31 or T7:T31. W6:Z6 (timing signal, EV per ounce, months of funding, P/NAV after a raise) spill
   to row 31 too: never write into W7:Z31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
-  a row added below 31 is outside every range.
+  a row added below 31 is outside every range. A–F, S and U–V are inputs that `screen --write` rewrites (physical
+  metal rows, review levels typed by hand, and notes typed by hand are kept); its output (names, weights) never goes
+  into the repo, an issue, a log or the step summary, and it never runs on GitHub. When a company is added to
+  `pnav_companies.csv`, fill its listing columns (`us_listing`, `canada_listing`, `us_otc_symbol`, `listing_source`):
+  the screen proposes only US- and Canadian-listed names by default.
 - Signals: `setup-sheet` inserts a row for a new signal or input (below the key before it in `SIGNALS`, then
   `layout.INPUTS`), so add new signals and inputs in code and run it rather than adding rows by hand. Context-only signals (`context=True`) show "Info"
   and have no G:H; their rule is tested by `backtest-signals` with `[signal_backtest.context_thresholds]`.

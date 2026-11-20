@@ -1,0 +1,26 @@
+# Copy to private/screen.toml (never committed) and set your own sizes. `screen --init` writes it from the tab.
+# Each bucket: its total weight (share of the whole Model portfolio) and how many names it holds. Physical metal
+# keeps the weights typed on the tab; the screened buckets are scaled to fill the rest.
+[buckets."Royalty"]
+weight = 0.10
+names = 3
+
+[buckets."Gold producers"]
+weight = 0.20
+names = 5
+
+[buckets."Growth: expanding producers"]
+weight = 0.05
+names = 2
+
+[buckets."Copper producers"]
+weight = 0.15
+names = 4
+
+[buckets."Silver and polymetallic producers"]
+weight = 0.05
+names = 2
+
+[buckets."Growth: developers"]
+weight = 0.15
+names = 6

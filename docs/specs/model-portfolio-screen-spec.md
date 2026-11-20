@@ -2,6 +2,22 @@
 
 Instructions for Claude Code. Roadmap item 5. Follow CLAUDE.md.
 
+**Status: built** (branch `model-portfolio-screen`). Where the build differs from the plan below:
+- Royalty companies aren't filtered on the peer norm. The Sheet's typical royalty multiple (1.5× × 0.94) sits below
+  where the whole group trades, so all seven read 1.5–1.9× their norm (Nov 2026) and a 1.3 level would exclude and
+  flag them all. They are excluded instead when the framework band is "Rich" or they are expensive for themselves
+  (own-history percentile ≥ 75), and their review level is 2.0.
+- Expanding producers may have diluted up to 100% in 3 years (30% excluded 5 of 8 US/Canadian names: they build and
+  merge with shares).
+- One row per company (Wheaton is in two funds). Tab rows are matched to companies by name (any case), else by
+  ticker, and a kept holding keeps its tab ticker; a new one gets a US Sprott ticker where the Sheet carries one
+  (KGC rather than K CN). Writing the P/NAV tab's name also mends rows whose name didn't look up.
+- `screen --init` writes `private/screen.toml` from the tab; `--rule-review-levels` resets typed levels to the rule
+  (with no state file, every level already on the tab counts as typed).
+- Listings for all 143 companies were checked against Yahoo quotes (exchange and name) on Nov 20, 2026: 113 have a
+  US or Canadian listing. DTC eligibility of the OTC symbols isn't recorded (Fidelity's quote page shows it); a
+  Canadian name without a recorded US OTC symbol counts as rep-assisted ($32.95) but stays eligible.
+
 ## Goal
 
 The Model portfolio tab's inputs are typed by hand: which holdings (A–E), their target weights (F), the review
@@ -59,10 +75,9 @@ the step summary (CLAUDE.md).
 - **Overrides**: where the mapping gets a company wrong, a new `bucket` column in `pnav_companies.csv` overrides
   it, with a reason in `bucket_note`. This classifies the company; it isn't portfolio membership, so it can be
   committed.
-- **Royalty in the other formulas:**
-  - Model portfolio W already shows a royalty company's framework band and own-history band, so the new bucket
-    needs no `[signals.timing]` entry.
-  - Add `"Royalty" = ["royalty_own_pctile_median"]` there anyway, as the fallback for a royalty row with no band.
+- **Royalty in the other formulas:** Model portfolio W already shows a royalty company's framework band and
+  own-history band, so the new bucket needs no `[signals.timing]` entry. (Adding one would change W's formula and
+  make `setup-sheet` report a conflict.)
 
 ### Markets: what can be bought without a per-trade fee
 
