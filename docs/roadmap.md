@@ -82,11 +82,11 @@ splits for Collective Mining and Viscaria, are open (small items below).
 
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
-| 5 | **Model portfolio from a screen**: rank PNAV inputs companies within each bucket and propose the holdings and target weights (Model portfolio A–F), set the review levels (S) from a rule, and write `private/portfolio.csv` from the tab so the backtest tests what the Sheet shows | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | M | — (4a later improves the breakeven measure) |
+| 5 | **Model portfolio from a screen**: rank PNAV inputs companies within each bucket (a new Royalty bucket included) and propose the holdings and target weights (Model portfolio A–F), only names buyable on US or Canadian markets by default (`--all-markets` for the rest: about $50 a trade in a Fidelity IRA), set the review levels (S) from a rule while keeping levels typed by hand, and write `private/portfolio.csv` from the tab so the backtest tests what the Sheet shows | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | M | — (4a later improves the breakeven measure) |
 
 Why: the user holds no miners yet, so the holdings needn't be a fixed hand-picked list. The rules are committed;
-bucket sizes, names and weights stay private (Sheet and email only). Four questions for the user are at the end
-of the spec.
+bucket sizes, names and weights stay private (Sheet and email only). Decisions taken Nov 20, 2026 are in the spec;
+two things to ask at build time are at its end.
 
 ## Done in November 2026 (not in the original plan)
 
