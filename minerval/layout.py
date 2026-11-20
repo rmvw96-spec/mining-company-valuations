@@ -73,6 +73,18 @@ FINANCING_FORMATS = {"committed_funding": "#,##0.0", "remaining_capex": "#,##0.0
                      "resource_inferred": "#,##0.0##", "weighted_amount": "#,##0.0##", "ev_per_weighted": "#,##0.00",
                      "peer_ev_ratio": "0.00"}
 PNAV_TAB_HEADERS = {"royalty_band": "Royalty band (framework)", "buy_below": "Buy-below price US$"}
+OWN_FORMATS = {"pocf": "0.0", "pocf_pctile": "0", "pnav_pctile": "0"}
+
+
+def own_headers() -> dict:
+    """PNAV inputs BY:CB headers (royalties against their own history)."""
+    C = settings()["royalty_history"]
+    return {"pocf": "P/OCF (price × shares ÷ latest annual operating cash flow filed; royalty rows, written by "
+                    "`signals`)",
+            "pocf_pctile": f"P/OCF percentile, own last {C['years']} years (0 = cheapest; written by `signals`)",
+            "pnav_pctile": f"P/NAV percentile, own recorded history (blank until {C['pnav_min_days']} days; "
+                           "written by `signals`)",
+            "own_band": "Own-history band (P/NAV percentile once recorded, else P/OCF; thresholds on the Signals tab)"}
 
 
 def sensitivity_headers() -> tuple[str, str]:
@@ -221,6 +233,18 @@ def pnav_formulas() -> dict:
     }
 
 
+def own_band_formula() -> str:
+    """PNAV inputs CB: the same rule as royalty_history.band()."""
+    def r(name):
+        return pnav_range(name)
+    nav, ocf = r("pnav_pctile"), r("pocf_pctile")
+    return (f'=ARRAYFORMULA(LET(lo,{sig("royalty_own_pctile_median", "G")},hi,{sig("royalty_own_pctile_median", "H")},'
+            f'p,IF(ISNUMBER({nav}),{nav},IF(ISNUMBER({ocf}),{ocf},"")),'
+            f'IF({r("peer_group")}<>"Royalty/streaming","",IF(NOT(ISNUMBER(p)),"",'
+            f'IF(p<=lo,"Cheap for itself",IF(p>=hi,"Expensive for itself","Normal for itself"))&" ("&'
+            f'IF(ISNUMBER({nav}),"P/NAV","P/OCF")&" percentile "&TEXT(p,"0")&")"))))')
+
+
 def n(rng: str) -> str:
     """A range's numbers with blanks and text as 0, element by element (N() takes only the first cell)."""
     return f"IF(ISNUMBER({rng}),{rng},0)"
@@ -345,7 +369,8 @@ def downside_new() -> str:
     return old[:i] + cost + old[i:]
 
 
-def timing_formula() -> str:
+def timing_formula(own: bool = True) -> str:
+    """Model portfolio W. Royalty rows show the framework band, then (own=True) their own-history band."""
     S = _S()
     a, b = S["portfolio_first_row"], S["portfolio_last_row"]
     C = S["portfolio_cols"]
@@ -373,9 +398,14 @@ def timing_formula() -> str:
         cond = f'({A}="{bucket}")' + (f'*({E}="{metal}")' if metal else "")
         joined = SEP.join(piece(i) for i in items)
         expr = f"IF({cond},{joined},{expr})"
+    if not own:                             # the first install's formula, which `setup-sheet` upgrades
+        return (f'=ARRAYFORMULA(LET(band,XLOOKUP({B},{pcol("holding")},{pcol("royalty_band")},""),'
+                f'dev,XLOOKUP({B},{pcol("holding")},{pcol("developer_check")},""),'
+                f'IF({B}="","",IF(band<>"",band,{expr}))))')
     return (f'=ARRAYFORMULA(LET(band,XLOOKUP({B},{pcol("holding")},{pcol("royalty_band")},""),'
+            f'own,XLOOKUP({B},{pcol("holding")},{pcol("own_band")},""),'
             f'dev,XLOOKUP({B},{pcol("holding")},{pcol("developer_check")},""),'
-            f'IF({B}="","",IF(band<>"",band,{expr}))))')
+            f'IF({B}="","",IF(band<>"",band&IF(own<>""," / "&own,""),{expr}))))')
 
 
 def portfolio_lookup(name) -> str:
@@ -622,6 +652,19 @@ def step_sensitivity() -> Step:
     return st
 
 
+def step_own_history() -> Step:
+    """PNAV inputs BY:CA (written by `signals`: headers only here) and CB (the own-history band)."""
+    S = _S()
+    tab, a, b, P = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs"]
+    st = Step(f"{tab}: columns {P['pocf']}:{P['own_band']} (royalties against their own history)")
+    for name, h in own_headers().items():
+        st.add(tab, f"{P[name]}{a - 1}", h)
+    _spill(st, tab, P["own_band"], a, b, own_band_formula())
+    for name, fmt in OWN_FORMATS.items():
+        st.formats.append((tab, f"{P[name]}{a}:{P[name]}{b}", fmt))
+    return st
+
+
 def step_downside() -> Step:
     S = _S()
     tab, D = S["downside_tab"], S["downside_cols"]
@@ -642,6 +685,8 @@ def step_portfolio() -> Step:
         else:
             st.add(tab, f"{C[name]}{a - 1}", PORTFOLIO_HEADERS[name])
         _spill(st, tab, C[name], a, b, f)
+        if name == "timing":
+            st.cells[-(b - a + 1)] = Cell(tab, f"{C[name]}{a}", f, "upgrade", timing_formula(own=False))
     st.formats.append((tab, f"{C['ev_per_aueq_oz']}{a}:{C['ev_per_aueq_oz']}{b}", "#,##0"))
     st.formats.append((tab, f"{C['months_of_cash']}{a}:{C['months_of_cash']}{b}", "0.0"))
     return st
@@ -713,7 +758,7 @@ def _short(v, n=70):
 
 def steps(sheet) -> list[Step]:
     return [step_signals(sheet), step_pnav(sheet), step_financing(), step_cash_flow_change(), step_pnav_tab(),
-            step_sensitivity(), step_downside(), step_portfolio(), step_portfolio_after()]
+            step_sensitivity(), step_own_history(), step_downside(), step_portfolio(), step_portfolio_after()]
 
 
 def run(sheet, dry_run=False, out_dir=None) -> list[str]:

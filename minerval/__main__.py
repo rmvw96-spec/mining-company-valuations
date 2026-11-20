@@ -13,6 +13,8 @@ After each earnings season (or when Sprott's holdings change)
   financials      write the refreshed company data to the Sheet (and the jurisdiction add-ons from the country table)
   snapshots       rewrite the fund tables on Summary, Metal prices reference and Stress test & downside
   jurisdiction    old vs new jurisdiction add-on for every company (out/jurisdiction/)
+After the royalty companies' annual filings (February and March)
+  royalty-ocf     rewrite data/research/royalty_ocf.csv (annual operating cash flow) from SEC EDGAR
 Once (and after changing the layout settings)
   setup-sheet     add the Signals tab and the new columns to the Sheet
 Portfolio research (occasional)
@@ -92,6 +94,7 @@ def main(argv=None):
                    help="first rewrite the table's scored rows from a private Fraser scores file")
     p.add_argument("--source", help="(with --build) the survey edition, for the source column")
     p.add_argument("--as-of", help="(with --build) its publication month, e.g. 2026-02")
+    sub.add_parser("royalty-ocf", help="annual operating cash flow of the royalty companies from SEC EDGAR")
     sub.add_parser("fetch-history", help="download monthly price histories")
     sub.add_parser("backtest", help="backtest the portfolio")
     p = sub.add_parser("backtest-signals", help="backtest the market signals (out/backtest-signals/)")
@@ -157,6 +160,9 @@ def main(argv=None):
     if a.cmd == "jurisdiction":
         from . import jurisdiction
         lines = jurisdiction.run(scores=a.build and Path(a.build), source=a.source, as_of=a.as_of)
+    if a.cmd == "royalty-ocf":
+        from . import royalty_history
+        lines = royalty_history.fetch_record()
     if a.cmd == "fetch-history":
         from . import backtest
         lines = backtest.fetch_history()

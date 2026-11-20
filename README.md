@@ -167,6 +167,7 @@ is the working copy, and the code reads the Sheet's values when it runs against 
 | Physical metal | gold/silver ratio and its percentile since 2000; the 2-year Treasury yield's change over ~3 months (FRED DGS2: the market's expected Fed path). For context only (no status): the 2-year yield and its gap to the fed funds rate (DFF), the 10-year real yield (FRED DFII10) with its 12-month high and 3-month change, and the dollar index over 12 months | buy silver when the ratio is high; buy gold more heavily when the market turns towards rate cuts (2-year yield down 0.25 points or more in 3 months). The real-yield and dollar rules showed no edge in the backtest, so they're shown without a status |
 | Physical metal and royalty | S&P 500 below its 12-month high | panics are when to buy bullion and royalty companies |
 | Royalty | median independent P/NAV of the royalty companies (a formula over PNAV inputs) | buy at 1.1–1.4× NAV; 1.5–2.2× is normal |
+| Royalty | median of the royalty companies' percentiles against their own history (P/OCF, later P/NAV) | bottom quarter: cheap for themselves |
 | Producers | gold, silver and copper against diesel over 12 months; gold price minus the industry AISC; GDX, SIL and COPX against their metal (percentile of 10 years); each fund's free-cash-flow yield from the Holdings tab | margins widen when metals outrun costs; buy miners when they're cheap against their metal |
 | Juniors | the tax-loss selling window (Nov 1 – Dec 31); gold, GDX, silver and SIL against their 200-day average; breadth: the share of SGDJ and of COPJ (by fund weight) whose holdings trade above their own 200-day average; GDXJ and SILJ below their 12-month high; and a formula combining the window and the gold and GDX uptrends | buy juniors in the tax-loss window, or once the uptrend is confirmed; breadth confirms that most juniors, not just a few large names, have turned up |
 
@@ -197,7 +198,7 @@ uv run python -m minerval history --backfill 2022-01-01 --dry-run
 uv run python -m minerval history --backfill 2022-01-01
 ```
 
-The fund free-cash-flow yields and the royalty median need past fundamentals or P/NAVs, so they aren't
+The fund free-cash-flow yields and the two royalty medians need past fundamentals or P/NAVs, so they aren't
 backfilled. The AISC margin is, using the industry AISC that had been published by each date. A backfilled
 row never replaces a live one.
 
@@ -279,6 +280,28 @@ PNAV inputs AS classes each royalty/streaming company by its independent P/NAV (
 row; AR is the buy-below price (1.4 × the independent NAV per share). P/NAV U:V show both. AJ uses the
 independent model's NAV per share (PNAV inputs R), which assumes that model's own metal prices (P/NAV
 column K, mostly $4,000 gold): it's a research input refreshed by hand, not live.
+
+### Royalties against their own history
+
+The bands are the same for every company, and some always trade above them (Franco-Nevada is "Rich" almost
+every day). A second view asks whether a company is cheap *for itself*:
+
+- **P/OCF against its own last 5 years** (PNAV inputs BY:BZ, written by `signals`): month-end price of the US
+  listing × shares ÷ the latest annual operating cash flow the company had filed with the SEC by then, from
+  `data/research/royalty_ocf.csv` (EDGAR's XBRL facts, written by `royalty-ocf`; Canadian-dollar years converted
+  at the year's average rate). Today's value uses the same basis, so it's like for like. Royalty companies have
+  few operating costs, so P/OCF tracks P/NAV, but it isn't the same thing. Months when the latest annual cash
+  flow was negative are left out, and a company needs 36 months to get a percentile (Metalla doesn't, yet).
+- **P/NAV against its own recorded history** (CA): today's independent P/NAV against the company's rows on the
+  Company history tab, blank until 250 days have been recorded (about November 2027). It replaces P/OCF in the
+  band once it fills in.
+
+CB reads "Cheap for itself" in the bottom quarter, "Expensive for itself" in the top quarter (thresholds on the
+`royalty_own_pctile_median` Signals row, which shows the companies' median), with the basis and percentile in
+brackets. Model portfolio W shows the framework band, then this one. Caveats: annual cash flow lags, so when it is
+rising fast (as in 2026) P/OCF on the latest annual figure looks higher than it will once the next annual report
+is filed; and an acquisition paid in shares adds the shares at once but only part of a year's cash flow (Royal
+Gold after Sandstorm, October 2025), so the percentile reads high until the next annual report.
 
 ### Producer cost increase
 
