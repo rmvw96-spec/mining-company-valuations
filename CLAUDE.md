@@ -221,6 +221,26 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
   Sustaining finance leases are noted, not added. EDGAR filers' quarterly exhibits can be listed from
   `data.sec.gov/submissions/CIK##########.json` and each filing's `index.json`; Canadian-only juniors post MD&As on
   their own sites (Orezone, Andean and Amerigo do).
+- **Recording sustaining spending (lessons from 31 producers, Nov 2026):**
+  - Use the basis of the cash flow it is subtracted from: consolidated. A joint venture that is equity-accounted
+    (Kibali for AngloGold, Red Chris for Imperial) is out; one proportionately consolidated (Côté for IAMGOLD,
+    Tropicana for AngloGold, NGM for Newmont) is in at the company's share. AngloGold's "managed operations" is its
+    consolidated figure; its "Group total" includes the equity-accounted joint ventures.
+  - Record figures as published. Where a company publishes one combined figure (OceanaGold "sustaining capital and
+    leases"; First Quantum "sustaining capital expenditure and deferred stripping"; Torex sustaining including lease
+    payments; Lundin sustaining including waste stripping), record it in `sustaining` and say so in `notes`
+    (`stripping_in_sustaining` = yes where stripping is inside), rather than splitting it by arithmetic.
+  - Prefer the consolidated highlights or free cash flow table to the AISC reconciliation for capital (AISC tables are
+    often gold-only or attributable); take leases from the AISC reconciliation when that is the only place they appear.
+  - Check a period total against its parts when you can (First Quantum: nine months 363 + Q4 133 = FY 496).
+  - Some companies split sustaining only in some periods (Imperial: FY2025 yes, 2026 year to date no). Record what
+    exists; the blank figure leaves the trailing 12 months unbuilt and the company on the free-cash-flow fallback.
+  - A company that newly listed in the US files its earlier MD&As inside a 40FR12B registration (OceanaGold March
+    2026, Torex November 2026); `research filings` includes that form.
+  - EDGAR rate-limits at about 10 requests a second: run scans one company at a time (the downloader pauses and
+    retries on 429).
+  - Add rows to `capex_periods.csv` by column name (a CSV writer), never by hand-counted commas: one missing comma
+    shifts every later field, which the record-file test catches.
 - **A press release that supersedes a study** (new economics, no new technical report) is not used for an NPV
   (Perpetua, March 2026).
 - **Juniors** split sustaining from growth less often and publish reserves less often; their MD&As may be on

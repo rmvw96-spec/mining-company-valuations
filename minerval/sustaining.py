@@ -94,6 +94,9 @@ def ttm(R: pd.DataFrame, ticker: str, end: str, usd_rate) -> dict:
         out["why"] = f"no filing for the period ending {end} (latest recorded: {last})"
         return out
     r = now.sort_values("period", key=lambda p: p.map(PERIODS), ascending=False).iloc[0]
+    if r.sustaining != r.sustaining:
+        out["why"] = f"{r.period} to {r.period_end}: sustaining not published ({r.document})"
+        return out
     parts = [(r, 1)]
     if r.period != "FY":
         fy = C[(C.period == "FY") & (C.period_end < end)].sort_values("period_end")
@@ -237,8 +240,16 @@ def _get(u: str) -> bytes:
     import requests
     from .config import settings
     S = settings()
-    ua = S["royalty_history"]["edgar_user_agent"] if "sec.gov" in u else S["yahoo"]["user_agent"]
-    r = requests.get(u, timeout=180, headers={"User-Agent": ua})
+    import time
+    sec = "sec.gov" in u
+    ua = S["royalty_history"]["edgar_user_agent"] if sec else S["yahoo"]["user_agent"]
+    for attempt in range(6):
+        if sec:
+            time.sleep(0.15)                 # the SEC allows about 10 requests a second
+        r = requests.get(u, timeout=180, headers={"User-Agent": ua})
+        if r.status_code not in (429, 503) or attempt == 5:
+            break
+        time.sleep(2 ** attempt)             # rate-limited: back off and try again
     r.raise_for_status()
     return r.content
 
