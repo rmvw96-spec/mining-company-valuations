@@ -158,13 +158,17 @@ def rebuild(p, F: pd.DataFrame) -> dict:
     return out
 
 
-def discount_rate(ticker: str, companies: pd.DataFrame | None = None) -> float:
-    """10-year yield + risk premium + the company's jurisdiction add-on (the producers' rate, [pnav])."""
+def discount_rate(ticker: str, companies: pd.DataFrame | None = None, table: dict | None = None) -> float:
+    """10-year yield + risk premium + the company's jurisdiction add-on, worked out as `financials` does it for the
+    Sheet (an override, else the country table over `country_weights`, else the hand-set figure; [pnav])."""
+    from .jurisdiction import company_addon, load_table
     P = settings()["pnav"]
-    C = companies if companies is not None else pd.read_csv(RESEARCH / "pnav_companies.csv", dtype=str,
-                                                             keep_default_na=False)
-    a = C.loc[C.ticker == ticker, "addon_pct_points"]
-    addon = float(a.iloc[0]) / 100 if len(a) and str(a.iloc[0]).strip() else 0.0
+    C = companies if companies is not None else pd.read_csv(RESEARCH / "pnav_companies.csv")
+    rows = C[C.ticker == ticker]
+    addon = 0.0
+    if len(rows):
+        a, _ = company_addon(rows.iloc[0], load_table() if table is None else table)
+        addon = a / 100 if a == a else 0.0
     return P["ten_year_yield"] + P["risk_premium"] + addon
 
 

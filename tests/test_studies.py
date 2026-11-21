@@ -91,3 +91,15 @@ def test_record_files_are_well_formed():
         F = S.flows(C, p)
         if len(F):
             assert list(F.year) == list(range(1, len(F) + 1)), f"{p.project}: years must run 1, 2, 3..."
+
+
+def test_discount_rate_uses_the_country_table_add_on():
+    from minerval.config import settings
+    P = settings()["pnav"]
+    C = pd.DataFrame({"ticker": ["A", "B", "C"], "addon_override": [np.nan, 2.0, np.nan],
+                      "country_weights": ["Ecuador:1", "", ""], "addon_pct_points": [np.nan, np.nan, 1.5]})
+    table = {("Ecuador", ""): 3.0}
+    base = P["ten_year_yield"] + P["risk_premium"]
+    assert abs(S.discount_rate("A", C, table) - (base + 0.03)) < 1e-9          # the country table
+    assert abs(S.discount_rate("B", C, table) - (base + 0.02)) < 1e-9          # an override
+    assert abs(S.discount_rate("C", C, table) - (base + 0.015)) < 1e-9         # the hand-set figure
