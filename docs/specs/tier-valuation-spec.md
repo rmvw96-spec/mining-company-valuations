@@ -118,6 +118,11 @@ shows before it reaches a buy signal.
   spending** (the user, Nov 21, 2026), so open-pit and underground miners compare fairly; record it in
   `capitalized_stripping_usd_m` beside the sustaining figure. Blank where a filing doesn't
   split sustaining from growth: **never estimated**.
+- **Built (Nov 21, 2026):** the record is `data/research/capex_periods.csv` (one row per filing period, as reported,
+  consolidated basis); `research sustaining --write` builds the trailing 12 months to each company's financials date
+  and writes `sustaining_capex_usd_m`, `capitalized_stripping_usd_m`, `sustaining_period_end` and
+  `sustaining_source` to `pnav_companies.csv`; `research fetch` / `research find` download and search the filings.
+  Filled for the 9 pilot producers.
 - **Fallback when blank:** free cash flow after all spending, the conservative case. The row is labelled
   "FCF basis: sustaining not recorded", and the screen and the buy signal say so.
 - **Pipeline:** a growth project counts only when it is **committed** (construction decision taken or under

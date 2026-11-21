@@ -38,6 +38,7 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 | After editing the Model portfolio by hand | `portfolio-file` | private/portfolio.csv (for `backtest` and `project`) |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
+| After each quarter's MD&As (roadmap 6) | add the new year-to-date rows to `data/research/capex_periods.csv` (`research fetch` / `research find` to locate them), then `research sustaining --write` | `pnav_companies.csv` sustaining columns; cache/research/ |
 | After the royalty companies' annual filings (10-K in February, 40-F in March) | `royalty-ocf`, then review the diff of `data/research/royalty_ocf.csv` with the user and commit it | data/research/royalty_ocf.csv |
 | When the WGC publishes a quarter's AISC (Gold Demand Trends, ~a month after quarter end) | add a row to `data/research/industry_aisc.csv` with its source and publication date | the next run writes it to Signals |
 
@@ -211,6 +212,15 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
   (Teck reports in C$; OR Royalties in C$ before 2024); gold-equivalent ratios are each company's own (Andean uses
   90:1); capitalized stripping is reported separately from sustaining capital by some open-pit miners (Teck,
   Capstone) and counts as sustaining spending (the user, Nov 21, 2026).
+- **Sustaining spending** (roadmap 6) is recorded per filing period in `data/research/capex_periods.csv`, never as a
+  trailing figure: each row is what one filing reports for its own period (FY, 9M, 6M or a quarter), in its currency,
+  on the **consolidated** basis (the basis of Yahoo's operating cash flow; Mantoverde at 100%). `research sustaining`
+  builds the trailing 12 months to each company's financials date (FY + year to date − the prior year to date, or
+  the quarters where a company reports only quarters, as Amerigo does), converting at period-average rates. Take the
+  prior-year comparative from the current filing, not last year's (restatements, discontinued operations).
+  Sustaining finance leases are noted, not added. EDGAR filers' quarterly exhibits can be listed from
+  `data.sec.gov/submissions/CIK##########.json` and each filing's `index.json`; Canadian-only juniors post MD&As on
+  their own sites (Orezone, Andean and Amerigo do).
 - **A press release that supersedes a study** (new economics, no new technical report) is not used for an NPV
   (Perpetua, March 2026).
 - **Juniors** split sustaining from growth less often and publish reserves less often; their MD&As may be on

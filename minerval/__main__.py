@@ -15,6 +15,10 @@ After each earnings season (or when Sprott's holdings change)
   jurisdiction    old vs new jurisdiction add-on for every company (out/jurisdiction/)
 After the royalty companies' annual filings (February and March)
   royalty-ocf     rewrite data/research/royalty_ocf.csv (annual operating cash flow) from SEC EDGAR
+After each quarter's filings (roadmap 6 research inputs)
+  research        sustaining [--write]: trailing-12-month sustaining spending from data/research/capex_periods.csv
+                  fetch [--ticker T]: download the documents in sources.csv to cache/research/ as text
+                  find T TERM...: search a company's downloaded documents
 Model portfolio (before buying, or after a refresh)
   screen          propose the Model portfolio's holdings and weights from the framework (--write to apply)
   portfolio-file  write private/portfolio.csv from the Model portfolio tab, for backtest and project
@@ -109,6 +113,13 @@ def main(argv=None):
     p = sub.add_parser("portfolio-file", help="write private/portfolio.csv from the Model portfolio tab")
     google(p)
     sub.add_parser("royalty-ocf", help="annual operating cash flow of the royalty companies from SEC EDGAR")
+    p = sub.add_parser("research", help="research inputs: sustaining spending, filing downloads and search")
+    p.add_argument("what", choices=["sustaining", "fetch", "find"])
+    p.add_argument("args", nargs="*", help="find: TICKER TERM...")
+    p.add_argument("--ticker")
+    p.add_argument("--write", action="store_true")
+    p.add_argument("--refresh", action="store_true", help="fetch: download again")
+    p.add_argument("--url", help="fetch or find: one document instead of the ticker's list")
     sub.add_parser("fetch-history", help="download monthly price histories")
     sub.add_parser("backtest", help="backtest the portfolio")
     p = sub.add_parser("backtest-signals", help="backtest the market signals (out/backtest-signals/)")
@@ -183,6 +194,16 @@ def main(argv=None):
     if a.cmd == "portfolio-file":
         from . import screen
         lines = screen.write_portfolio_file(open_sheet(a))
+    if a.cmd == "research":
+        from . import sustaining as SU
+        if a.what == "sustaining":
+            lines = SU.run_sustaining(write=a.write)
+        elif a.what == "fetch":
+            lines = SU.fetch(a.ticker, refresh=a.refresh, url=a.url)
+        else:
+            if len(a.args) < 2:
+                raise SystemExit("research find TICKER TERM [TERM...]")
+            lines = SU.find(a.args[0], a.args[1:], url=a.url)
     if a.cmd == "royalty-ocf":
         from . import royalty_history
         lines = royalty_history.fetch_record()
