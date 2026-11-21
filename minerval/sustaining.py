@@ -185,7 +185,7 @@ def run_sustaining(write: bool = False, usd_rate=None) -> list[str]:
     R = load_record()
     T, lines = build(R, financials_dates(), usd_rate or _fx_average())
     if write:
-        lines += write_companies(T)
+        lines += write_companies(T) + log_sources()
     else:
         lines.append("Dry run: pnav_companies.csv not changed (add --write).")
     return lines
@@ -278,3 +278,81 @@ def find(ticker: str, terms: list[str], context: int = 2, url: str | None = None
         for i in hits[:40]:
             out += [f"{j:6d}: {L[j]}" for j in range(max(0, i - context), min(len(L), i + context + 1))] + ["--"]
     return out or ["No matches."]
+
+
+# ---------- EDGAR: which filings a company has made (for the US-listed and 40-F/6-K filers) ----------
+
+EDGAR_FORMS = ("10-K", "10-Q", "6-K", "40-F", "20-F", "8-K", "40FR12B", "40-F/A", "20-F/A")   # 40FR12B: a 40-F registration (a new US listing)
+
+
+def _edgar_json(url: str, get=None):
+    import json
+    return json.loads((get or _get)(url))
+
+
+def us_symbol(ticker: str, path=None) -> str:
+    """The US exchange symbol from pnav_companies.csv `us_listing` ("NYSE: KGC" -> "KGC"; OTC ADRs too)."""
+    C = pd.read_csv(path or COMPANIES, dtype=str, keep_default_na=False)
+    u = C.loc[C.ticker == ticker, "us_listing"]
+    u = u.iloc[0] if len(u) else ""
+    return u.split(":", 1)[1].strip() if ":" in u else ""
+
+
+def edgar_cik(symbol: str, get=None) -> int | None:
+    j = _edgar_json("https://www.sec.gov/files/company_tickers.json", get)
+    return next((int(v["cik_str"]) for v in j.values() if v["ticker"].upper() == symbol.upper()), None)
+
+
+def edgar_filings(cik: int, since: str, get=None, min_size: int = 100_000) -> list[dict]:
+    """Filings since a date, each with its larger .htm documents (the MD&A and statements are exhibits of a 6-K)."""
+    j = _edgar_json(f"https://data.sec.gov/submissions/CIK{cik:010d}.json", get)
+    r = j["filings"]["recent"]
+    out = []
+    for i in range(len(r["form"])):
+        if r["filingDate"][i] < since or r["form"][i] not in EDGAR_FORMS:
+            continue
+        acc = r["accessionNumber"][i].replace("-", "")
+        base = f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/"
+        idx = _edgar_json(base + "index.json", get)
+        docs = [base + x["name"] for x in idx["directory"]["item"]
+                if x["name"].endswith(".htm") and str(x.get("size") or "0").isdigit() and int(x["size"]) >= min_size]
+        if docs:
+            out.append({"date": r["filingDate"][i], "form": r["form"][i], "docs": docs})
+    return out
+
+
+def filings(ticker: str, since: str, get=None) -> list[str]:
+    sym = us_symbol(ticker)
+    if not sym:
+        return [f"{ticker}: no US listing recorded, so no EDGAR filings; use the company's own site."]
+    cik = edgar_cik(sym, get)
+    if not cik:
+        return [f"{ticker}: {sym} not in EDGAR's ticker list (OTC ADRs often aren't); use the company's own site."]
+    lines = [f"{ticker}: {sym}, CIK {cik}"]
+    for f in edgar_filings(cik, since, get):
+        lines += [f"  {f['date']} {f['form']}"] + [f"      {d}" for d in f["docs"]]
+    return lines
+
+
+def log_sources(path=None, record=None) -> list[str]:
+    """Add a sources.csv row for every document in the record that the log doesn't have yet (CLAUDE.md: every
+    document read is logged)."""
+    p = path or SOURCES
+    S = pd.read_csv(p, dtype=str, keep_default_na=False)
+    R = pd.read_csv(record or RECORD, dtype=str, keep_default_na=False)
+    C = pd.read_csv(COMPANIES, dtype=str, keep_default_na=False)
+    names = dict(zip(C.ticker, C.holding))
+    new = []
+    for (t, u), g in R.groupby(["ticker", "url"], sort=False):
+        if u in set(S.url):
+            continue
+        x = g.iloc[0]
+        found = "; ".join(f"{r.period} to {r.period_end}: sustaining {r.sustaining} {r.currency}M"
+                          + (f", stripping {r.capitalized_stripping}" if r.capitalized_stripping else "")
+                          + (f", leases {r.sustaining_leases}" if r.sustaining_leases else "") for _, r in g.iterrows())
+        new.append({"ticker": t, "company": names.get(t, t), "document": x.document, "period": x.period_end[:7],
+                    "published": x.published, "url": u, "read": "yes",
+                    "found": found + " (recorded in capex_periods.csv)", "notes": x.notes})
+    if new:
+        pd.concat([S, pd.DataFrame(new)], ignore_index=True).to_csv(p, index=False, lineterminator="\n")
+    return [f"Logged {len(new)} new documents in {p.name}."]

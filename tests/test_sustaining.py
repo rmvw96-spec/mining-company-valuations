@@ -98,3 +98,17 @@ def test_sustaining_leases_are_added_and_shown():
     x = SU.ttm(R, "ALP", "2026-09-30", flat)
     assert x["sustaining"] == 132.0 and x["leases"] == 12.0           # 120 capital + 12 leases
     assert np.isnan(SU.ttm(rec({}), "ALP", "2025-12-31", flat)["leases"])   # none reported: blank, not 0
+
+
+def test_edgar_filings_lists_large_documents():
+    import json
+    pages = {
+        "https://data.sec.gov/submissions/CIK0000000042.json": {"filings": {"recent": {
+            "form": ["6-K", "6-K", "S-8"], "filingDate": ["2026-10-29", "2025-01-01", "2026-11-01"],
+            "accessionNumber": ["0001-26-000001", "0001-25-000001", "0001-26-000002"]}}},
+        "https://www.sec.gov/Archives/edgar/data/42/000126000001/index.json": {"directory": {"item": [
+            {"name": "ex991.htm", "size": "500000"}, {"name": "cover.htm", "size": "9000"}, {"name": "x.jpg", "size": "9"}]}},
+    }
+    F = SU.edgar_filings(42, "2026-01-01", get=lambda u: json.dumps(pages[u]).encode())
+    assert F == [{"date": "2026-10-29", "form": "6-K",
+                  "docs": ["https://www.sec.gov/Archives/edgar/data/42/000126000001/ex991.htm"]}]

@@ -19,6 +19,7 @@ After each quarter's filings (roadmap 6 research inputs)
   research        sustaining [--write]: trailing-12-month sustaining spending from data/research/capex_periods.csv
                   fetch [--ticker T]: download the documents in sources.csv to cache/research/ as text
                   find T TERM...: search a company's downloaded documents
+                  filings T [--since DATE]: a US-listed company's EDGAR filings and their large documents
 Model portfolio (before buying, or after a refresh)
   screen          propose the Model portfolio's holdings and weights from the framework (--write to apply)
   portfolio-file  write private/portfolio.csv from the Model portfolio tab, for backtest and project
@@ -114,12 +115,13 @@ def main(argv=None):
     google(p)
     sub.add_parser("royalty-ocf", help="annual operating cash flow of the royalty companies from SEC EDGAR")
     p = sub.add_parser("research", help="research inputs: sustaining spending, filing downloads and search")
-    p.add_argument("what", choices=["sustaining", "fetch", "find"])
+    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings"])
     p.add_argument("args", nargs="*", help="find: TICKER TERM...")
     p.add_argument("--ticker")
     p.add_argument("--write", action="store_true")
     p.add_argument("--refresh", action="store_true", help="fetch: download again")
     p.add_argument("--url", help="fetch or find: one document instead of the ticker's list")
+    p.add_argument("--since", default="2025-10-01", help="filings: EDGAR filings since this date")
     sub.add_parser("fetch-history", help="download monthly price histories")
     sub.add_parser("backtest", help="backtest the portfolio")
     p = sub.add_parser("backtest-signals", help="backtest the market signals (out/backtest-signals/)")
@@ -198,6 +200,8 @@ def main(argv=None):
         from . import sustaining as SU
         if a.what == "sustaining":
             lines = SU.run_sustaining(write=a.write)
+        elif a.what == "filings":
+            lines = SU.filings(a.ticker or (a.args[0] if a.args else ""), a.since)
         elif a.what == "fetch":
             lines = SU.fetch(a.ticker, refresh=a.refresh, url=a.url)
         else:
