@@ -112,3 +112,13 @@ def test_edgar_filings_lists_large_documents():
     F = SU.edgar_filings(42, "2026-01-01", get=lambda u: json.dumps(pages[u]).encode())
     assert F == [{"date": "2026-10-29", "form": "6-K",
                   "docs": ["https://www.sec.gov/Archives/edgar/data/42/000126000001/ex991.htm"]}]
+
+
+def test_ttm_from_four_quarters_without_a_fiscal_year():
+    q = [("2025-10-01", "2025-12-31", 40.0), ("2026-01-01", "2026-03-31", 20.0), ("2026-04-01", "2026-06-30", 30.0),
+         ("2026-07-01", "2026-09-30", 10.0)]
+    R = pd.DataFrame([{**rec({}).iloc[0].to_dict(), "period": "3M", "period_start": a, "period_end": b,
+                       "sustaining": v} for a, b, v in q])
+    x = SU.ttm(R, "ALP", "2026-09-30", flat)
+    assert x["why"] == "" and x["sustaining"] == 100.0 and len(x["parts"]) == 4
+    assert SU.ttm(R[R.period_end != "2026-03-31"], "ALP", "2026-09-30", flat)["why"]   # a gap: not built

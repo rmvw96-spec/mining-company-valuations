@@ -73,6 +73,19 @@ def _year_to_date(C: pd.DataFrame, r, fy_end: str, end: str | None = None, perio
     return [x for _, x in q.iterrows()], ""
 
 
+def _four_quarters(C: pd.DataFrame, end: str) -> list:
+    """Four consecutive quarters (3M rows) ending on `end`, for a company that publishes only quarterly figures
+    (Buenaventura's AISC appendix); [] when any is missing."""
+    out, e = [], pd.Timestamp(end)
+    for _ in range(4):
+        q = C[(C.period == "3M") & (pd.to_datetime(C.period_end) == e)]
+        if q.empty:
+            return []
+        out.append(q.iloc[0])
+        e = (e - pd.offsets.QuarterEnd(1))
+    return out
+
+
 def _amount(r) -> tuple[float, float, float]:
     """(total sustaining spending, stripping, leases) for one record row, in its own currency."""
     strip = r.capitalized_stripping if r.capitalized_stripping == r.capitalized_stripping else 0.0
@@ -98,7 +111,10 @@ def ttm(R: pd.DataFrame, ticker: str, end: str, usd_rate) -> dict:
         out["why"] = f"{r.period} to {r.period_end}: sustaining not published ({r.document})"
         return out
     parts = [(r, 1)]
-    if r.period != "FY":
+    four = _four_quarters(C, end) if r.period == "3M" else []
+    if four:
+        parts = [(x, 1) for x in four]
+    elif r.period != "FY":
         fy = C[(C.period == "FY") & (C.period_end < end)].sort_values("period_end")
         if fy.empty:
             out["why"] = f"no fiscal year before {end}"
