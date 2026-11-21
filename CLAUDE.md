@@ -192,6 +192,34 @@ change `[signals.thresholds]` in settings.toml and Signals G:H together, then ru
 "Sheet and Python statuses agree". Don't suggest a threshold because it scored best in the sweep: on one 25-year
 period that is fitted noise. Point to plateaus, and to statuses marked "too few to judge".
 
+## Research (company filings)
+
+Lessons from the Step 0 pilot (Nov 21, 2026, `docs/specs/tier-valuation-spec.md`). Each document read and what it
+held is logged in `data/research/sources.csv`: check it before searching again, and add a row for every new one.
+
+- **The record is the filing, not a summary.** Use the MD&A, 10-K/40-F/20-F, annual information form, reserve
+  statement or NI 43-101 / S-K 1300 technical report. Results press releases often give only next year's guidance
+  (Capstone's gave 2026 sustaining capital, not 2025 actuals), and web-search summaries and call transcripts can be
+  wrong (one put Alamos's 2025 sustaining capital at $50M; its MD&A says $144.6M). Never record a figure from a
+  search summary without opening the document.
+- **Where things are:** sustaining vs growth capital in the MD&A's capital expenditures section (Newmont's 10-K
+  splits it by mine for three years; Capstone's MD&A by mine for two). Production in the MD&A highlights table
+  (often three years). Reserves in the year-end reserve release or the AIF; the MD&A may give only a total without
+  saying attributable or 100%. Study cash flows in the technical report's economic analysis (Section 22 in NI
+  43-101 reports: an annual production and cash-flow table, and usually NPV across prices and discount rates).
+- **Bases and units to check every time:** attributable vs 100% (Mantoverde is 70% Capstone's); reporting currency
+  (Teck reports in C$; OR Royalties in C$ before 2024); gold-equivalent ratios are each company's own (Andean uses
+  90:1); capitalized stripping is reported separately from sustaining capital by some open-pit miners (Teck,
+  Capstone) and counts as sustaining spending (the user, Nov 21, 2026).
+- **A press release that supersedes a study** (new economics, no new technical report) is not used for an NPV
+  (Perpetua, March 2026).
+- **Juniors** split sustaining from growth less often and publish reserves less often; their MD&As may be on
+  SEDAR+ only. Where a figure isn't published, leave it blank: never estimate.
+- **Fetching:** SEC EDGAR HTML reads directly. PDFs (MD&As, 10-K PDFs, technical reports) come back as raw bytes:
+  download with `curl` into a new folder in the scratchpad and run `pdftotext -layout`, then grep. Technical reports
+  are often over the fetch tool's 10 MB limit, so download them. Some investor-site links serve HTML instead of the
+  PDF. SEDAR+ hasn't been tested.
+
 ## Data source notes
 
 - Works without a login: `query1.finance.yahoo.com/v8/finance/chart/<symbol>` (prices, history),

@@ -113,7 +113,10 @@ shows before it reaches a buy signal.
   `cash_flow_share` × revenue × the price change, by revenue mix).
 - **Sustaining spending** (research inputs in `pnav_companies.csv`, the record, and PNAV inputs, the working copy):
   `sustaining_capex_usd_m`, `sustaining_capex_period` (fiscal year or trailing 12 months, and its end date),
-  `sustaining_source`. Converted at the stated date's rate, and the source says so. Blank where a filing doesn't
+  `sustaining_source`. Converted at the stated date's rate, and the source says so. **Capitalized stripping**
+  (waste removal capitalized by open-pit miners, reported separately by Teck and Capstone) **counts as sustaining
+  spending** (the user, Nov 21, 2026), so open-pit and underground miners compare fairly; record it in
+  `capitalized_stripping_usd_m` beside the sustaining figure. Blank where a filing doesn't
   split sustaining from growth: **never estimated**.
 - **Fallback when blank:** free cash flow after all spending, the conservative case. The row is labelled
   "FCF basis: sustaining not recorded", and the screen and the buy signal say so.

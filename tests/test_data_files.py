@@ -179,3 +179,12 @@ def test_example_portfolio_is_neutral():
     """The committed example holds Sprott funds and a bullion trust only, never Model portfolio names."""
     E = pd.read_csv(CONFIG / "portfolio.example.csv")
     assert set(E.key) <= {"PHYS", "PSLV", "COP", "SGDM", "SGDJ", "COPP", "COPJ", "SLVR"}
+
+
+def test_sources_log():
+    """data/research/sources.csv: one row per document read, with where it is and what it held."""
+    S = pd.read_csv(DATA / "research" / "sources.csv", keep_default_na=False)
+    assert list(S.columns) == ["ticker", "company", "document", "period", "published", "url", "read", "found", "notes"]
+    assert set(S.read) <= {"yes", "partial", "via search", "no"}
+    assert S.url.str.startswith("https://").all()
+    assert (S.document != "").all() and (S.company != "").all()
