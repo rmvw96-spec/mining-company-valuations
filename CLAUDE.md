@@ -237,6 +237,11 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
     exists; the blank figure leaves the trailing 12 months unbuilt and the company on the free-cash-flow fallback.
   - A company that newly listed in the US files its earlier MD&As inside a 40FR12B registration (OceanaGold March
     2026, Torex November 2026); `research filings` includes that form.
+  - Some filings are page images with a scrambled text layer (Gold Fields' 6-Ks: `rr.htm` plus `rr001.jpg`...): find
+    the page from the text (line n of the converted text is about image n-1), download the `.jpg` from the filing
+    folder, crop it with PIL if needed, and read it as an image. Say so in `notes`.
+  - Some companies publish sustaining spending only per quarter (Buenaventura's AISC appendix): record the four
+    quarters to the financials date as 3M rows; `research sustaining` adds them.
   - EDGAR rate-limits at about 10 requests a second: run scans one company at a time (the downloader pauses and
     retries on 429).
   - Add rows to `capex_periods.csv` by column name (a CSV writer), never by hand-counted commas: one missing comma
