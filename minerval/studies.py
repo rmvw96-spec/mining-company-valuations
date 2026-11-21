@@ -22,8 +22,8 @@ the Silver Sand PFS, 0.675 from the stated 32.5% fits the study's price grid wit
 off). Without a stated rate the average is used and flagged. The net revenue share is net / gross revenue from the
 study (royalties and selling costs move with price). Metals other than gold,
 silver and copper stay at the study's price. The rebuild is checked against the published NPV at the study's own
-price and rate (within `check_npv`) and against its sensitivity rows (within `check_sensitivity`); a study that
-fails isn't used for a buy signal.
+price and rate (within `check_npv`) and against its sensitivity rows (within `check_sensitivity`, as a share of the
+study's base NPV, so a row whose NPV is near zero doesn't dominate); a study that fails isn't used for a buy signal.
 
 Then: the time discount from today to the guided construction start, the probability of success for the study's
 stage ([valuation.stage_probability]; blank until researched and confirmed by the user) and the company's share.
@@ -149,7 +149,8 @@ def rebuild(p, F: pd.DataFrame) -> dict:
     for metal, price, v, r in parse_sensitivity(p.sensitivity):
         px = {m: q * (1 + price) for m, q in sp.items()} if metal == "all" else {**sp, metal: price}
         rb = npv(F, r, px, sp, ts, rs, p.discounting)
-        worst = max(worst, abs(rb / v - 1)) if v else worst
+        base = pub if pub else abs(v)                    # measured against the base NPV: a row near zero (a low price
+        worst = max(worst, abs(rb - v) / base) if base else worst   # at a high rate) would otherwise blow up
     out["sensitivity_worst"] = worst if p.sensitivity else None
     if p.sensitivity and worst > c.get("check_sensitivity", 0.10):
         out["flags"].append(f"re-pricing off the study's sensitivity rows by up to {worst:.0%}")
