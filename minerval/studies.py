@@ -38,14 +38,16 @@ from .config import RESEARCH, settings
 
 PROJECTS = RESEARCH / "projects.csv"
 CASHFLOWS = RESEARCH / "project_cashflows.csv"
-METALS = {"gold": "payable_gold_koz", "silver": "payable_silver_koz", "copper": "payable_copper_mlb"}
-UNIT = {"gold": 1e3, "silver": 1e3, "copper": 1e6}          # payable units -> ounces or pounds
+METALS = {"gold": "payable_gold_koz", "silver": "payable_silver_koz", "copper": "payable_copper_mlb",
+          "lead": "payable_lead_mlb", "zinc": "payable_zinc_mlb"}
+UNIT = {"gold": 1e3, "silver": 1e3, "copper": 1e6, "lead": 1e6, "zinc": 1e6}   # payable units -> ounces or pounds
 PROJECT_COLS = ["ticker", "project", "attributable_pct", "study_type", "study_date", "study_price",
                 "study_npv_usd_m", "study_discount_rate", "discounting", "marginal_tax_rate", "net_revenue_share", "sensitivity",
                 "initial_capex_usd_m", "construction_start", "first_production", "committed", "superseded",
                 "source", "as_of", "notes"]
 CASHFLOW_COLS = ["ticker", "project", "study_date", "year", "pre_tax_fcf_usd_m", "post_tax_fcf_usd_m",
-                 "payable_gold_koz", "payable_silver_koz", "payable_copper_mlb", "source"]
+                 "payable_gold_koz", "payable_silver_koz", "payable_copper_mlb", "payable_lead_mlb",
+                 "payable_zinc_mlb", "source"]
 STUDY_TYPES = ["PEA", "PFS", "FS", "construction"]
 
 
@@ -64,7 +66,8 @@ def parse_prices(s: str) -> dict:
 
 
 def parse_sensitivity(s: str) -> list[tuple[str, float, float, float]]:
-    """'silver 18:329, 30:1124 @5%; silver 18:232 @8%' -> [(metal, price, npv, rate), ...]."""
+    """'silver 18:329, 30:1124 @5%; all -20%:1551, +20%:3689 @5%' -> [(metal, price or change, npv, rate), ...].
+    'all' rows change every metal in the study price by the same percentage (the price is then the change, -0.2)."""
     out = []
     for part in str(s or "").split(";"):
         m = re.match(r"\s*([a-z]+)\s+(.+?)\s*@\s*([\d.]+)%\s*$", part.strip().lower())
@@ -72,7 +75,8 @@ def parse_sensitivity(s: str) -> list[tuple[str, float, float, float]]:
             continue
         for pair in m.group(2).split(","):
             p, v = pair.split(":")
-            out.append((m.group(1), float(p), float(v), float(m.group(3)) / 100))
+            p = float(p.strip().rstrip("%")) / 100 if p.strip().endswith("%") else float(p)
+            out.append((m.group(1), p, float(v.replace(" ", "")), float(m.group(3)) / 100))
     return out
 
 
@@ -143,7 +147,8 @@ def rebuild(p, F: pd.DataFrame) -> dict:
             out["flags"].append(f"rebuilt NPV {rb:,.0f} vs published {pub:,.0f} ({diff:+.0%})")
     worst = 0.0
     for metal, price, v, r in parse_sensitivity(p.sensitivity):
-        rb = npv(F, r, {**sp, metal: price}, sp, ts, rs, p.discounting)
+        px = {m: q * (1 + price) for m, q in sp.items()} if metal == "all" else {**sp, metal: price}
+        rb = npv(F, r, px, sp, ts, rs, p.discounting)
         worst = max(worst, abs(rb / v - 1)) if v else worst
     out["sensitivity_worst"] = worst if p.sensitivity else None
     if p.sensitivity and worst > c.get("check_sensitivity", 0.10):

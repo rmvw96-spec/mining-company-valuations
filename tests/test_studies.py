@@ -24,7 +24,8 @@ def silver_sand(**k):
     F = pd.DataFrame({"ticker": "NEWP", "project": "Silver Sand", "study_date": "2024-06-19",
                       "year": range(1, len(POST) + 1), "pre_tax_fcf_usd_m": PRE, "post_tax_fcf_usd_m": POST,
                       "payable_gold_koz": np.nan, "payable_silver_koz": [a * 1000 for a in AG_MOZ],
-                      "payable_copper_mlb": np.nan, "source": "x"})
+                      "payable_copper_mlb": np.nan, "payable_lead_mlb": np.nan, "payable_zinc_mlb": np.nan,
+                      "source": "x"})
     return pd.Series(p), F
 
 
@@ -32,6 +33,13 @@ def test_parsers():
     assert S.parse_prices("gold 3,400; silver 45; copper 4.50") == {"gold": 3400.0, "silver": 45.0, "copper": 4.5}
     assert S.parse_sensitivity("silver 18:329, 30:1124 @5%; gold 3000:10 @8%") == [
         ("silver", 18.0, 329.0, 0.05), ("silver", 30.0, 1124.0, 0.05), ("gold", 3000.0, 10.0, 0.08)]
+
+
+def test_all_metals_sensitivity_rows():
+    assert S.parse_sensitivity("all -20%:1550.7, +10%:3198.3 @5%") == [("all", -0.2, 1550.7, 0.05),
+                                                                        ("all", 0.1, 3198.3, 0.05)]
+    p, F = silver_sand(sensitivity="all -25%:329 @5%")              # silver 24 -> 18: the same as 'silver 18'
+    assert S.rebuild(p, F)["sensitivity_worst"] < 0.02
 
 
 def test_rebuild_matches_the_published_npv_and_sensitivities():

@@ -1,1 +1,22 @@
-ticker,project,study_date,year,pre_tax_fcf_usd_m,post_tax_fcf_usd_m,payable_gold_koz,payable_silver_koz,payable_copper_mlb,source
+ticker,project,study_date,year,pre_tax_fcf_usd_m,post_tax_fcf_usd_m,payable_gold_koz,payable_silver_koz,payable_copper_mlb,payable_lead_mlb,payable_zinc_mlb,source
+NEWP,Carangas,2026-07-16,1,-259.2,-259.2,0.0,0.0,,0.0,0.0,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,2,-385.2,-385.2,0.0,0.0,,0.0,0.0,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,3,306.8,217.6,0.0,9465.0,,48.5,63.93,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,4,453.9,310.3,0.0,12506.0,,55.12,79.37,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,5,433.2,297.7,0.0,12289.0,,46.3,70.55,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,6,275.3,126.0,0.0,12798.0,,41.89,68.34,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,7,334.1,163.0,0.0,13777.0,,55.12,85.98,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,8,577.0,394.7,0.0,19961.0,,79.37,132.28,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,9,669.9,453.3,0.0,22448.0,,79.37,110.23,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,10,543.2,361.4,0.0,20610.0,,59.52,74.96,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,11,434.0,278.9,52.755,14074.0,,41.89,50.71,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,12,377.3,261.3,106.927,7300.0,,39.68,57.32,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,13,511.4,345.0,145.622,7362.0,,35.27,55.12,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,14,425.5,289.4,138.235,5690.0,,33.07,57.32,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,15,667.4,451.0,173.861,6794.0,,30.86,52.91,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,16,847.3,566.9,228.664,6313.0,,30.86,52.91,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,17,885.5,592.7,243.099,5557.0,,30.86,52.91,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,18,431.6,281.6,52.831,7870.0,,59.52,101.41,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,19,145.7,97.6,0.0,4539.0,,72.75,119.05,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,20,145.7,97.9,0.0,4539.0,,72.75,119.05,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,21,-129.3,-129.3,0.0,1231.0,,30.86,52.91,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
