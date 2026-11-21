@@ -12,8 +12,11 @@ the same months as the cash flow it is subtracted from:
 
 Each part is converted to US$ at the average month-end rate over its own period (as `royalty-ocf` does), and the
 result goes to `pnav_companies.csv` (`sustaining_capex_usd_m`, `capitalized_stripping_usd_m`,
-`sustaining_period_end`, `sustaining_source`). Capitalized stripping counts as sustaining spending (the user,
-Nov 21, 2026); where a filing includes it in sustaining capital, `stripping_in_sustaining` is "yes".
+`sustaining_leases_usd_m`, `sustaining_period_end`, `sustaining_source`). `sustaining_capex_usd_m` is the total:
+sustaining capital plus capitalized stripping (where a filing includes stripping in sustaining capital,
+`stripping_in_sustaining` is "yes") plus sustaining lease payments, which IFRS 16 puts in financing cash flow, so
+they are in neither operating cash flow nor capital spending (both counted, the user, Nov 21, 2026). The stripping
+and lease columns show those parts; a lease figure is blank where no filing reports one.
 
 When the next quarter's reports come out, add their year-to-date rows and rerun: the old rows stay, so every
 figure can be recalculated. `research fetch` downloads the documents named in `data/research/sources.csv` (and in
@@ -34,15 +37,16 @@ SOURCES = RESEARCH / "sources.csv"
 COMPANIES = RESEARCH / "pnav_companies.csv"
 DOCS = CACHE / "research"
 COLS = ["ticker", "period", "period_start", "period_end", "basis", "currency", "sustaining",
-        "capitalized_stripping", "stripping_in_sustaining", "growth", "document", "url", "where", "published",
+        "capitalized_stripping", "stripping_in_sustaining", "sustaining_leases", "growth", "document", "url", "where", "published",
         "notes"]
 PERIODS = {"FY": 12, "9M": 9, "6M": 6, "3M": 3}
-OUT_COLS = ["sustaining_capex_usd_m", "capitalized_stripping_usd_m", "sustaining_period_end", "sustaining_source"]
+OUT_COLS = ["sustaining_capex_usd_m", "capitalized_stripping_usd_m", "sustaining_leases_usd_m", "sustaining_period_end",
+            "sustaining_source"]
 
 
 def load_record(path=None) -> pd.DataFrame:
     R = pd.read_csv(path or RECORD, keep_default_na=False, na_values=[""], dtype={"ticker": str})
-    for c in ("sustaining", "capitalized_stripping", "growth"):
+    for c in ("sustaining", "capitalized_stripping", "sustaining_leases", "growth"):
         R[c] = pd.to_numeric(R[c], errors="coerce")
     return R
 
@@ -69,13 +73,12 @@ def _year_to_date(C: pd.DataFrame, r, fy_end: str, end: str | None = None, perio
     return [x for _, x in q.iterrows()], ""
 
 
-def _amount(r) -> tuple[float, float]:
-    """(sustaining including stripping, stripping) for one record row, in its own currency."""
-    s = r.sustaining
+def _amount(r) -> tuple[float, float, float]:
+    """(total sustaining spending, stripping, leases) for one record row, in its own currency."""
     strip = r.capitalized_stripping if r.capitalized_stripping == r.capitalized_stripping else 0.0
-    if str(r.stripping_in_sustaining).strip().lower() == "yes":
-        return s, strip
-    return s + strip, strip
+    lease = r.sustaining_leases if r.sustaining_leases == r.sustaining_leases else 0.0
+    tot = r.sustaining + lease + (0.0 if str(r.stripping_in_sustaining).strip().lower() == "yes" else strip)
+    return tot, strip, lease
 
 
 def ttm(R: pd.DataFrame, ticker: str, end: str, usd_rate) -> dict:
@@ -84,7 +87,7 @@ def ttm(R: pd.DataFrame, ticker: str, end: str, usd_rate) -> dict:
     Returns {"sustaining": ..., "stripping": ..., "parts": [...], "why": ""}; when it can't be built, values are
     NaN and `why` says which filing is missing."""
     C = R[R.ticker == ticker]
-    out = {"sustaining": np.nan, "stripping": np.nan, "parts": [], "why": ""}
+    out = {"sustaining": np.nan, "stripping": np.nan, "leases": np.nan, "parts": [], "why": ""}
     now = C[C.period_end == end]
     if now.empty:
         last = C.period_end.max() if len(C) else "none"
@@ -108,7 +111,7 @@ def ttm(R: pd.DataFrame, ticker: str, end: str, usd_rate) -> dict:
     if len(bases) > 1:
         out["why"] = f"parts on different bases ({', '.join(sorted(bases))})"
         return out
-    tot = strip = 0.0
+    tot = strip = lease = 0.0
     for p, sign in parts:
         if p.sustaining != p.sustaining:
             out["why"] = f"{p.period} to {p.period_end}: sustaining not published"
@@ -117,11 +120,14 @@ def ttm(R: pd.DataFrame, ticker: str, end: str, usd_rate) -> dict:
         if rate is None:
             out["why"] = f"no {p.currency} rate for {p.period_start} to {p.period_end}"
             return out
-        s, st = _amount(p)
+        s, st, le = _amount(p)
         tot += sign * s * rate
         strip += sign * st * rate
+        lease += sign * le * rate
         out["parts"].append(f"{'+' if sign > 0 else '-'}{p.period} to {p.period_end} ({p.document})")
-    out.update(sustaining=round(tot, 1), stripping=round(strip, 1), basis=bases.pop())
+    has_lease = any(p.sustaining_leases == p.sustaining_leases for p, _ in parts)
+    out.update(sustaining=round(tot, 1), stripping=round(strip, 1), leases=round(lease, 1) if has_lease else np.nan,
+               basis=bases.pop())
     return out
 
 
@@ -148,9 +154,11 @@ def build(R: pd.DataFrame, dates: dict, usd_rate) -> tuple[pd.DataFrame, list[st
         src = (f"TTM to {end}, {x['basis']} basis, US$ at period-average month-end rates (Yahoo): "
                + " ".join(x["parts"]) + "; record: data/research/capex_periods.csv")
         rows.append({"ticker": t, "sustaining_capex_usd_m": x["sustaining"],
-                     "capitalized_stripping_usd_m": x["stripping"], "sustaining_period_end": end,
+                     "capitalized_stripping_usd_m": x["stripping"], "sustaining_leases_usd_m": x["leases"],
+                     "sustaining_period_end": end,
                      "sustaining_source": src})
-        lines.append(f"{t}: {x['sustaining']:,.1f} US$M to {end} (stripping {x['stripping']:,.1f})")
+        le = "" if x["leases"] != x["leases"] else f", leases {x['leases']:,.1f}"
+        lines.append(f"{t}: {x['sustaining']:,.1f} US$M to {end} (stripping {x['stripping']:,.1f}{le})")
     return pd.DataFrame(rows), lines
 
 

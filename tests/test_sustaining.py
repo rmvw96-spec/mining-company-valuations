@@ -7,7 +7,7 @@ from minerval import sustaining as SU
 
 def rec(*rows):
     base = {"ticker": "ALP", "period": "FY", "period_start": "2025-01-01", "period_end": "2025-12-31",
-            "basis": "attributable", "currency": "USD", "sustaining": 100.0, "capitalized_stripping": np.nan,
+            "basis": "attributable", "currency": "USD", "sustaining": 100.0, "capitalized_stripping": np.nan, "sustaining_leases": np.nan,
             "stripping_in_sustaining": "", "growth": np.nan, "document": "FY2025 MD&A", "url": "https://x/fy",
             "where": "", "published": "", "notes": ""}
     return pd.DataFrame([{**base, **r} for r in rows])
@@ -87,3 +87,14 @@ def test_ttm_from_quarters_when_no_year_to_date_is_published():
     assert x["why"] == "" and x["sustaining"] == 135.0             # 100 + (50 + 30 + 10) - (40 + 10 + 5)
     y = SU.ttm(R[R.period_end != "2026-06-30"], "ALP", "2026-09-30", flat)
     assert "2 recorded, 3 needed" in y["why"]
+
+
+def test_sustaining_leases_are_added_and_shown():
+    R = rec({"sustaining_leases": 10.0},
+            {"period": "9M", "period_start": "2026-01-01", "period_end": "2026-09-30", "sustaining": 90.0,
+             "sustaining_leases": 6.0},
+            {"period": "9M", "period_start": "2025-01-01", "period_end": "2025-09-30", "sustaining": 70.0,
+             "sustaining_leases": 4.0})
+    x = SU.ttm(R, "ALP", "2026-09-30", flat)
+    assert x["sustaining"] == 132.0 and x["leases"] == 12.0           # 120 capital + 12 leases
+    assert np.isnan(SU.ttm(rec({}), "ALP", "2025-12-31", flat)["leases"])   # none reported: blank, not 0
