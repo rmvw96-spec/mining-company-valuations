@@ -21,7 +21,7 @@ the average after-tax / pre-tax ratio overstates it, because depreciation shield
 the Silver Sand PFS, 0.675 from the stated 32.5% fits the study's price grid within 2.5%, the average 0.73 is 11%
 off). Without a stated rate the average is used and flagged. The net revenue share is net / gross revenue from the
 study (royalties and selling costs move with price). Metals other than gold,
-silver and copper stay at the study's price. The rebuild is checked against the published NPV at the study's own
+silver, copper, lead and zinc (antimony, molybdenum) stay at the study's price. The rebuild is checked against the published NPV at the study's own
 price and rate (within `check_npv`) and against its sensitivity rows (within `check_sensitivity`, as a share of the
 study's base NPV, so a row whose NPV is near zero doesn't dominate); a study that fails isn't used for a buy signal.
 

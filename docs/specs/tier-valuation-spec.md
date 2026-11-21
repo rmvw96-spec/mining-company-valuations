@@ -189,6 +189,18 @@ first year of construction), after-tax free cash flow (US$M, capex included), an
 New measures: EV / risk-adjusted NPV at each deck, the overrun dilution at +15% and +30%, and capex-to-market cap.
 EV per weighted unit (roadmap 3) stays.
 
+### Built (Nov 21, 2026)
+
+`minerval/studies.py` and `research studies`; records in `projects.csv` and `project_cashflows.csv`. Decided while
+building: the tax share is 1 - the study's **marginal** tax rate as stated (or derived from its stated terms and
+noted), because the average after-tax / pre-tax ratio overstates it; sensitivity rows are checked as a share of the
+base NPV; studies may discount mid-year or end-year (recorded per study); developers get their jurisdiction add-on
+from `country_weights` like the producers. Recorded with cash flows and checked: New Pacific (Carangas), Perpetua
+(Stibnite), Hycroft, Solaris (Warintza), Omai, Aldebaran (Altar); every rebuild within 1.3% of the published NPV and
+its sensitivities within 3.2%. Recorded without cash flows (no NPV): Ivanhoe Electric's Santa Cruz and Seabridge's
+KSM (their tables aggregate years), AbraSilver's Diablillos DFS (on SEDAR+ only). Koryx's PFS (Nov 17, 2026) has
+no technical report yet.
+
 ### Structured stage
 
 `stage` in `pnav_companies.csv` is free text today ("Developer (DFS June 2026; investment decision due Q2 2027)").
