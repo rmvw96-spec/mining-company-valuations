@@ -6,7 +6,8 @@ weights (A-F), review levels (S) and notes (U-V). Physical metal rows are the us
 - The rules are public: [portfolio_screen] in config/settings.toml (buckets, markets, filters, score, review
   levels, sizing limits). Each bucket's total weight and number of names are private: private/screen.toml.
 - By default only companies buyable on a US or Canadian market are proposed (`--all-markets` adds the rest):
-  pnav_companies.csv us_listing / canada_listing, and the fee reasons in settings.
+  pnav_companies.csv us_listing / canada_listing, and the fee reasons in settings. An OTC ADR with no Canadian
+  listing also needs a median daily dollar volume over 3 months of at least `otc_adr_min_dollar_volume`.
 - Holding names, weights and statuses never go into the repo, a log or the step summary: the report is
   out/screen/ (local), the Sheet and, with --email, a private email. The command never runs on GitHub.
 - A review level the user typed in S is kept: private/screen_state.json records the levels the screen wrote.
@@ -108,6 +109,51 @@ def market(r, c: dict | None = None) -> tuple[bool, str]:
             return True, ""
         return bool(c["canada_rep_assisted"]), c["canada_rep_note"]
     return False, c["foreign_fee_note"]
+
+
+def otc_adr(r) -> str:
+    """The ADR symbol when the US listing is an OTC ADR ("OTC ADR: ANFTY"), else ""."""
+    u = _text(r.get("us_listing"))
+    return u.split(":", 1)[1].strip() if u.upper().startswith("OTC ADR:") else ""
+
+
+def dollar_volume(chart: dict | None, days: int = 63) -> float:
+    """Median daily US$ volume from a Yahoo 3-month chart; days with no trade (or missing from the chart) count as 0.
+    NaN when the chart is missing."""
+    try:
+        q = chart["chart"]["result"][0]["indicators"]["quote"][0]
+    except (TypeError, KeyError, IndexError):
+        return np.nan
+    dv = [(c or 0) * (v or 0) for c, v in zip(q.get("close") or [], q.get("volume") or [])]
+    dv += [0.0] * max(0, days - len(dv))
+    return float(np.median(dv))
+
+
+def otc_volumes(U: pd.DataFrame, fetch=None) -> dict:
+    """{ADR symbol: median daily US$ volume} for the OTC ADRs without a Canadian listing (downloads from Yahoo)."""
+    from . import yahoo
+    fetch = fetch or (lambda s: yahoo.chart(s, range="3mo", interval="1d"))
+    syms = sorted({otc_adr(r) for _, r in U.iterrows() if otc_adr(r) and not _text(r.get("canada_listing"))})
+    return {s: dollar_volume(c) for s, c in yahoo.pmap(fetch, syms).items()} if syms else {}
+
+
+def apply_liquidity(U: pd.DataFrame, vols: dict, c: dict | None = None) -> tuple[pd.DataFrame, list[str]]:
+    """Marks the thinly traded OTC ADRs as not buyable in the default mode (`--all-markets` keeps them)."""
+    floor = (c or cfg())["markets"]["otc_adr_min_dollar_volume"]
+    U, warn = U.copy(), []
+    for i, r in U.iterrows():
+        s = otc_adr(r)
+        if not s or s not in vols:
+            continue
+        v = vols[s]
+        if v != v:
+            U.at[i, "market_ok"], U.at[i, "market_note"] = False, f"OTC ADR {s}: trading volume not available"
+            warn.append(f"Couldn't download {s}'s trading volume: {r['holding']} is left out until it can be checked.")
+        elif v < floor:
+            U.at[i, "market_ok"] = False
+            U.at[i, "market_note"] = (f"OTC ADR {s} thinly traded: median ${v:,.0f} a day over 3 months, "
+                                      f"floor ${floor:,.0f}")
+    return U, warn
 
 
 def where(r) -> str:
@@ -244,7 +290,7 @@ def failure(r, today: date, level: float, all_markets: bool = False, c: dict | N
     dil = F.get("max_share_change_3y_pct_by_bucket", {}).get(r["bucket"], F["max_share_change_3y_pct"])
     if k == "producer" and r["share_change_3y"] > dil:
         return f"dilution {r['share_change_3y']:.0f}% in 3 years"
-    if r["addon"] > F["max_addon_points"]:
+    if F.get("max_addon_points") is not None and r["addon"] > F["max_addon_points"]:
         return f"jurisdiction add-on {r['addon']:.2f} points"
     if k == "developer":
         if _text(r.get("developer_check")).startswith("Short of cash"):
@@ -291,6 +337,7 @@ def score(B: pd.DataFrame, k: str, c: dict | None = None) -> pd.DataFrame:
         if wt <= 0:
             continue
         p = rank_pct(B[m], hb)
+        B[f"p_{m}"] = p
         num_ += (p * wt).fillna(0)
         den += p.notna() * wt
         used += p.notna().astype(int)
@@ -422,7 +469,10 @@ def plan(U: pd.DataFrame, tab: list[dict], sizes: dict, today: date, state: dict
                          "E": (r.metal or "").capitalize(),
                          "F": round(w, 6), "S": level, "U": why, "V": change, "typed_level": t in typed,
                          "rank": rank, "score": r.score, "new": old is None})
-        ranked_out[b] = B.assign(score=E.score.reindex(B.index), measures_used=E.measures_used.reindex(B.index)) \
+        pc = [f"p_{m}" for m, _ in MEASURES[k] if f"p_{m}" in E]
+        ranked_out[b] = B.assign(score=E.score.reindex(B.index), measures_used=E.measures_used.reindex(B.index),
+                                 rank=pd.Series(range(1, len(E) + 1), index=E.index).reindex(B.index),
+                                 picked=B.holding.map(lambda h: _text(h) in chosen), **{x: E[x] for x in pc}) \
             .sort_values(["fail", "score"], ascending=[True, False])
         fails.update({_text(h): f for h, f in zip(B.holding, B.fail) if f})
         ranks.update({t: (b, i + 1, n) for i, t in enumerate(ranked)})
@@ -489,7 +539,7 @@ def report(P: dict, all_markets: bool) -> list[str]:
     for r in P["physical"]:
         L.append(f"  {r['A']}: {r['B']} (kept as typed), {num(r['F']):.1%}")
     for r in P["rows"]:
-        tag = "new" if r["new"] else "kept"
+        tag = "new to the tab" if r["new"] else "already on the tab"
         lvl = f"{r['S']:g}" + (" (typed, kept)" if r["typed_level"] else "")
         L.append(f"  {r['A']}: {r['B']} [{r['D']}; {r['C']}] {r['F']:.1%}, review {lvl}, rank {r['rank']} ({tag})")
     total = sum(num(r["F"]) for r in P["physical"] if num(r["F"]) == num(r["F"])) + sum(r["F"] for r in P["rows"])
@@ -503,6 +553,22 @@ def report(P: dict, all_markets: bool) -> list[str]:
             L.append(f"  {r.holding} [{_text(r.ticker)}] score {s}" + (f"  EXCLUDED: {r.fail}" if r.fail else
                                                                         f" ({r.get('measures_used', 0):.0f} measures)"))
     return L
+
+
+def ranking_table(P: dict) -> pd.DataFrame:
+    """Every screened company: bucket, rank, score, each measure's value and its 0-1 rank in the bucket (p_), and
+    why an excluded one failed. Written to out/screen/ranking.csv."""
+    out = []
+    for b, B in P["ranked"].items():
+        cols = [m for m, _ in MEASURES[kind(b)]]
+        T = pd.DataFrame({"bucket": b, "holding": B.holding.map(_text), "ticker": B.ticker,
+                          "picked": B.get("picked", False), "rank": B.get("rank"), "score": B.score,
+                          "measures_used": B.measures_used, "excluded": B.fail})
+        for m in cols:
+            T[m] = B[m]
+            T[f"p_{m}"] = B.get(f"p_{m}")
+        out.append(T)
+    return pd.concat(out, ignore_index=True) if out else pd.DataFrame()
 
 
 def write_rows(sheet, P: dict) -> list[tuple]:
@@ -569,7 +635,7 @@ def init_sizes(sheet, path=None) -> list[str]:
 
 
 def run(sheet, write: bool = False, all_markets: bool = False, email: bool = False, rule_levels: bool = False,
-        today: date | None = None, out_dir=None) -> list[str]:
+        today: date | None = None, out_dir=None, fetch_volume=None) -> list[str]:
     from .history import today_ny
     today = today or today_ny()
     out_dir = out_dir or DEST
@@ -578,11 +644,14 @@ def run(sheet, write: bool = False, all_markets: bool = False, email: bool = Fal
     if not sizes:
         return [f"No {PRIVATE_CFG}: run `screen --init` (writes it from the tab), then set the sizes."]
     U, _ = read_universe(sheet)
+    U, liq_warn = apply_liquidity(U, otc_volumes(U, fetch_volume))
     tab = read_tab(sheet)
     state = load_state()
     P = plan(U, tab, sizes, today, state, all_markets, rule_levels)
+    P["warnings"] = liq_warn + P["warnings"]
     rep = report(P, all_markets)
     pd.DataFrame(P["rows"]).to_csv(out_dir / "proposal.csv", index=False)
+    ranking_table(P).round(4).to_csv(out_dir / "ranking.csv", index=False)
     lines = [f"Screen: {len(P['rows'])} screened rows proposed, {len(P['drops'])} dropped, "
              f"{len(P['warnings'])} warnings. Report (local only): {out_dir / 'report.txt'}."]
     if write:

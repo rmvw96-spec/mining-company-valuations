@@ -171,7 +171,7 @@ def test_screen_settings():
     assert set(C["review"]["by_bucket"]) <= set(C["bucket_order"])
     from minerval.screen import MEASURES
     assert {m for ms in MEASURES.values() for m, _ in ms} <= set(C["score"])
-    for k in ("financials_max_days", "price_max_days", "min_mcap_m", "min_mcap_developer_m", "max_addon_points"):
+    for k in ("financials_max_days", "price_max_days", "min_mcap_m", "min_mcap_developer_m"):
         assert C["filters"][k] > 0
 
 

@@ -84,11 +84,17 @@ def test_a_good_company_passes():
     ({"price_date": "2026-11-10"}, "price stale"),
     ({"mcap": 299.0}, "market cap under $300M"),
     ({"share_change_3y": 30.5}, "dilution"),
-    ({"addon": 0.026}, "jurisdiction add-on"),
     ({"pnav_peer": 1.3}, "valuation 1.30× peer norm"),
 ])
 def test_each_filter(k, starts):
     assert fail(**k).startswith(starts)
+
+
+def test_no_jurisdiction_filter_unless_configured():
+    assert fail(addon=0.08) == ""                                         # 8 points: still eligible, scored lower
+    c = SC.cfg()
+    c = {**c, "filters": {**c["filters"], "max_addon_points": 2.5}}
+    assert SC.failure(universe(company(addon=0.026)).iloc[0], TODAY, 1.3, c=c).startswith("jurisdiction add-on")
 
 
 def test_filter_edges_pass():
@@ -99,6 +105,40 @@ def test_filter_edges_pass():
 def test_expanding_producers_have_their_own_dilution_limit():
     assert fail(peer_group="Junior producer", share_change_3y=90.0) == ""
     assert fail(peer_group="Junior producer", share_change_3y=101.0).startswith("dilution")
+
+
+def chart(closes, volumes):
+    return {"chart": {"result": [{"indicators": {"quote": [{"close": closes, "volume": volumes}]}}]}}
+
+
+def test_dollar_volume_counts_missing_days_as_zero():
+    assert SC.dollar_volume(chart([10.0] * 63, [1000] * 63)) == 10000.0
+    assert SC.dollar_volume(chart([10.0] * 40, [1000] * 40)) == 10000.0      # 40 of 63: median still trades
+    assert SC.dollar_volume(chart([10.0] * 20, [1000] * 20)) == 0.0          # most days without a trade
+    assert SC.dollar_volume(chart([10.0, None], [5, None])) == 0.0
+    assert np.isnan(SC.dollar_volume(None))
+
+
+def test_thin_otc_adrs_are_left_out_unless_all_markets():
+    U = universe(company(ticker="THIN", us_listing="OTC ADR: THNY"),
+                 company(ticker="DEEP", us_listing="OTC ADR: DPPY"),
+                 company(ticker="GONE", us_listing="OTC ADR: GNNY"),
+                 company(ticker="TSX", us_listing="OTC ADR: TSXY", canada_listing="TSX: T"))
+    fetched = []
+
+    def fetch(s):
+        fetched.append(s)
+        return {"THNY": chart([5.0] * 63, [100] * 63), "DPPY": chart([5.0] * 63, [100000] * 63)}.get(s)
+
+    vols = SC.otc_volumes(U, fetch)
+    assert sorted(fetched) == ["DPPY", "GNNY", "THNY"]                       # a Canadian listing needs no check
+    U2, warn = SC.apply_liquidity(U, vols)
+    fail = {r.ticker: SC.failure(r, TODAY, 1.3) for _, r in U2.iterrows()}
+    assert fail["THIN"].startswith("market (OTC ADR THNY thinly traded: median $500 a day")
+    assert fail["DEEP"] == "" and fail["TSX"] == ""
+    assert fail["GONE"] == "market (OTC ADR GNNY: trading volume not available)"
+    assert len(warn) == 1 and "GNNY" in warn[0]
+    assert SC.failure(U2.iloc[0], TODAY, 1.3, all_markets=True) == ""
 
 
 def test_all_markets_lets_foreign_names_in():
@@ -262,3 +302,14 @@ def test_init_sizes_from_the_tab(tmp_path, monkeypatch):
     assert got["Gold producers"] == {"weight": 0.3, "names": 2} and got["Royalty"] == {"weight": 0, "names": 0}
     assert "Physical metal" not in got
     assert "not overwritten" in SC.init_sizes(sh, p)[0]
+
+
+def test_ranking_table_shows_each_measures_rank():
+    U = universe(company(holding="A", ticker="A", pnav_peer=0.5), company(holding="B", ticker="B", pnav_peer=0.9),
+                 company(holding="C", ticker="C", pnav_peer=2.0))
+    U["bucket"] = "Gold producers"
+    P = SC.plan(U, [], {"Gold producers": {"weight": 1.0, "names": 1}}, TODAY, None)
+    T = SC.ranking_table(P).set_index("holding")
+    assert T.loc["A", "picked"] and T.loc["A", "rank"] == 1 and T.loc["A", "p_peer_norm"] == 1.0
+    assert T.loc["B", "p_peer_norm"] == 0.0 and not T.loc["B", "picked"]
+    assert T.loc["C", "excluded"].startswith("valuation") and np.isnan(T.loc["C", "score"])

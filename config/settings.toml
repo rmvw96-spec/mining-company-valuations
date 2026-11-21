@@ -321,7 +321,10 @@ resource_weight_inferred = 0.2
 # (S) and notes (U-V) from the framework's numbers. These are the rules, and public. Each bucket's total weight and
 # number of names are private: private/screen.toml (see config/screen.example.toml). The output never goes into
 # the repo, a log or the step summary: out/screen/ (local), the Sheet and, with --email, a private email.
-buffer = 2                          # a holding on the tab stays while it ranks within names + buffer
+# A name on the tab stays while it ranks within names + buffer, so the list doesn't churn on small rank changes once
+# shares are bought. 0 while the portfolio is still being built (Nov 2026: nothing bought yet), so every name is
+# picked on rank alone; raise it (2 was the spec's default) once the holdings are bought.
+buffer = 0
 tilt = 0.0                          # 0 = equal weights in a bucket; 0.5 = up to ±50% by score
 bucket_order = ["Physical metal", "Royalty", "Gold producers", "Growth: expanding producers", "Copper producers",
                 "Silver and polymetallic producers", "Growth: developers"]
@@ -348,6 +351,12 @@ physical_symbols = { PHYS = "PHYS", PSLV = "PSLV", COP = "COP-U.TO", "COP/U" = "
 canada_rep_assisted = true          # keep Canadian names with no US OTC symbol recorded (rep-assisted, $32.95 a trade)
 foreign_fee_note = "Foreign-only: about $50 a trade in an IRA"
 canada_rep_note = "Canada, no US OTC symbol recorded: rep-assisted, $32.95 a trade"
+# OTC ADRs (us_listing "OTC ADR: X") trade from none to millions of dollars a day. An ADR with no Canadian listing is
+# proposed only if its median daily dollar volume over the last 3 months (days with no trade count as $0) reaches
+# this floor; `screen` downloads it from Yahoo. Nov 2026: EVMNY $0.7M and ANGPY $1.4M a day pass; ANFTY $85k (11 of 40
+# days without a trade), BVGLY (one trade in 3 months), KOZAY and HCHDY ($0) fail. Anywhere from $0.1M to $0.6M
+# splits them the same way.
+otc_adr_min_dollar_volume = 250000
 
 # Hard filters: a company failing one isn't proposed (the report says which).
 [portfolio_screen.filters]
@@ -359,7 +368,9 @@ max_share_change_3y_pct = 30.0      # producers: more than 30% dilution in 3 yea
 # Expanding producers fund construction and mergers with shares, so 30% would exclude most of them (Nov 2026: 5 of 8
 # US/Canadian names); 100% still drops serial diluters.
 max_share_change_3y_pct_by_bucket = { "Growth: expanding producers" = 100.0 }
-max_addon_points = 2.5              # jurisdiction add-on (PNAV inputs P): above it the risk dominates the value
+# No filter on the jurisdiction add-on (removed Nov 2026, the user's call): a high-risk country shouldn't exclude a
+# company whose financials are sound. The risk still counts through the discount rate in P/NAV and the score's
+# `addon` and `addon_reliance` measures. Set max_addon_points (points) to bring a filter back.
 max_peer_ev_ratio = 1.5             # developers: EV per weighted unit at most 1.5× the peer median (BW)
 # Royalty companies: valued by the framework's own measures, not the peer norm (the Sheet's typical royalty multiple,
 # 1.5× × 0.94 on Metal prices reference, sits below where the whole group has traded, so every royalty company reads
