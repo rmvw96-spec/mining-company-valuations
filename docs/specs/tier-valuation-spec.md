@@ -61,6 +61,15 @@ The user asked to check the research is readily available before committing to i
 - **Gate:** the user reviews the coverage and decides whether each item goes ahead, waits, or changes. Items below
   about two-thirds coverage need a fallback or a different measure.
 
+**Pilot results (Nov 21, 2026, first pass; `out/pilot/`, local):** production 9 of 9 producers and royalty GEOs 3
+of 3; sustaining spending 5 of 9 (all seniors, 2 of 3 intermediates, no juniors from their results releases);
+reserves 3 of 9; study cash-flow tables 1 confirmed, 1 likely, 1 superseded by a press release. The rebuild matched
+the New Pacific PFS exactly at its own price (5% and 8%) and within 1–4% of its price grid. Press releases and call
+summaries aren't a record (one summary misstated Alamos's sustaining spending by a factor of three). Decisions: a
+second pass on the juniors' MD&As for sustaining spending, the free-cash-flow fallback where none is split;
+reserves plus M&I resources per share (screen spec); the study's own tax share; no NPV for a study superseded by a
+press release.
+
 ## Part 1: the common method
 
 ### Price decks
@@ -145,13 +154,18 @@ first year of construction), after-tax free cash flow (US$M, capex included), an
 
 ### Method
 
-1. **Re-price each year** to each deck: free cash flow + `cash_flow_share` × payable production × (deck price −
-   study price), by metal, the same tax share the producers use.
+1. **Re-price each year** to each deck: free cash flow + tax share × payable production × (deck price − study
+   price), by metal. **The tax share is the study's own** (the user, Nov 21, 2026): the change in post-tax cash flow
+   ÷ the change in pre-tax cash flow, from the study's tables, or 1 − its effective tax rate. `cash_flow_share`
+   (0.70) only where a study publishes neither. `project_cashflows.csv` also records pre-tax cash flow for this.
 2. **Discount at our rate** (10-year + 3% + the add-on) from year 1. Developers keep the study's whole mine life:
    Rule discounts the study's value, not a 10-year window (the 10-year window is for producers).
 3. **Check the rebuild:** at the study's own price and rate, the rebuilt NPV should be within 5% of the published
    one, and the re-pricing should match the sensitivity rows within 10%. A study that fails is flagged and not used
    for a buy signal until it's checked.
+   **A study superseded by a press release** (new economics with no new technical report, e.g. Perpetua's March
+   2026 update over its 2020 feasibility study): no NPV, status "No NPV: awaiting technical report", until a
+   report with a cash-flow table is filed (the user, Nov 21, 2026).
 4. **Discount for time:** from year 1 to today. Year 1 is the expected construction start (company guidance, with
    its date); a study with no construction decision and no guided date is flagged.
 5. **Probability of success by stage:** `[valuation.stage_probability]` for PEA, PFS, FS, permitted and

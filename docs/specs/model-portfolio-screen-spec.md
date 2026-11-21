@@ -169,7 +169,7 @@ doesn't count as performance. The period is the last 3 fiscal years for which da
 |---|---|---|
 | Producers (gold, copper, silver, expanding) | Cash flow per share growth: operating cash flow − sustaining spending (higher) | Yahoo annual OCF and shares; sustaining spending per year (research; FCF where not recorded, labelled) |
 | | Production per share growth, attributable (higher) | Research: annual reports, unit as reported |
-| | Reserves per share growth, attributable P&P (higher) | Research: year-end reserve statements |
+| | Reserves and M&I resources per share growth, attributable, weighted by category as roadmap 3 weights developers (higher) | Research: year-end reserve and resource statements (the user, Nov 21, 2026: juniors publish resources more often than reserves) |
 | | Cash margin through the cycle: average and lowest year of cash flow ÷ revenue (higher) | As above |
 | | Share-count change over 3 years (lower) | Holdings downside H |
 | | Net cash, % of market value (higher) | Holdings downside D |
