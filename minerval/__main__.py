@@ -20,6 +20,7 @@ After each quarter's filings (roadmap 6 research inputs)
                   fetch [--ticker T]: download the documents in sources.csv to cache/research/ as text
                   find T TERM...: search a company's downloaded documents
                   filings T [--since DATE]: a US-listed company's EDGAR filings and their large documents
+                  studies: rebuild each recorded study's NPV from its cash flows and check it (projects.csv)
 Model portfolio (before buying, or after a refresh)
   screen          propose the Model portfolio's holdings and weights from the framework (--write to apply)
   portfolio-file  write private/portfolio.csv from the Model portfolio tab, for backtest and project
@@ -115,7 +116,7 @@ def main(argv=None):
     google(p)
     sub.add_parser("royalty-ocf", help="annual operating cash flow of the royalty companies from SEC EDGAR")
     p = sub.add_parser("research", help="research inputs: sustaining spending, filing downloads and search")
-    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings"])
+    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings", "studies"])
     p.add_argument("args", nargs="*", help="find: TICKER TERM...")
     p.add_argument("--ticker")
     p.add_argument("--write", action="store_true")
@@ -200,6 +201,9 @@ def main(argv=None):
         from . import sustaining as SU
         if a.what == "sustaining":
             lines = SU.run_sustaining(write=a.write)
+        elif a.what == "studies":
+            from . import studies
+            lines = studies.report()
         elif a.what == "filings":
             lines = SU.filings(a.ticker or (a.args[0] if a.args else ""), a.since)
         elif a.what == "fetch":

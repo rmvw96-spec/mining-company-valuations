@@ -316,6 +316,19 @@ resource_weight_inferred = 0.2
 "Growth: developers" = ["junior_timing", "breadth_sgdj", "@developer_check"]
 "Growth: developers|Copper" = ["junior_timing", "breadth_copj", "@developer_check"]
 
+[valuation]
+# Roadmap 6 (docs/specs/tier-valuation-spec.md). Study rebuilds (minerval/studies.py): the rebuilt NPV at the study's
+# own price and rate must be within check_npv of the published one, and the re-pricing within check_sensitivity of
+# the study's own sensitivity rows, or the study isn't used for a buy signal.
+check_npv = 0.05
+check_sensitivity = 0.10
+max_overrun_dilution = 0.33         # developers' downside test: dilution at a 30% capex overrun (the user, Nov 21, 2026)
+capex_overrun = [0.15, 0.30]
+
+# Probability of success by study stage (PEA, PFS, FS, construction): to be researched with sources and confirmed
+# by the user. Until a stage has a value, its studies get an NPV but no risk-adjusted NPV.
+[valuation.stage_probability]
+
 [portfolio_screen]
 # `python -m minerval screen` (roadmap 5): proposes the Model portfolio's holdings and weights (A-F), review levels
 # (S) and notes (U-V) from the framework's numbers. These are the rules, and public. Each bucket's total weight and
