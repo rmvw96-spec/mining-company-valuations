@@ -88,6 +88,17 @@ Why: the user holds no miners yet, so the holdings needn't be a fixed hand-picke
 bucket sizes, names and weights stay private (Sheet and email only). Decisions taken Nov 20, 2026 are in the spec;
 two things to ask at build time are at its end.
 
+## Phase 6: value by tier, then a portfolio of the best businesses (specified from Nov 21, 2026)
+
+| # | Item | Spec | Size | Depends on |
+|---|---|---|---|---|
+| 6 | **Valuation by tier** (Rick Rule's method): EV against a 10-year NPV at pessimistic, base and optimistic decks; producers on operating cash flow − sustaining spending, with committed pipeline projects; developers from rebuilt study cash flows, discounted for time and probability by stage, with a capex-overrun test; royalties on operating cash flow. A buy-below price and a fair-value level per company | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | L | Step 0 data pilot (15 companies) first; 4a improves the pessimistic cost case |
+| 5b | **Model portfolio revision 2**: select each bucket's best business performers per share at constant metal prices (not on price), and a buy signal per row when the price reaches its tier's buy level; review above fair value | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) (revision 2) | M–L | 6; research of production, reserves and sustaining spending for 2022–2025 |
+
+Why: on Nov 21, 2026, P/NAV at spot over 25 years with all capital spending made 36 of 97 producers' NAV negative,
+mostly companies mid-build, and ranking on spot made the list depend on the week it ran. The user wants the
+portfolio to hold the best businesses and to buy each when its own tier's valuation says it's cheap.
+
 ## Done in November 2026 (not in the original plan)
 
 - A "Send a test email" checkbox on the manual price-update run (`test-email` command), to check the email

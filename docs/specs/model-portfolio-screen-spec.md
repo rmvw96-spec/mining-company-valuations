@@ -2,7 +2,25 @@
 
 Instructions for Claude Code. Roadmap item 5. Follow CLAUDE.md.
 
-**Status: built** (branch `model-portfolio-screen`). Where the build differs from the plan below:
+**Revision 2 (roadmap 5b), being specified with the user from Nov 21, 2026. Depends on roadmap 6
+([tier-valuation-spec.md](tier-valuation-spec.md)).** What changes from the build:
+
+- **Selection is on business performance per share, not on price.** The portfolio holds each bucket's best
+  performers historically: cash flow, production and reserves per share at constant metal prices, margins through
+  the cycle, little dilution (developers: Rule's developer measures). Price plays no part in choosing them.
+- **Value triggers a buy signal per company.** Each row gets a buy-below price from its tier's valuation (EV
+  against a 10-year NPV at the base deck, with a downside test at the pessimistic deck; roadmap 6), and its status
+  says "Buy" when the price is at or below it. A great company that's expensive stays on the list with no buy signal.
+- **Review above fair value** replaces the peer-norm review level.
+- **Removed:** the valuation filter (Part 1), the jurisdiction filter (removed Nov 21, 2026: country risk counts
+  once, in the discount rate), and the `addon` and `addon_reliance` score measures.
+- **Kept:** the markets rule (with the OTC ADR volume floor, Nov 21, 2026), the data, size and dilution filters,
+  bucket sizes, weights, the write, Part 3 and the privacy rules. The turnover buffer is 0 until holdings are
+  bought (Nov 21, 2026).
+
+Sections below marked **(revision 2)** replace the built version; the rest describes the build.
+
+**Status of the first version: built**  (branch `model-portfolio-screen`). Where the build differs from the plan below:
 - Royalty companies aren't filtered on the peer norm. The Sheet's typical royalty multiple (1.5× × 0.94) sits below
   where the whole group trades, so all seven read 1.5–1.9× their norm (Nov 2026) and a 1.3 level would exclude and
   flag them all. They are excluded instead when the framework band is "Rich" or they are expensive for themselves
@@ -62,6 +80,8 @@ the step summary (CLAUDE.md).
 
 - **Universe**: rows of PNAV inputs with a market cap and a P/NAV (P/NAV tab D numeric, not "negative" or ">20"),
   joined to data/derived/pnav.csv for the fields the Sheet doesn't show.
+  **Revision 2:** no P/NAV or NPV is required to be ranked; a company without one is ranked on performance and
+  shows "No NPV" in its status.
 - **Buckets**: the existing bucket names (`[signals.timing]` keys) plus **Royalty**. Physical metal is not
   screened: its rows keep what the user typed, and they come first on the tab.
 - **Mapping each company to a bucket** (`[portfolio_screen.buckets]`: peer group, main metal and stage):
@@ -122,40 +142,56 @@ $32.95 plus the currency markup, but no $50.
 - **Fee table:** keep it in `[portfolio_screen.markets]` comments with its source and date. Check the schedule
   once a year, since the amounts change.
 
-### Hard filters (a company failing any one isn't eligible)
+### Hard filters (revision 2)
 
-Every threshold is in `[portfolio_screen.filters]` with a comment giving the reason:
+A company failing any one isn't eligible. Every threshold is in `[portfolio_screen.filters]` with a comment giving
+the reason:
 
-- **Market:** the rule above.
+- **Market:** the rule above, including the OTC ADR volume floor (`otc_adr_min_dollar_volume`: median daily dollar
+  volume over 3 months, days without a trade counting as $0).
 - **Data:** financials through (Holdings N) within the last 9 months, and a price date (Holdings T) within 6 days.
 - **Size:** market cap at least $300M for producers and royalty companies, and $100M for developers, as a
   liquidity floor.
-- **Dilution:** share-count change over 3 years (Model portfolio R's source, Holdings downside H) no more than 30%
-  for producers.
-- **Jurisdiction:** add-on (PNAV inputs P) no more than 2.5 points.
-- **Developers:**
-  - The developer check isn't "Short of cash".
-  - P/NAV after the raise (BO) is numeric or "Fully funded" / "Funded (company says)".
-  - EV per weighted unit against the peer median (BW) is no more than 1.5.
-- **Royalty:** the framework band isn't "no independent NAV". A royalty company with no own-history percentile
-  (Metalla today) stays eligible, and that measure is left out of its score.
-- **Valuation:** "valuation vs peer norm" (P/NAV tab N) is below the bucket's review level (Part 2), so the screen
-  never proposes a company it would flag at once.
+- **Dilution:** share-count change over 3 years no more than 30% for producers (100% for expanding producers).
+- **History:** at least `min_history_years` (3) years of the performance measures; fewer, and the company is
+  listed as "too little history" rather than ranked.
+- **Developers:** the developer check isn't "Short of cash".
+- **No price or valuation filter, and no jurisdiction filter.** Value only drives the buy signal (Part 2).
 
-### Score (ranking within a bucket)
+### Score: business performance per share (revision 2)
 
-For each measure: rank percentiles within the bucket, 0 for the worst and 1 for the best. The score is their
-weighted average, with weights in `[portfolio_screen.score]` (equal by default). Measures with no value for a
-company are left out of its average, and the report says how many it had.
+**What "performance" means** (the user, Nov 21, 2026): how the business has grown per share, not how the share
+price did. All figures are per share, each year with that year's share count, and **at constant metal prices**:
+each year's figures are re-priced to the base deck with the valuation's price adjustment, so a rising gold price
+doesn't count as performance. The period is the last 3 fiscal years for which data exists (2022–2025 today).
 
-| Bucket | Measures (better = ...) |
-|---|---|
-| Producers (gold, copper, silver, expanding) | valuation vs peer norm (lower); P/NAV at Low prices (lower); free-cash-flow breakeven vs today's price (lower); net cash, % of market value (higher); share-count change, 3 years (lower); jurisdiction add-on (lower); P/NAV with the add-on raised ÷ P/NAV today, BX (lower: less reliant on the risk premium) |
-| Developers | P/NAV after a raise (lower; funded counts as best); EV per weighted unit against the peer median, BW (lower); months of funding (higher); jurisdiction add-on (lower) |
-| Royalty | independent P/NAV, AJ (lower); own-history percentile, P/NAV when recorded else P/OCF, CA or BZ (lower); valuation vs peer norm (lower); jurisdiction add-on (lower) |
+| Bucket | Measure (better = ...) | Data |
+|---|---|---|
+| Producers (gold, copper, silver, expanding) | Cash flow per share growth: operating cash flow − sustaining spending (higher) | Yahoo annual OCF and shares; sustaining spending per year (research; FCF where not recorded, labelled) |
+| | Production per share growth, attributable (higher) | Research: annual reports, unit as reported |
+| | Reserves per share growth, attributable P&P (higher) | Research: year-end reserve statements |
+| | Cash margin through the cycle: average and lowest year of cash flow ÷ revenue (higher) | As above |
+| | Share-count change over 3 years (lower) | Holdings downside H |
+| | Net cash, % of market value (higher) | Holdings downside D |
+| | AISC margin at the base deck (higher) | Roadmap 4a (company AISC) when built; the breakeven measure until then |
+| Royalty | Operating cash flow per share growth (higher) | Yahoo |
+| | Attributable gold-equivalent ounces sold per share growth (higher) | Research |
+| | Cash margin through the cycle (higher) | Yahoo |
+| | Share-count change over 3 years (lower) | Holdings downside H |
+| Developers ("everything Rule states", the user, Nov 21, 2026) | Resource per share growth, by category weight (higher): did drilling add more than the dilution? | Roadmap 3 resource rows, by year (research) |
+| | Study progress over 3 years: PEA → PFS → FS → permitted → construction (more steps) | `projects.csv` study dates, `study_stage` |
+| | Money into the ground: exploration and development spending ÷ all spending (higher); G&A ÷ all spending (lower) | Yahoo cash-flow and income statements where split; research otherwise |
+| | Risk-adjusted NPV per share across successive studies at a constant deck (higher) | Roadmap 6 |
+| | Share-count change over 3 years (lower) | Holdings downside H |
 
-Don't tune the weights to the backtest: most of these measures have no history, and one period's best fit is
-noise (CLAUDE.md, "Signal backtest").
+- Rank percentiles within the bucket as before; a measure a company lacks is left out of its average, and the
+  report says how many it had.
+- **Weighting: open.** The user will decide it once the valuation work is settled (Nov 21, 2026). The likely
+  shape, from the research given in conversation: equal weights across themes (growth per share, margins, balance
+  sheet and dilution), not across every measure, so a theme with more measures doesn't count more. Not tuned to
+  the backtest.
+- **Not measured:** share-price return. It rewards stocks that have already risen, which works against buying on
+  value. The report may show it for context, outside the score.
 
 ### Bucket sizes: defaults and the research behind the limits
 
@@ -187,7 +223,7 @@ noise (CLAUDE.md, "Signal backtest").
 ### Selection and weights
 
 - **Names**: the top N per bucket, with N from `private/screen.toml`.
-- **Turnover buffer** (`buffer`, default 2): a holding already on the tab stays while it ranks within N + buffer
+- **Turnover buffer** (`buffer`; 2 once holdings are bought, 0 while the portfolio is still being built): a holding already on the tab stays while it ranks within N + buffer
   and passes the filters, so the list doesn't churn on small rank changes. A holding that fails a filter is
   dropped and the reason is reported.
 - **Weights**: each bucket's total weight is split equally among its names. Optionally tilt by score within
@@ -235,21 +271,34 @@ portfolio):
   alerts SMTP settings. The next `prices` run will also email the Status changes, as usual.
 - **Part 3** runs at the end of `--write`.
 
-## Part 2: review levels from a rule
+## Part 2: buy signal and fair value (revision 2)
 
-- T reads "Review: above level" when K (valuation vs peer norm, 1.0 = in line) is above S.
-- The rule is `review_multiple` from `[portfolio_screen.review]`: 1.3 by default (30% above the peer norm), with
-  per-bucket overrides (developers might warrant 1.5, since study NPVs are rougher).
-- **A level typed by hand stays** (the user's choice):
-  - `screen --write` records the S values it wrote in `private/screen_state.json` (by Sprott ticker).
-  - On the next write, a row whose S still equals the recorded value is the screen's, and it is updated.
-  - A row whose S differs was typed by the user, and it is kept. The report lists it as "review level typed by
-    hand: kept".
-  - A new holding gets the rule's level. If the state file is missing, every non-blank S is treated as typed by
-    hand.
-- Physical metal rows: S stays as typed.
-- The filter in Part 1 uses the rule's level (or the typed one, for a holding that has one), so a new name always
-  starts below it.
+Replaces the peer-norm review level. The valuation is roadmap 6's (Part 5 of
+[tier-valuation-spec.md](tier-valuation-spec.md)):
+
+| Tier | Buy when (both) | Above fair value |
+|---|---|---|
+| Producers | EV ≤ 0.6 × base NPV, and EV ≤ pessimistic NPV with costs raised | EV ≥ 1.0 × base NPV |
+| Royalties | EV ≤ 1.0 × base NPV, and EV ≤ pessimistic NPV | EV ≥ 1.5 × base NPV |
+| Developers | EV ≤ 0.6 × base risk-adjusted NPV, and the +30% capex-overrun test passes | EV ≥ 1.0 × base risk-adjusted NPV |
+
+- **S (level):** the buy multiple for that row: blank or the rule's value from `[valuation.buy]`. A level typed by
+  hand is kept, with the existing state file (`private/screen_state.json`).
+- **Buy-below price** (new column, placed by `setup-sheet` after Z): US$ and the listing currency, a formula over
+  PNAV inputs, so it moves with the financials and the decks.
+- **T (status)**, a formula, in this order:
+  1. "No NPV: <why>" (negative at the base deck, inputs missing, or a study that failed its check);
+  2. "Fails downside test" (EV above the pessimistic NPV, or the overrun test fails);
+  3. "Buy: below <price>";
+  4. "Above fair value: review";
+  5. "Hold".
+- **Alerts:** a change in T is already emailed privately by `prices` (`alerts.notify_portfolio`), so a name entering
+  or leaving its buy zone arrives by email. Names, prices and statuses never go into an issue, a log or the step
+  summary.
+- **Every company,** not just the portfolio's rows, gets a buy-below price on PNAV inputs (roadmap 6), with no email.
+- **Review** also follows performance: a row whose score falls below the bucket's cut is listed by the next
+  `screen` run (and, after holdings are bought, the turnover buffer decides when it is replaced).
+- Physical metal rows: unchanged (S and T as typed and as today).
 
 ## Part 3: `private/portfolio.csv` from the tab
 
@@ -334,6 +383,14 @@ portfolio):
   - add the yearly fee-schedule check to the calendar;
   - add the unresearched listings as a small item if any are left.
 
+## Tests for revision 2 (offline, MemorySheet; no real names in fixtures)
+
+- Constant-price re-pricing of a year's cash flow and production, per share with that year's share count.
+- Each performance measure, the FCF fallback label, and "too little history".
+- Selection ignores price: an expensive company with the best score is selected, with no buy status.
+- Status order in T at each edge (no NPV, downside test, buy, above fair value, hold), a typed S kept, and the
+  buy-below price at each binding condition.
+
 ## Done when
 
 - `screen --dry-run` gives a ranked, explained proposal for each equity bucket, Royalty included, with US and
@@ -343,7 +400,13 @@ portfolio):
 - `backtest` runs on the `private/portfolio.csv` written from the tab.
 - The example portfolio is neutral.
 
-## At build time, ask the user
+## Open questions for revision 2
+
+1. **Weighting** of the performance measures (after the valuation work is settled).
+2. **Period:** 3 fiscal years today (Yahoo carries 4 annual years for 220 of 237 companies). Longer periods need
+   research from filings; decide after the Step 0 pilot (roadmap 6).
+
+## At build time, ask the user (first version)
 
 1. **Royalty's weight:** how much to move from Gold producers, and how many names. The research suggests 2–4
    names; the recommendation is given in conversation, not here, because the weights are private.
