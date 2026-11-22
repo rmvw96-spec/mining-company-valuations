@@ -176,13 +176,21 @@ Research inputs (built Nov 21, 2026):
 
 Valuation (to build):
 
-- [ ] A14. `[scenarios]` has Pessimistic, Base and Optimistic, each metal set on its own; changing one metal of one
-  deck changes only the NPVs at that deck. — new test
-- [ ] A15. Producer NPV covers min(reserve life, 10) years with no terminal value; NPV ≤ 0 shows "negative NPV". —
-  new test
-- [ ] A16. Producer cash flow is OCF − sustaining re-priced by revenue mix; a blank sustaining figure falls back
-  to FCF with its label. — new test
-- [ ] A17. The pessimistic deck raises costs by `pessimistic_cost_increase`; base and optimistic don't. — new test
+- [x] A14. Decks are read metal by metal and an incomplete deck is refused; changing one metal of one deck changes
+  only the NPVs at that deck. — `tests/test_valuation.py::test_decks_are_read_metal_by_metal_and_must_be_complete`,
+  `tests/test_valuation.py::test_changing_one_metal_of_one_deck_changes_only_that_decks_npv`,
+  `tests/test_valuation.py::test_the_settings_name_the_decks_consistently`
+- [x] A15. Producer NPV covers min(reserve life, 10) years with no terminal value; NPV ≤ 0 shows "negative NPV";
+  no reserve life or cash flow means no NPV, with the reason. —
+  `tests/test_valuation.py::test_npv_covers_the_shorter_of_reserve_life_and_horizon_with_no_terminal_value`,
+  `tests/test_valuation.py::test_a_negative_npv_is_text_not_a_ratio`,
+  `tests/test_valuation.py::test_no_reserve_life_or_cash_flow_means_no_npv_and_says_why`
+- [x] A16. Producer cash flow is OCF − sustaining re-priced by revenue mix; a blank sustaining figure falls back
+  to FCF with its label. — `tests/test_valuation.py::test_cash_flow_is_ocf_less_sustaining_repriced_by_revenue_mix`,
+  `tests/test_valuation.py::test_a_blank_sustaining_figure_falls_back_to_fcf_with_its_label`,
+  `tests/test_valuation.py::test_measures_ev_to_npv_fcf_yield_and_the_downside_test`
+- [x] A17. The pessimistic deck raises costs by `pessimistic_cost_increase`; base and optimistic don't. —
+  `tests/test_valuation.py::test_only_the_pessimistic_deck_raises_costs`
 - [ ] A18. A committed project's risk-adjusted NPV is added at the company's share; an uncommitted one isn't. —
   new test
 - [ ] A19. Developer overrun dilution at +15% and +30%, its test against 0.33, and capex-to-market cap. — new test
@@ -196,6 +204,8 @@ Valuation (to build):
   `financials --dry-run` report
 - [ ] A26. (user) The validation report has been read with the user.
 - [ ] A27. README describes the valuation by tier and the decks; the roadmap marks item 6.
+- [ ] A28. (user) `[scenarios]` holds the user's Pessimistic, Base and Optimistic decks, each with a source and date,
+  and `[valuation] pessimistic_cost_increase` is set.
 
 ## Decisions
 

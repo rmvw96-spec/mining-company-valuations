@@ -320,6 +320,12 @@ resource_weight_inferred = 0.2
 # Roadmap 6 (docs/specs/tier-valuation-spec.md). Study rebuilds (minerval/studies.py): the rebuilt NPV at the study's
 # own price and rate must be within check_npv of the published one, and the re-pricing within check_sensitivity of
 # the study's own sensitivity rows, or the study isn't used for a buy signal.
+# Price decks (Part 1): each a [scenarios] entry with gold, silver and copper set on its own (no ratio links them),
+# with its source and date in a comment. The values are the user's; nothing in the code depends on them.
+decks = ["Pessimistic", "Base", "Optimistic"]
+pessimistic_deck = "Pessimistic"   # runs with costs raised by pessimistic_cost_increase
+base_deck = "Base"
+horizon_years = 10                  # producers and royalties: min(reserve life, this), no terminal value
 check_npv = 0.05
 check_sensitivity = 0.10
 max_overrun_dilution = 0.33         # developers' downside test: dilution at a 30% capex overrun (the user, Nov 21, 2026)
