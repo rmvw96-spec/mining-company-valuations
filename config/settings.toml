@@ -224,7 +224,7 @@ downside = "CK"
 fcf_yield = "CL"
 dilution_15 = "CM"
 dilution_30 = "CN"
-overrun_test = "CO"
+financing_note = "CO"
 capex_to_mcap = "CP"
 buy_below_value = "CQ"
 fair_value_price = "CR"
@@ -355,7 +355,11 @@ horizon_years = 10                  # producers and royalties: min(reserve life,
 check_factor = 2.0                  # validation: flag an NAV more than 2x from the independent or consensus NAV
 check_npv = 0.05
 check_sensitivity = 0.10
-max_overrun_dilution = 0.33         # developers' downside test: dilution at a 30% capex overrun (the user, Nov 21, 2026)
+# Developers' financing (Rule Investment Newsletter #22, "Build or sell?", Nov 11, 2026): his model finances a build
+# with 35% equity, raised "often at a 15% discount to the market price" (the Signals input raise_discount), the rest
+# debt; dilution is priced into the buy-below per share rather than tested against a limit (the user, Nov 22, 2026).
+equity_share = 0.35
+dilution_note_above = 1.0           # note a raise at the largest overrun that more than doubles the share count
 capex_overrun = [0.15, 0.30]
 
 # Probability that a project at each stage reaches production (minerval/studies.py stage(): construction = a

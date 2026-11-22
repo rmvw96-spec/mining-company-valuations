@@ -11,14 +11,19 @@ horizon_years) years at the discount rate, with no terminal value; net cash isn'
 A committed growth project (projects.csv `committed` = yes: a construction decision and a published study) adds
 its risk-adjusted study NPV at the company's share (minerval/studies.py).
 
-Developers (Part 3, steps 7-8): the funding gap with remaining capex raised by each of [valuation] capex_overrun,
-funded by an equity raise at the Signals input raise_discount; the downside test passes when the dilution at the
-largest overrun is at most max_overrun_dilution. Capex-to-market cap = remaining capex ÷ market cap.
+Royalties (Part 4): base-deck operating cash flow as a perpetuity at the discount rate, with no growth (new deals
+and discoveries are upside).
+
+Developers (Part 3, steps 7-8, Rule's financing-adjusted test): the funding gap at each of [valuation]
+capex_overrun is financed with [valuation] equity_share in equity (Rule's model: 35%, the rest debt), raised at the
+Signals input raise_discount. The buy-below price is the value per share after the +30% case: (buy × risk-adjusted
+NPV − the overrun's extra capex + net cash + the equity raised) ÷ (shares + new shares); fair value is the same at
+the study's capex. Capex-to-market cap = remaining capex ÷ market cap.
 """
 import pandas as pd
 
 from .config import DERIVED, OUT, RESEARCH, ensure, settings
-from .pnav import _num, annuity, funding_gap, raise_after
+from .pnav import _num, annuity, funding_gap
 from .price_model import METALS, cost_change
 
 OCF_BASIS = "OCF − sustaining"
@@ -91,7 +96,8 @@ def royalty_cash_flow(r, prices: dict) -> tuple[float | None, str]:
     return (ocf + _price_change(r, prices), ROYALTY_BASIS) if _num(ocf) else (None, "no cash flow")
 
 
-def _valuation(deck_prices: dict, rate: float, years: float, ev, cash_flow, extra: dict | None = None) -> dict:
+def _valuation(deck_prices: dict, rate: float, years: float, ev, cash_flow, extra: dict | None = None,
+               value=None) -> dict:
     """NPV and EV / NPV at each deck from `cash_flow(deck, prices)`, plus the base-deck cash flow ÷ EV and the
     downside test (EV ≤ the pessimistic NPV)."""
     c = cfg()
@@ -104,7 +110,7 @@ def _valuation(deck_prices: dict, rate: float, years: float, ev, cash_flow, extr
         cf, basis = cash_flow(d, px)
         if cf is None:
             return blank(basis)
-        out[f"npv {d}"] = npv(cf, rate, years) + (extra or {}).get(d, 0.0)
+        out[f"npv {d}"] = (value(cf) if value else npv(cf, rate, years)) + (extra or {}).get(d, 0.0)
         out[f"ev/npv {d}"] = ev_to_npv(ev, out[f"npv {d}"]) if _num(ev) else None
         out["npv_basis"] = basis
         if d == c["base_deck"] and _num(ev) and ev > 0:
@@ -131,16 +137,19 @@ def producer_valuation(r, deck_prices: dict, rate: float, pipeline: dict | None 
 
 
 def royalty_valuation(r, deck_prices: dict, rate: float) -> dict:
-    """Part 4: NPV of operating cash flow over horizon_years at each deck (not the reserve life: a royalty's
-    portfolio outlives any one mine), EV / NPV, and the downside test at the pessimistic deck."""
-    return _valuation(deck_prices, rate, cfg()["horizon_years"], r.get("ev_m"),
-                      lambda d, px: royalty_cash_flow(r, px))
+    """Part 4: base-deck operating cash flow as a perpetuity at `rate` (no growth: a royalty portfolio outlives any
+    one mine, and new deals and discoveries are the upside), EV / NPV, and the downside test at the pessimistic
+    deck."""
+    return _valuation(deck_prices, rate, 0.0, r.get("ev_m"), lambda d, px: royalty_cash_flow(r, px),
+                      value=lambda cf: cf / rate)
 
 
-def buy_levels(tier: str, npv_base, npv_pessimistic=None, net_cash_m=None, shares_m=None, overrun_ok=None) -> dict:
-    """Part 5, per share: buy-below = (min(buy × base NPV, pessimistic NPV) + net cash) ÷ shares, the highest price
-    meeting both conditions (developers: buy × base risk-adjusted NPV, only when the capex-overrun test passes);
-    fair value = (fair × base NPV + net cash) ÷ shares. Levels from [valuation.buy]. None, with why, otherwise."""
+def buy_levels(tier: str, npv_base, npv_pessimistic=None, net_cash_m=None, shares_m=None,
+               financing: dict | None = None) -> dict:
+    """Part 5, per share. Producers and royalties: buy-below = (min(buy × base NPV, pessimistic NPV) + net cash) ÷
+    shares, fair value = (fair × base NPV + net cash) ÷ shares. Developers (Rule's financing-adjusted test, from
+    overrun()["cases"]): buy-below = (buy × NPV − overrun capex + net cash + equity raised) ÷ (shares + new shares) in
+    the +30% case ("worst"), fair value the same at the study's capex ("base"). Levels from [valuation.buy]."""
     L = cfg()["buy"][tier]
     out = {"buy_below": None, "fair_value": None, "binding": "", "why": ""}
     if npv_base is None:
@@ -150,18 +159,22 @@ def buy_levels(tier: str, npv_base, npv_pessimistic=None, net_cash_m=None, share
     if not (_num(shares_m) and shares_m > 0):
         return out | {"why": "no share count"}
     nc = net_cash_m if _num(net_cash_m) else 0.0
-    out["fair_value"] = (L["fair"] * npv_base + nc) / shares_m
-    disc = L["buy"] * npv_base
     if tier == "developer":
-        if overrun_ok is None:
-            return out | {"why": "no capex-overrun test (no remaining capex recorded)"}
-        if not overrun_ok:
-            return out | {"why": "fails the capex-overrun test"}
-        cap, binding = disc, "discount"
-    elif npv_pessimistic is None:
+        if not financing:
+            return out | {"why": "no remaining capex recorded: the build's dilution can't be priced"}
+
+        def per_share(mult, f):
+            return (mult * npv_base - f["overrun_cost_m"] + nc + f["equity_m"]) / (shares_m + f["new_shares_m"])
+        out["fair_value"] = per_share(L["fair"], financing["base"])
+        price = per_share(L["buy"], financing["worst"])
+        if price <= 0:
+            return out | {"why": "negative value per share after a +30% overrun"}
+        return out | {"buy_below": price, "binding": "financing at a +30% overrun"}
+    out["fair_value"] = (L["fair"] * npv_base + nc) / shares_m
+    if npv_pessimistic is None:
         return out | {"why": "no pessimistic NPV"}
-    else:
-        cap, binding = (disc, "discount") if disc <= npv_pessimistic else (npv_pessimistic, "downside test")
+    disc = L["buy"] * npv_base
+    cap, binding = (disc, "discount") if disc <= npv_pessimistic else (npv_pessimistic, "downside test")
     price = (cap + nc) / shares_m
     if price <= 0:
         return out | {"why": "fails the downside test at any price"}
@@ -232,20 +245,31 @@ def developer_valuation(ticker: str, deck_prices: dict, rate: float, today, P, C
 
 
 def overrun(remaining_capex_m, cash_m, committed_m, price, mcap_m, discount: float | None = None) -> dict:
-    """Dilution of an equity raise for the funding gap at each capex overrun, the downside test, and capex ÷ market
-    cap. A gap at or below zero needs no raise (no dilution)."""
+    """The build's financing at the study's capex and at each capex overrun (Rule's model): the funding gap
+    (capex × (1 + overrun) − cash − committed funding) is financed with [valuation] equity_share in equity at
+    `discount` to today's price, the rest debt. "cases" maps each overrun (0 = the study) to the equity raised, the new
+    shares and the overrun's extra capex; dilution at each overrun and capex ÷ market cap are for information, with
+    a note when the +30% raise more than doubles the share count."""
     c = cfg()
     d = settings()["signals"]["inputs"]["raise_discount"] if discount is None else discount
-    out = {f"dilution +{o:.0%}": None for o in c["capex_overrun"]} | {"overrun_ok": None, "capex_to_mcap": None,
-                                                                      "why": ""}
+    out = {f"dilution +{o:.0%}": None for o in c["capex_overrun"]} | {"capex_to_mcap": None, "financing_note": "",
+                                                                      "cases": {}, "why": ""}
     if not _num(remaining_capex_m):
         return out | {"why": "no remaining capex recorded"}
-    for o in c["capex_overrun"]:
-        x = raise_after(funding_gap(remaining_capex_m * (1 + o), cash_m, committed_m), price, mcap_m, None, d)
-        out[f"dilution +{o:.0%}"] = x.get("dilution")
+    shares = mcap_m / price if _num(mcap_m) and _num(price) and price > 0 else None
+    for o in [0.0, *c["capex_overrun"]]:
+        gap = funding_gap(remaining_capex_m * (1 + o), cash_m, committed_m)
+        equity = c["equity_share"] * max(gap, 0.0)
+        new = equity / (price * (1 - d)) if shares else None
+        out["cases"][o] = {"equity_m": equity, "new_shares_m": new, "overrun_cost_m": o * remaining_capex_m}
+        if o and shares:
+            out[f"dilution +{o:.0%}"] = new / shares
+    if not shares:
+        return out | {"cases": {}, "why": "no share price or market cap"}
     worst = out[f"dilution +{max(c['capex_overrun']):.0%}"]
-    if worst is not None:
-        out["overrun_ok"] = bool(worst <= c["max_overrun_dilution"])
+    if worst is not None and worst > c["dilution_note_above"]:
+        out["financing_note"] = (f"a raise at a +{max(c['capex_overrun']):.0%} overrun more than doubles the share "
+                                 f"count ({worst:.0%} dilution)")
     if _num(mcap_m) and mcap_m > 0:
         out["capex_to_mcap"] = remaining_capex_m / mcap_m
     return out
@@ -296,10 +320,11 @@ def compute(I: pd.DataFrame, deck_prices: dict, today, P=None, C=None,
             v = developer_valuation(r["ticker"], deck_prices, rate, today, P, C)
             o = overrun(r.get("remaining_capex_usd_m"), r.get("cash_m"), r.get("committed_funding_usd_m"), price, mcap)
             d.update({k: v[k] for k in v if k.startswith("npv ")}, valuation_basis=STUDY_BASIS, why=v["why"])
-            d.update({k: o[k] for k in o if k != "why"}, downside_ok=o["overrun_ok"])
+            d.update({k: o[k] for k in o if k not in ("why", "cases")})
             for dk in deck_prices:
                 d[f"ev/npv {dk}"] = ev_to_npv(ev, d[f"npv {dk}"]) if ev is not None else None
-            b = buy_levels("developer", d[f"npv {base}"], None, nc, shares, o["overrun_ok"])
+            fin = {"base": o["cases"][0.0], "worst": o["cases"][max(c["capex_overrun"])]} if o["cases"] else None
+            b = buy_levels("developer", d[f"npv {base}"], None, nc, shares, financing=fin)
         else:
             if tier == "producer":
                 pipe, pwhy = pipeline(r["ticker"], deck_prices, rate, today, P, C)

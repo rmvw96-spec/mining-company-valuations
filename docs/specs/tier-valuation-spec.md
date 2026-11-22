@@ -94,9 +94,11 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
   5. **Probability:** `[valuation.stage_probability]` by stage: construction (`committed`), permitted (`permits` =
      yes after at least a PFS), else the study type.
   6. **Risk-adjusted NPV** = NPV × time discount × probability × attributable share.
-  7. **Capex overrun:** the funding gap (roadmap 3) with remaining capex raised by each of `capex_overrun`
-     (+15%, +30%), funded by an equity raise at `raise_discount`. The downside test passes when dilution at +30% is
-     at most `max_overrun_dilution` (0.33).
+  7. **Financing and overrun (Rule's financing-adjusted test):** the funding gap (roadmap 3: remaining capex −
+     cash − committed funding) at the study's capex and at each of `capex_overrun` (+15%, +30%) is financed with
+     `equity_share` (0.35) in equity at `raise_discount` (15%), the rest debt. Dilution at each overrun is shown for
+     information, with a note when the +30% raise more than doubles the share count (`dilution_note_above`); it is
+     priced into the buy-below price (Part 5) rather than tested against a limit.
   8. **Capex-to-market cap** = remaining capex ÷ market cap.
 - **Stage column:** `study_stage` in `pnav_companies.csv` (PEA / PFS / FS / permitted / construction / none),
   filled from the free-text `stage` and checked against the latest study row.
@@ -105,8 +107,9 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
 
 ### Part 4: royalties
 
-- NPV of operating cash flow over 10 years at each deck (no sustaining spending), at the same discount rate. Their
-  lower cost of capital shows in the buy level (Part 5), not the rate.
+- NPV = operating cash flow at each deck as a perpetuity at the same discount rate, with no growth (no sustaining
+  spending; new deals and discoveries are the upside). At a rate near 9% the buy level (1.0×) is about 11× cash
+  flow and fair value (1.5×) about 16-17×, against the 15-20× Rule cites for precious-metals royalties.
 - Kept: independent P/NAV (AJ), framework band (AS), P/OCF and own-history percentiles (BY:CA). New: EV / NPV at
   each deck and the downside test at the pessimistic deck.
 
@@ -118,7 +121,7 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
 |---|---|---|
 | Producers | EV ≤ 0.6 × base NPV, and EV ≤ pessimistic NPV with costs raised | EV ≥ 1.0 × base NPV |
 | Royalties | EV ≤ 1.0 × base NPV, and EV ≤ pessimistic NPV | EV ≥ 1.5 × base NPV |
-| Developers | EV ≤ 0.6 × base risk-adjusted NPV, and the +30% overrun test passes | EV ≥ 1.0 × base risk-adjusted NPV |
+| Developers | Price ≤ (0.6 × base risk-adjusted NPV − the +30% overrun's extra capex + net cash + equity raised) ÷ (shares + new shares) | Price ≥ the same at the study's capex with 1.0 × NPV |
 
 - **Buy-below price per share** (US$) = (min(buy × base NPV, pessimistic NPV) + net cash) ÷ shares, written by
   `financials`: it doesn't depend on today's price, only on the NPVs, net cash and the share count. No NPV (negative at base, inputs missing, failed check): no price, and the status
@@ -194,15 +197,16 @@ Valuation (to build):
   one isn't, and one that can't be valued is named. —
   `tests/test_valuation.py::test_a_committed_projects_risk_adjusted_npv_is_added_and_an_uncommitted_one_isnt`,
   `tests/test_valuation.py::test_a_committed_project_that_cant_be_valued_is_left_out_and_named`
-- [x] A19. Developer overrun dilution at +15% and +30%, its test against 0.33, and capex-to-market cap. —
-  `tests/test_valuation.py::test_overrun_dilution_at_each_overrun_and_its_downside_test`,
-  `tests/test_valuation.py::test_no_remaining_capex_means_no_overrun_test`
+- [x] A19. Developer financing at the study's capex and at +15% and +30% overruns with 35% equity, its dilution and
+  doubling note, and capex-to-market cap. —
+  `tests/test_valuation.py::test_overrun_financing_uses_rules_equity_share_and_notes_a_doubling`,
+  `tests/test_valuation.py::test_no_remaining_capex_means_the_dilution_cant_be_priced`
 - [ ] A20. `study_stage` holds only the six values and agrees with the latest study row. — new data-file test
-- [x] A21. Royalty NPV of operating cash flow over 10 years at each deck and its downside test. —
-  `tests/test_valuation.py::test_royalty_npv_is_ten_years_of_operating_cash_flow_at_each_deck_with_no_cost_increase`
-- [x] A22. The buy-below price at each binding condition (the discount, the downside test, developers' overrun
-  test), and none without an NPV. — `tests/test_valuation.py::test_buy_below_price_at_each_binding_condition`,
-  `tests/test_valuation.py::test_developers_buy_below_needs_the_overrun_test`,
+- [x] A21. Royalty NPV is a perpetuity of operating cash flow at each deck, with its downside test. —
+  `tests/test_valuation.py::test_royalty_npv_is_a_perpetuity_of_operating_cash_flow_at_each_deck_with_no_cost_increase`
+- [x] A22. The buy-below price at each binding condition (the discount, the downside test, developers' financing
+  at a +30% overrun), and none without an NPV. — `tests/test_valuation.py::test_buy_below_price_at_each_binding_condition`,
+  `tests/test_valuation.py::test_developers_buy_below_prices_in_the_dilution_of_a_30pct_overrun`,
   `tests/test_valuation.py::test_no_npv_means_no_buy_below_price_and_says_why`,
   `tests/test_valuation.py::test_the_settings_set_a_buy_level_below_fair_value_for_every_tier`
 - [x] A23. The validation check flags an NAV more than 2× from the independent NAV or the consensus P/NAV. —
@@ -225,7 +229,10 @@ All by the user, Nov 21, 2026:
 - Decks are configurable metal by metal, with no fixed ratio; the design doesn't depend on their values.
 - Buy level: a discount to the base-deck NPV plus a downside test at the pessimistic deck. Royalty fair value 1.5×.
 - Developers: rebuild the study cash flows at our rate and decks, with the study's own tax share.
-- Developer downside test: at most 33% dilution at a 30% capex overrun.
+- Developers: Rule's financing-adjusted per-share test (35% equity, 15% discount, the +30% overrun's cost and
+  dilution priced into the buy-below), replacing the 33% dilution limit set Nov 21 (the user, 2026-11-22; from Rule
+  Investment Newsletter #22, Nov 11, 2026).
+- Royalties: a perpetuity of base-deck operating cash flow, replacing 10 years (the user, 2026-11-22).
 - Production, reserves and sustaining spending are researched from the start (after the Step 0 pilot), with a
   second pass on juniors' MD&As and the FCF fallback where none is split.
 - Sustaining spending is an exact trailing 12 months, rebuilt each quarter from a per-period record; capitalized

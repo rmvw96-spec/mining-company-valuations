@@ -11,7 +11,7 @@ DECKS = {"Pessimistic": {"gold": 1800.0, "silver": 22.0, "copper": 3.6},
          "Optimistic": {"gold": 2600.0, "silver": 34.0, "copper": 5.2}}
 CFG = {"horizon_years": 10, "decks": ["Pessimistic", "Base", "Optimistic"], "pessimistic_deck": "Pessimistic",
        "base_deck": "Base", "pessimistic_cost_increase": 0.10, "capex_overrun": [0.15, 0.30],
-       "max_overrun_dilution": 0.33, "check_factor": 2.0,
+       "equity_share": 0.35, "dilution_note_above": 1.0, "check_factor": 2.0,
        "buy": {"producer": {"buy": 0.6, "fair": 1.0}, "royalty": {"buy": 1.0, "fair": 1.5},
                "developer": {"buy": 0.6, "fair": 1.0}}}
 
@@ -148,21 +148,27 @@ def test_a_committed_project_that_cant_be_valued_is_left_out_and_named(monkeypat
     assert pipe == {d: 0.0 for d in DECKS} and why == ["Mill: no cash-flow table recorded"]
 
 
-def test_overrun_dilution_at_each_overrun_and_its_downside_test():
-    # remaining capex 400, cash 100, committed 50; 50M shares at $10 (market cap 500), raised at a 15% discount
+def test_overrun_financing_uses_rules_equity_share_and_notes_a_doubling():
+    # remaining capex 400, cash 100, committed 50; 50M shares at $10 (market cap 500), raised at a 15% discount;
+    # 35% of the funding gap is equity (Rule's model), the rest debt
     o = V.overrun(400.0, 100.0, 50.0, 10.0, 500.0, discount=0.15)
-    assert o["dilution +15%"] == pytest.approx((400 * 1.15 - 150) / 8.5 / 50)
-    assert o["dilution +30%"] == pytest.approx((400 * 1.30 - 150) / 8.5 / 50)
-    assert o["overrun_ok"] is False and o["capex_to_mcap"] == pytest.approx(0.8)
-    funded = V.overrun(100.0, 200.0, 0.0, 10.0, 500.0, discount=0.15)
-    assert funded["dilution +30%"] == 0.0 and funded["overrun_ok"] is True
-    edge = V.overrun(100.0, 0.0, 0.0, 10.0, 500.0, discount=0.15)     # +30%: 130 / 8.5 = 15.3M new on 50M = 30.6%
-    assert edge["dilution +30%"] < 0.33 and edge["overrun_ok"] is True
+    worst = o["cases"][0.30]
+    assert worst["equity_m"] == pytest.approx(0.35 * (400 * 1.30 - 150))
+    assert worst["new_shares_m"] == pytest.approx(0.35 * (400 * 1.30 - 150) / 8.5)
+    assert worst["overrun_cost_m"] == pytest.approx(0.30 * 400)
+    assert o["dilution +30%"] == pytest.approx(worst["new_shares_m"] / 50)
+    assert o["dilution +15%"] == pytest.approx(0.35 * (400 * 1.15 - 150) / 8.5 / 50)
+    assert o["cases"][0.0]["overrun_cost_m"] == 0.0 and o["capex_to_mcap"] == pytest.approx(0.8)
+    assert o["financing_note"] == ""
+    big = V.overrun(3000.0, 0.0, 0.0, 10.0, 500.0, discount=0.15)              # 0.35 x 3,900 / 8.5 = 160.6M on 50M
+    assert big["financing_note"] == "a raise at a +30% overrun more than doubles the share count (321% dilution)"
+    funded = V.overrun(100.0, 200.0, 0.0, 10.0, 500.0, discount=0.15)          # cash covers it: no raise
+    assert funded["dilution +30%"] == 0.0 and funded["cases"][0.30]["overrun_cost_m"] == pytest.approx(30.0)
 
 
-def test_no_remaining_capex_means_no_overrun_test():
+def test_no_remaining_capex_means_the_dilution_cant_be_priced():
     o = V.overrun(None, 100.0, 0.0, 10.0, 500.0, discount=0.15)
-    assert o["overrun_ok"] is None and o["capex_to_mcap"] is None and o["why"] == "no remaining capex recorded"
+    assert o["cases"] == {} and o["capex_to_mcap"] is None and o["why"] == "no remaining capex recorded"
 
 
 def royalty(**k):
@@ -172,11 +178,11 @@ def royalty(**k):
     return r
 
 
-def test_royalty_npv_is_ten_years_of_operating_cash_flow_at_each_deck_with_no_cost_increase():
+def test_royalty_npv_is_a_perpetuity_of_operating_cash_flow_at_each_deck_with_no_cost_increase():
     v = V.royalty_valuation(royalty(), DECKS, 0.08)
     for d, px in DECKS.items():
         cf = 400.0 + 0.7 * 500.0 * (px["gold"] / 2000 - 1)                     # no sustaining, no cost increase
-        assert v[f"npv {d}"] == pytest.approx(cf * annuity(0.08, 10))           # 10 years, not the 4-year life
+        assert v[f"npv {d}"] == pytest.approx(cf / 0.08)                        # no growth, not the 4-year life
     assert v["npv_basis"] == V.ROYALTY_BASIS
     assert v["downside_ok"] is (3000.0 <= v["npv Pessimistic"])
     assert V.royalty_valuation(royalty(ev_m=100.0), DECKS, 0.08)["downside_ok"] is True
@@ -193,13 +199,19 @@ def test_buy_below_price_at_each_binding_condition():
     assert r["buy_below"] == pytest.approx(1100 / 50) and r["fair_value"] == pytest.approx(1600 / 50)
 
 
-def test_developers_buy_below_needs_the_overrun_test():
-    ok = V.buy_levels("developer", npv_base=500.0, net_cash_m=20.0, shares_m=40.0, overrun_ok=True)
-    assert ok["buy_below"] == pytest.approx((0.6 * 500 + 20) / 40) and ok["binding"] == "discount"
-    no = V.buy_levels("developer", npv_base=500.0, net_cash_m=20.0, shares_m=40.0, overrun_ok=False)
-    assert no["buy_below"] is None and no["why"] == "fails the capex-overrun test"
-    unk = V.buy_levels("developer", npv_base=500.0, net_cash_m=20.0, shares_m=40.0, overrun_ok=None)
-    assert unk["buy_below"] is None and unk["why"] == "no capex-overrun test (no remaining capex recorded)"
+def test_developers_buy_below_prices_in_the_dilution_of_a_30pct_overrun():
+    worst = {"equity_m": 35.0, "new_shares_m": 10.0, "overrun_cost_m": 30.0}    # the +30% overrun case
+    base = {"equity_m": 20.0, "new_shares_m": 5.0, "overrun_cost_m": 0.0}       # the study's capex
+    b = V.buy_levels("developer", npv_base=500.0, net_cash_m=20.0, shares_m=40.0,
+                     financing={"base": base, "worst": worst})
+    assert b["buy_below"] == pytest.approx((0.6 * 500 - 30 + 20 + 35) / (40 + 10))       # 6.50
+    assert b["fair_value"] == pytest.approx((500 + 20 + 20) / (40 + 5))                   # 12.00
+    assert b["binding"] == "financing at a +30% overrun"
+    unk = V.buy_levels("developer", npv_base=500.0, net_cash_m=20.0, shares_m=40.0, financing=None)
+    assert unk["buy_below"] is None and unk["why"] == "no remaining capex recorded: the build's dilution can't be priced"
+    deep = V.buy_levels("developer", npv_base=100.0, net_cash_m=0.0, shares_m=40.0,
+                        financing={"base": base, "worst": {"equity_m": 0.0, "new_shares_m": 0.0, "overrun_cost_m": 90.0}})
+    assert deep["buy_below"] is None and deep["why"] == "negative value per share after a +30% overrun"
 
 
 def test_no_npv_means_no_buy_below_price_and_says_why():
@@ -230,6 +242,7 @@ def test_the_settings_set_a_buy_level_below_fair_value_for_every_tier():
     c = settings()["valuation"]
     assert set(c["buy"]) == {"producer", "royalty", "developer"}
     assert all(0 < v["buy"] < v["fair"] for v in c["buy"].values()) and c["check_factor"] > 1
+    assert 0 < c["equity_share"] < 1 and "max_overrun_dilution" not in c
 
 
 def test_missing_inputs_give_no_price_and_no_flags():
@@ -309,7 +322,10 @@ def test_compute_gives_buy_levels_overrun_and_validation_flags(monkeypatch):
     assert "the independent NAV ($2.00)" in prd["flags"]                          # far from the outside NAV
     dev = T.loc["DEV"]
     o = V.overrun(300.0, 30.0, 0.0, 2.0, 200.0)
-    assert dev["dilution +30%"] == pytest.approx(o["dilution +30%"]) and dev["overrun_ok"] == o["overrun_ok"]
+    assert dev["dilution +30%"] == pytest.approx(o["dilution +30%"]) and dev["financing_note"] == o["financing_note"]
+    want = V.buy_levels("developer", dev["npv Base"], None, 30.0, 100.0,
+                        financing={"base": o["cases"][0.0], "worst": o["cases"][0.30]})
+    assert dev["buy_below"] == pytest.approx(want["buy_below"]) and dev["fair_value"] == pytest.approx(want["fair_value"])
     assert dev["capex_to_mcap"] == pytest.approx(1.5)
 
 
@@ -323,3 +339,16 @@ def test_report_states_the_decks_the_cost_note_and_the_flags(monkeypatch):
     assert V.cost_increase_note() in text
     assert "Producer Co" in text and "independent NAV" in text
     assert "Not valued: 1 (physical metal: 1)" in text
+
+
+def test_compute_says_why_a_row_has_no_valuation(monkeypatch):
+    from datetime import date
+
+    import pandas as pd
+    P, C = study_stub(monkeypatch)
+    F = inputs_frame()
+    more = pd.DataFrame([{**F.iloc[0].to_dict(), "sheet_row": 16, "ticker": "EXP", "basis": np.nan},
+                         {**F.iloc[0].to_dict(), "sheet_row": 17, "ticker": "NOJ", "addon_pct_points": np.nan}])
+    T = V.compute(pd.concat([F, more]), DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04).set_index("ticker")
+    assert T.loc["EXP", "tier"] == "" and T.loc["EXP", "why"] == "no cash-flow basis or study recorded"
+    assert T.loc["NOJ", "tier"] == "producer" and T.loc["NOJ", "why"] == "no jurisdiction add-on"

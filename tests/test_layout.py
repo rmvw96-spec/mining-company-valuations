@@ -247,7 +247,7 @@ def test_valuation_columns_after_cb(tmp_path):
     p, P, f = sh.cells["PNAV inputs"], settings()["sheet"]["pnav_inputs"], layout.valuation_formulas()
     assert p[f"{P['npv_base']}11"].startswith("NPV, Base deck") and p[f"{P['ev_npv_base']}12"] == f["ev_npv_base"]
     assert f"{P['ev']}12:{P['ev']}154/{P['npv_base']}12:{P['npv_base']}154" in f["ev_npv_base"]
-    assert '"negative NPV"' in f["ev_npv_base"] and f"{P['overrun_test']}12:{P['overrun_test']}154" in f["downside"]
-    for name in ("valuation_basis", "npv_base", "cf_base", "overrun_test", "buy_below_value", "valuation_why"):
+    assert '"negative NPV"' in f["ev_npv_base"] and f"{P['financing_note']}12:{P['financing_note']}154" in f["downside"]
+    for name in ("valuation_basis", "npv_base", "cf_base", "financing_note", "buy_below_value", "valuation_why"):
         assert f"{P[name]}12" not in p and p[f"{P[name]}11"]               # written by `financials`: header only
     assert P["valuation_why"] == "CS"

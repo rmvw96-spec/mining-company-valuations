@@ -91,17 +91,17 @@ def valuation_headers() -> dict:
                             f"study (risk-adjusted)); {by}"}
     for d in V["decks"]:
         h[f"npv_{d.lower()}"] = (f"NPV, {d} deck US$M ({V['horizon_years']} years, no terminal value; developers: "
-                                 f"risk-adjusted study NPV); {by}")
+                                 f"risk-adjusted study NPV; royalties: a perpetuity); {by}")
     h["cf_base"] = f"Cash flow a year at the {V['base_deck']} deck US$M (producers and royalties); {by}"
     for d in V["decks"]:
         h[f"ev_npv_{d.lower()}"] = f'EV / NPV, {d} deck ("negative NPV" when the NPV is zero or below)'
     h["downside"] = (f"Downside test: EV ≤ the {V['pessimistic_deck']} NPV (producers with costs raised); developers: "
-                     f"the +{max(o):.0%} capex-overrun test")
+                     f"the financing note (their downside is priced into the buy-below)")
     h["fcf_yield"] = f"Sustaining FCF yield ({V['base_deck']}-deck cash flow ÷ EV)"
     h["dilution_15"] = f"Dilution of a raise at a +{o[0]:.0%} capex overrun (developers); {by}"
     h["dilution_30"] = f"Dilution of a raise at a +{o[-1]:.0%} capex overrun (developers); {by}"
-    h["overrun_test"] = (f"Capex-overrun test: dilution at +{max(o):.0%} at most {V['max_overrun_dilution']:.0%} "
-                         f"(developers); {by}")
+    h["financing_note"] = (f"Financing note (developers): a raise at +{max(o):.0%} that more than doubles the share "
+                           f"count; dilution is priced into the buy-below; {by}")
     h["capex_to_mcap"] = "Remaining capex ÷ market cap (developers)"
     h["buy_below_value"] = (f"Buy below US$/share (the tier's buy level × {V['base_deck']} NPV, no higher than the "
                             f"downside test allows; levels in [valuation.buy]); {by}")
@@ -575,7 +575,7 @@ def valuation_formulas() -> dict:
         out[f"ev_npv_{d.lower()}"] = (f'=ARRAYFORMULA(IF(ISNUMBER({npv}),IF({npv}<=0,"negative NPV",'
                                       f'IFERROR({ev}/{npv},"")),""))')
     pess = r(f"npv_{settings()['valuation']['pessimistic_deck'].lower()}")
-    out["downside"] = (f'=ARRAYFORMULA(IF({r("basis")}="",{r("overrun_test")},IF(ISNUMBER({pess})*ISNUMBER({ev}),'
+    out["downside"] = (f'=ARRAYFORMULA(IF({r("basis")}="",{r("financing_note")},IF(ISNUMBER({pess})*ISNUMBER({ev}),'
                        f'IF(({pess}>0)*({ev}<={pess}),"Passes","Fails"),"")))')
     out["fcf_yield"] = (f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({r("cf_base")})*ISNUMBER({ev}),'
                         f'IF({ev}>0,{r("cf_base")}/{ev},""),""),""))')
