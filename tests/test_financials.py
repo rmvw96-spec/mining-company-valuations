@@ -215,3 +215,16 @@ def test_financials_leaves_the_valuation_alone_before_setup(derived, tmp_path):
     sh = sheet()
     rep = financials.run(sh, out_dir=tmp_path / "out")
     assert "CC12" not in sh.cells["PNAV inputs"] and any("CC:CS (valuation) not set up yet" in line for line in rep)
+
+
+def test_financials_writes_a_developers_table_addon_too(derived, tmp_path):
+    I = pd.read_csv(derived / "pnav.csv")
+    I["addon_pct_points"], I["addon_basis"] = [1.5, 2.25], ["table", "table"]
+    I.to_csv(derived / "pnav.csv", index=False)
+    sh = sheet()                                                   # row 14 (NOBASIS) has no cash-flow basis
+    sh.cells["PNAV inputs"]["P11"] = "Jurisdiction add-on"
+    rep = financials.run(sh, out_dir=tmp_path / "out")
+    p = sh.cells["PNAV inputs"]
+    assert p["P12"] == 0.015 and p["P14"] == 0.0225 and "P13" not in p      # not the fixed-price trust row
+    assert "F14" not in p                                          # its F:H and M:O stay research inputs
+    assert any("2 rows from the country table" in line for line in rep)

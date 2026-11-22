@@ -5,7 +5,9 @@ Rows are matched by key, not by position, so added or re-sorted rows are fine:
   Holdings downside   columns D:J and M:Q, matched on fund (A) + Sprott ticker (L); K is a formula
   PNAV inputs         columns E:H and M:O, matched on the Yahoo symbol (AP). Rows with a fixed price
                       (AQ, the physical trusts) are skipped, and F:H and M:O are written only where
-                      column I names a cash-flow basis, since I:L and P:S are research inputs.
+                      column I names a cash-flow basis, since I:L and P:S are research inputs; P (the
+                      jurisdiction add-on) is written on every row whose add-on comes from the country table
+                      or an override, developers' included, and hand-set rows are left alone.
                       Once `setup-sheet` has added them: AX:AY (cash, 12-month free cash flow) on every
                       row, and Holdings downside R (cost base, revenue - FCF); CC:CG, CM:CO and CQ:CS
                       (valuation by tier) from data/derived/valuation.csv, written by `valuation`, which must
@@ -217,8 +219,8 @@ def run(sheet, dry_run=False, out_dir=None):
         cash[r] = want[s][3]
         if str(basis.get(r, "")).strip():
             fgh[r], mno[r] = want[s][1], want[s][2]
-            if want[s][4] is not None:
-                addon[r] = want[s][4]
+        if want[s][4] is not None:              # a country-table or override add-on, developers' included
+            addon[r] = want[s][4]
     ch = _changes(sheet, tab, "E", e) + _changes(sheet, tab, "F", fgh) + _changes(sheet, tab, "M", mno)
     blocks += blocks_by_row(tab, "E", e) + blocks_by_row(tab, "F", fgh) + blocks_by_row(tab, "M", mno)
     if has_cash:
