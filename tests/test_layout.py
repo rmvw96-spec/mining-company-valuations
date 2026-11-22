@@ -251,3 +251,9 @@ def test_valuation_columns_after_cb(tmp_path):
     for name in ("valuation_basis", "npv_base", "cf_base", "financing_note", "buy_below_value", "valuation_why"):
         assert f"{P[name]}12" not in p and p[f"{P[name]}11"]               # written by `financials`: header only
     assert P["valuation_why"] == "CS"
+
+
+def test_valuation_headers_describe_each_tier():
+    h = layout.valuation_headers()
+    assert "producers: 10 years, no terminal value; royalties: a perpetuity; developers: risk-adjusted" in h["npv_base"]
+    assert "developers: value per share after a +30% overrun's financing" in h["buy_below_value"]

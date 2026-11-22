@@ -90,8 +90,8 @@ def valuation_headers() -> dict:
     h = {"valuation_basis": f"Valuation basis (OCF − sustaining; FCF basis: sustaining not recorded; OCF (royalty); "
                             f"study (risk-adjusted)); {by}"}
     for d in V["decks"]:
-        h[f"npv_{d.lower()}"] = (f"NPV, {d} deck US$M ({V['horizon_years']} years, no terminal value; developers: "
-                                 f"risk-adjusted study NPV; royalties: a perpetuity); {by}")
+        h[f"npv_{d.lower()}"] = (f"NPV, {d} deck US$M (producers: {V['horizon_years']} years, no terminal value; "
+                                 f"royalties: a perpetuity; developers: risk-adjusted study NPV); {by}")
     h["cf_base"] = f"Cash flow a year at the {V['base_deck']} deck US$M (producers and royalties); {by}"
     for d in V["decks"]:
         h[f"ev_npv_{d.lower()}"] = f'EV / NPV, {d} deck ("negative NPV" when the NPV is zero or below)'
@@ -103,8 +103,9 @@ def valuation_headers() -> dict:
     h["financing_note"] = (f"Financing note (developers): a raise at +{max(o):.0%} that more than doubles the share "
                            f"count; dilution is priced into the buy-below; {by}")
     h["capex_to_mcap"] = "Remaining capex ÷ market cap (developers)"
-    h["buy_below_value"] = (f"Buy below US$/share (the tier's buy level × {V['base_deck']} NPV, no higher than the "
-                            f"downside test allows; levels in [valuation.buy]); {by}")
+    h["buy_below_value"] = (f"Buy below US$/share (producers and royalties: the buy level × {V['base_deck']} NPV, no "
+                            f"higher than the downside test allows; developers: value per share after a "
+                            f"+{max(o):.0%} overrun's financing; levels in [valuation.buy]); {by}")
     h["fair_value_price"] = f"Fair value US$/share (review above; [valuation.buy]); {by}"
     h["valuation_why"] = f"Why there's no NPV or buy-below price; {by}"
     return h
