@@ -5,7 +5,29 @@ to implement, on its own branch and PR, following CLAUDE.md and the format in
 [specs/TEMPLATE.md](specs/TEMPLATE.md). Sizes are rough: S is an afternoon, M a day or
 two, L several days.
 
-Written Nov 18, 2026, after the market-signals work (PR #5) and the scheduled GitHub price update went live.
+Written Nov 18, 2026, after the market-signals work (PR #5, [market-signals-spec.md](specs/market-signals-spec.md)) and the scheduled GitHub price update went live.
+
+## Status
+
+Each item, its spec and its acceptance criteria checked off. **Built**: the build is done, and anything still open
+waits on the user or on data not yet published (criteria marked "(user)" or "(data)"). **In progress**: partly
+built. **Outstanding**: not started. `tests/test_data_files.py` checks this table against the specs.
+
+| # | Item | Spec | Status | Criteria | Checked | Still open |
+|---|---|---|---|---|---|---|
+| 0 | Market signals (PR #5) | [market-signals-spec.md](specs/market-signals-spec.md) | Built | A1–A15 | 15 of 15 | — |
+| 1a | Signal history | [signal-history-spec.md](specs/signal-history-spec.md) | Built | A1–A9 | 9 of 9 | — |
+| 1b | Alerts | [alerts-spec.md](specs/alerts-spec.md) | Built | A1–A7 | 7 of 7 | — |
+| 2a | Signal backtest | [signal-backtest-spec.md](specs/signal-backtest-spec.md) | Built | A1–A10 | 8 of 10 | WGC Q3 2026 AISC, early December (data); the user's read of the report (user) |
+| 2b | Junior breadth | [junior-breadth-spec.md](specs/junior-breadth-spec.md) | Built | A1–A7 | 7 of 7 | — |
+| 2c | Rate-expectations signal | [market-signals-spec.md](specs/market-signals-spec.md) | Built | A2, A4 | 2 of 2 | — |
+| 3 | Developer financing | [developer-financing-spec.md](specs/developer-financing-spec.md) | Built | A1–A10 | 9 of 10 | figures not yet published (data) |
+| 4a | Producer costs | [producer-costs-spec.md](specs/producer-costs-spec.md) | Outstanding | A1–A8 | 0 of 8 | all |
+| 4b | Jurisdiction risk | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | Built | A1–A8 | 7 of 8 | the user's review of the comparison before `financials` writes it (user) |
+| 4c | Royalty history | [royalty-history-spec.md](specs/royalty-history-spec.md) | Built | A1–A10 | 10 of 10 | — |
+| 5 | Model portfolio screen, revision 1 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Built | A1–A19 | 18 of 19 | the first `screen --write` (user) |
+| 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Outstanding | A20–A28 | 0 of 9 | all |
+| 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | In progress | A1–A27 | 13 of 27 | decks, NPVs and EV / NPV, the pipeline, royalties, the overrun test, buy level, Sheet columns, validation report |
 
 ## Principles
 
@@ -23,77 +45,54 @@ Written Nov 18, 2026, after the market-signals work (PR #5) and the scheduled Gi
 
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
-| 1a | **Built Nov 2026.** **Signal history**: one row per run on a new Signal history tab, plus a daily snapshot of each royalty company's P/NAV and each developer's EV/oz and months of cash | [signal-history-spec.md](specs/signal-history-spec.md) | S | — |
-| 1b | **Built Nov 2026.** **Alerts**: a GitHub issue (market signals) and an optional private email (Model portfolio rows) when a status changes | [alerts-spec.md](specs/alerts-spec.md) | S | 1a helps (dates of changes) |
+| 1a | **Signal history**: one row per run on a new Signal history tab, plus a daily snapshot of each royalty company's P/NAV and each developer's EV/oz and months of cash | [signal-history-spec.md](specs/signal-history-spec.md) | S | — |
+| 1b | **Alerts**: a GitHub issue (market signals) and an optional private email (Model portfolio rows) when a status changes | [alerts-spec.md](specs/alerts-spec.md) | S | 1a helps (dates of changes) |
 
 ## Phase 2: test the framework (early December 2026)
 
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
-| 2a | **Built Nov 2026** (the Q3 2026 AISC row is still to add). **Signal backtest**, including an industry AISC history table, so the AISC margin can be tested and the Q3 2026 figure (World Gold Council, due early December 2026) goes in from the record | [signal-backtest-spec.md](specs/signal-backtest-spec.md) | L | WGC Q3 2026 AISC for the last row |
-| 2b | **Built Nov 2026.** **Junior breadth**: the share of SGDJ and COPJ (by weight) above their 200-day averages, as a confirmation signal | [junior-breadth-spec.md](specs/junior-breadth-spec.md) | S | best built alongside 2a, which tests it |
+| 2a | **Signal backtest**, including an industry AISC history table, so the AISC margin can be tested and the Q3 2026 figure (World Gold Council, due early December 2026) goes in from the record | [signal-backtest-spec.md](specs/signal-backtest-spec.md) | L | WGC Q3 2026 AISC for the last row |
+| 2b | **Junior breadth**: the share of SGDJ and COPJ (by weight) above their 200-day averages, as a confirmation signal | [junior-breadth-spec.md](specs/junior-breadth-spec.md) | S | best built alongside 2a, which tests it |
+| 2c | **Rate-expectations signal** for physical gold: the two-year yield's 3-month change (with the two-year minus fed funds and the two-year yield for context); the real yield and the dollar become context only | [market-signals-spec.md](specs/market-signals-spec.md) | S | 2a (tested it) |
 
 After 2a, revisit the thresholds in `config/settings.toml` [signals.thresholds] and on the Signals tab
 (G:H) with the results in hand. That's a judgment call for the user, not something the code changes.
 
-Done in Nov 2026: the real yield and the dollar's 12-month change are context only (status "Info", no
-thresholds), because neither showed an edge. Their old rules stay in the backtest
-(`[signal_backtest.context_thresholds]`).
-
-Built in Nov 2026 (2c): a **rate-expectations signal** for physical gold (`two_year_3m_change`, with
-`two_year_minus_fed_funds` and `two_year_yield` for context). It is the Model portfolio's timing signal for
-physical gold. A one-off study (Nov 2026,
-month-ends 2003–2026) found the 10-year real yield moves with gold in the same month (correlation −0.44
-monthly, −0.58 over 3 months) and not ahead of it at any lag, so a rule that waits for it to peak and fall
-comes late. What the market expects the Fed to do did better, from FRED's 2-year Treasury yield (DGS2) and
-the effective fed funds rate (DFF):
-
-- 2-year yield down 0.25 points or more over 3 months ("turning dovish"): gold +11.4% over the next 6
-  months against +6.1% for all months, up 90% of the time, score +2.6 (17 independent windows). Positive at
-  every threshold from 0.10 to 0.75, and in both 2003–2013 and 2014–2026.
-- 2-year yield 0.25 points or more below fed funds ("market expects cuts"): +14.4% over 6 months, up 90%,
-  score +2.4 (12 windows).
-- Caveat: both fire in clusters around three or four easing cycles (2006–08, 2019–20, 2023–25), so the
-  real evidence is a handful of episodes. CME FedWatch probabilities aren't freely available as history;
-  Yahoo's front fed funds future (ZQ=F) covers only the next month and was too noisy.
+The evidence for 2c, and why the real yield and the dollar became context only, is in the market-signals spec's
+Decisions.
 
 ## Phase 3: developers (December 2026 to January 2027, before the next tax-loss window closes in practice)
 
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
-| 3 | **Built Nov 2026.** **Developer financing and valuation**: undrawn facilities in the cash runway, an expected-raise estimate and NAV per share after it, and EV/oz weighted by resource category | [developer-financing-spec.md](specs/developer-financing-spec.md) | M | — |
+| 3 | **Developer financing and valuation**: undrawn facilities in the cash runway, an expected-raise estimate and NAV per share after it, and EV/oz weighted by resource category | [developer-financing-spec.md](specs/developer-financing-spec.md) | M | — |
 
 Why now: Skeena showed 1.4 months of cash because its project financing wasn't counted. The "Short
 of cash" checks drive the junior timing column, so they need to be right before the next junior entry.
-
-Built: committed funding, remaining capex and a "funded" statement per developer (PNAV inputs BF:BI), the
-funding gap, an equity raise for it and P/NAV after (BJ:BO, Model portfolio Z), and EV per weighted unit by
-resource category (BP:BW). Filled for a first set of developers; the rest of the developer rows, and resource
-splits for Collective Mining and Viscaria, are open (small items below).
 
 ## Phase 4: model improvements (with the Q4 2026 reports, February to March 2027)
 
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
 | 4a | **Producer costs from company AISC and energy share**, so the diesel signal feeds the cost scenario | [producer-costs-spec.md](specs/producer-costs-spec.md) | M | Q4 reports for company AISC; 2a (industry AISC table) |
-| 4b | **Built Nov 2026.** **Jurisdiction risk from a country table** instead of a hand-set add-on per company | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | M | — (can move earlier) |
-| 4c | **Built Nov 2026.** **Royalties against their own history** as well as the peer median | [royalty-history-spec.md](specs/royalty-history-spec.md) | S–M | 1a (needs months of recorded P/NAVs); the Yahoo-based fallback works from day one |
+| 4b | **Jurisdiction risk from a country table** instead of a hand-set add-on per company | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | M | — (can move earlier) |
+| 4c | **Royalties against their own history** as well as the peer median | [royalty-history-spec.md](specs/royalty-history-spec.md) | S–M | 1a (needs months of recorded P/NAVs); the Yahoo-based fallback works from day one |
 
 ## Phase 5: Model portfolio from a screen (any time; before the first purchase)
 
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
-| 5 | **Built Nov 2026.** **Model portfolio from a screen**: rank PNAV inputs companies within each bucket (a new Royalty bucket included) and propose the holdings and target weights (Model portfolio A–F), only names buyable on US or Canadian markets by default (`--all-markets` for the rest: about $50 a trade in a Fidelity IRA), set the review levels (S) from a rule while keeping levels typed by hand, and write `private/portfolio.csv` from the tab so the backtest tests what the Sheet shows | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | M | — (4a later improves the breakeven measure) |
+| 5 | **Model portfolio from a screen**: rank PNAV inputs companies within each bucket (a new Royalty bucket included) and propose the holdings and target weights (Model portfolio A–F), only names buyable on US or Canadian markets by default (`--all-markets` for the rest: about $50 a trade in a Fidelity IRA), set the review levels (S) from a rule while keeping levels typed by hand, and write `private/portfolio.csv` from the tab so the backtest tests what the Sheet shows | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | M | — (4a later improves the breakeven measure) |
 
 Why: the user holds no miners yet, so the holdings needn't be a fixed hand-picked list. The rules are committed;
-bucket sizes, names and weights stay private (Sheet and email only). Decisions taken Nov 20, 2026 are in the spec;
-two things to ask at build time are at its end.
+bucket sizes, names and weights stay private (Sheet and email only). The decisions are in the spec.
 
 ## Phase 6: value by tier, then a portfolio of the best businesses (specified from Nov 21, 2026)
 
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
-| 6 | **Valuation by tier** (Rick Rule's method): EV against a 10-year NPV at pessimistic, base and optimistic decks; producers on operating cash flow − sustaining spending, with committed pipeline projects; developers from rebuilt study cash flows, discounted for time and probability by stage, with a capex-overrun test; royalties on operating cash flow. A buy-below price and a fair-value level per company | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | L | Step 0 data pilot (15 companies) first; 4a improves the pessimistic cost case |
+| 6 | **Valuation by tier** (Rick Rule's method): EV against a 10-year NPV at pessimistic, base and optimistic decks; producers on operating cash flow − sustaining spending, with committed pipeline projects; developers from rebuilt study cash flows, discounted for time and probability by stage, with a capex-overrun test; royalties on operating cash flow. A buy-below price and a fair-value level per company | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | L | Step 0 data pilot (done Nov 21, 2026); 4a improves the pessimistic cost case |
 | 5b | **Model portfolio revision 2**: select each bucket's best business performers per share at constant metal prices (not on price), and a buy signal per row when the price reaches its tier's buy level; review above fair value | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) (revision 2) | M–L | 6; research of production, reserves and sustaining spending for 2022–2025 |
 
 Why: on Nov 21, 2026, P/NAV at spot over 25 years with all capital spending made 36 of 97 producers' NAV negative,

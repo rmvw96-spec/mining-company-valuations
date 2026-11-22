@@ -63,9 +63,10 @@ holders. And EV per ounce counted an inferred ounce the same as a reserve ounce.
   `tests/test_layout.py::test_occupied_cell_skips_the_step`
 - [x] A8. Skeena's check reflects its arranged financing, and the first set of developers has figures with sources
   (Nov 18, 2026). — `financials` report
-- [ ] A9. Every Model portfolio developer has P/NAV after a raise or a "Fully funded" label. Known gaps: FireFly's
-  committed funding (not confirmed); Collective Mining's and Viscaria's resource split; Seabridge's gap is KSM's
-  whole PFS capex, which a JV partner would largely fund.
+- [ ] A9. (data) Every Model portfolio developer has P/NAV after a raise or a "Fully funded" label. Known gaps (data
+  file, Nov 22, 2026): FireFly's committed funding (not confirmed); Osisko Metals (no economic study yet) and Blue
+  Moon (selling Nussir; update once it closes); Viscaria's resource split (an image in its releases); Seabridge's
+  gap is KSM's whole PFS capex, which a JV partner would largely fund.
 - [x] A10. README's developer section and CLAUDE.md's input and spill columns describe it.
 
 ## Decisions

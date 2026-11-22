@@ -1,6 +1,6 @@
 # Title: what the change does
 
-Roadmap n · Status: Proposed | In progress | Built YYYY-MM-DD · Depends on: roadmap items
+Roadmap n · Status: Outstanding | In progress | Built YYYY-MM-DD · Depends on: roadmap items
 
 Instructions for Claude Code. Follow CLAUDE.md; don't restate it here.
 
@@ -23,7 +23,9 @@ comment beside the setting in `config/settings.toml`, not here.
 
 Each criterion is pass or fail and names its proof: a test (`tests/test_x.py::test_y`, checked by
 `tests/test_data_files.py`), a command and what its output shows, or "(user)" for a review the user does. Tick a
-criterion only when its test passes or its command was run that day.
+criterion only when its test passes or its command was run that day. A criterion that waits on the user or on
+data not yet published starts with "(user)" or "(data)": an item whose only open criteria are those counts as
+Built. When you tick one, update the item's row in the roadmap's status table (the same test checks they agree).
 
 - [ ] A1. Observable statement. — `tests/test_x.py::test_y`
 - [ ] A2. Observable statement. — `uv run python -m minerval <command>` shows ...

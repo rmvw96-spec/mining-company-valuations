@@ -3,7 +3,8 @@
 README.md explains the project for people; this file is how Claude should run and change it.
 Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`. Specs follow
 `docs/specs/TEMPLATE.md`: the end state only (no build history or research write-ups; a setting's evidence goes in
-its settings comment), and acceptance criteria that each name their proof. Tick a criterion when its test passes.
+its settings comment), and acceptance criteria that each name their proof. Tick a criterion when its test passes,
+and update the item's row in the status table at the top of `docs/roadmap.md` (a test checks they agree).
 
 ## Ground rules
 

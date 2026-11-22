@@ -1,7 +1,7 @@
 # Market signals: when to buy each tier
 
-Roadmap: before the roadmap (PR #5) · Status: Built Nov 17, 2026; rate-expectations signal and context-only
-signals added Nov 2026 (roadmap 2c) · Depends on: none
+Roadmap 0 (PR #5) and 2c · Status: Built Nov 17, 2026; the rate-expectations signal and context-only signals
+(roadmap 2c) Built Nov 2026 · Depends on: none
 
 Instructions for Claude Code. Follow CLAUDE.md, including its Sheet rules (spill ranges, `--dry-run`, the
 Signals tab).
@@ -155,4 +155,10 @@ holding's relevant signal.
 - Thresholds are defaults matching the framework's wording, editable on the Sheet (G:H) with `[signals.thresholds]`
   as the record; changing one changes both (2026-11-17).
 - The real yield and the dollar are context only; the two-year yield's 3-month change is the rate signal for
-  physical gold (roadmap 2c, Nov 2026).
+  physical gold (roadmap 2c, Nov 2026). A study of month-ends 2003–2026 found the real yield moves with gold in the
+  same month (correlation −0.44 monthly, −0.58 over 3 months), not ahead of it at any lag. A 0.25-point fall in the
+  2-year yield over 3 months was followed by gold +11.4% over 6 months against +6.1% for all months (up 90% of the
+  time, 17 independent windows; positive at every threshold from 0.10 to 0.75, in 2003–2013 and 2014–2026), and the
+  2-year 0.25 points below fed funds by +14.4% (12 windows). Both fire in clusters around three or four easing
+  cycles (2006–08, 2019–20, 2023–25), so the evidence is a handful of episodes. CME FedWatch history isn't free, and
+  Yahoo's front fed funds future (ZQ=F) covers one month and was too noisy.

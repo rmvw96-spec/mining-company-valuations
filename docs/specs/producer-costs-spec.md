@@ -1,6 +1,6 @@
 # Producer costs from company AISC and energy exposure
 
-Roadmap 4a · Status: Proposed · Depends on: market signals (the diesel signal); improves roadmap 6's pessimistic
+Roadmap 4a · Status: Outstanding · Depends on: market signals (the diesel signal); improves roadmap 6's pessimistic
 costs
 
 Instructions for Claude Code. Follow CLAUDE.md.

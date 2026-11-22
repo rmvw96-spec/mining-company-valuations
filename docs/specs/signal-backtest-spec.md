@@ -70,7 +70,7 @@ record instead of one typed number, so the AISC margin can be tested.
 - [x] A7. The AISC table is well formed (unique ordered quarters, positive values, a source on every row). —
   `tests/test_data_files.py::test_industry_aisc_table`
 - [x] A8. README gives what the backtest answers and its limits; CLAUDE.md says the table is the record.
-- [ ] A9. The WGC's Q3 2026 figure is in the table (due early December 2026).
+- [ ] A9. (data) The WGC's Q3 2026 figure is in the table (due early December 2026).
 - [ ] A10. (user) The user has read the report; any threshold they change is changed in settings and Signals G:H
   together, and `signals` reports "Sheet and Python statuses agree".
 
