@@ -325,9 +325,39 @@ check_sensitivity = 0.10
 max_overrun_dilution = 0.33         # developers' downside test: dilution at a 30% capex overrun (the user, Nov 21, 2026)
 capex_overrun = [0.15, 0.30]
 
-# Probability of success by study stage (PEA, PFS, FS, construction): to be researched with sources and confirmed
-# by the user. Until a stage has a value, its studies get an NPV but no risk-adjusted NPV.
+# Probability that a project at each stage reaches production (minerval/studies.py stage(): construction = a
+# construction decision; permitted = key permits in hand after at least a PFS, projects.csv `permits`; else the
+# study type). PROPOSED Nov 21, 2026, pending the user's confirmation. No source publishes stage-by-stage conversion
+# rates; the evidence found:
+#   - MinEx Consulting (R. Schodde): about 45% of significant discoveries since 1950 became mines (gold 51%, copper
+#     39%), on average 16-17 years after discovery; the rate has fallen in recent years.
+#   - S&P Global Market Intelligence: discovery to production averages about 16 years (232 assets), and nearly 30
+#     years for unbuilt projects that have had a feasibility study, mostly from permitting delays (Jul 2026).
+#   - An unsourced investor funnel, widely repeated: about 60% of feasibility-stage projects are financed and built.
+#   - McKinsey: only a fifth of 40+ projects delivered the returns predicted at feasibility (an overrun risk, which
+#     the capex-overrun test covers, not a probability of being built).
+#   - Sprott (Aug 2022) P/NAV by stage, PEA 0.2-0.5, PFS/FS 0.2-0.7, construction 0.5-0.8, production 0.6-1.5: market
+#     multiples, which also price time and risk aversion, so they bound but don't give the probabilities.
+# A PEA (inferred resources allowed, about +/-35-50% cost accuracy) sits below the long-run 45%; a PFS is the first
+# study that can declare reserves; feasibility follows the 60% funnel; permits remove the main source of delay;
+# construction leaves completion risk. Not tuned to any data.
 [valuation.stage_probability]
+PEA = 0.35
+PFS = 0.50
+FS = 0.60
+permitted = 0.75
+construction = 0.90
+
+# Years from today to the construction start when the company hasn't guided one (a guided date in projects.csv
+# `construction_start` always wins). PROPOSED Nov 21, 2026, pending the user's confirmation: the usual sequence is
+# PEA to PFS 1-2 years, PFS to feasibility 1-2 years, feasibility to a construction decision (permits and
+# financing) 1-3 years; S&P's long averages come from projects that stall, which the probability already covers.
+[valuation.years_to_start]
+PEA = 4
+PFS = 3
+FS = 2
+permitted = 1
+construction = 0
 
 [portfolio_screen]
 # `python -m minerval screen` (roadmap 5): proposes the Model portfolio's holdings and weights (A-F), review levels

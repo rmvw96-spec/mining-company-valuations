@@ -288,4 +288,7 @@ deck**, levels configurable per tier in `[valuation.buy]`:
 
 ## Open questions (ask as they come up)
 
-1. **Probability of success by stage:** research values with sources at build time; the user confirms them.
+1. **Probability of success by stage and time to construction:** researched and built Nov 21, 2026
+   (`[valuation.stage_probability]`, `[valuation.years_to_start]`, with the evidence in the settings comments; a
+   `permitted` stage for projects with key permits, `projects.csv` `permits`); the values are proposals awaiting the
+   user's confirmation.

@@ -43,12 +43,13 @@ METALS = {"gold": "payable_gold_koz", "silver": "payable_silver_koz", "copper": 
 UNIT = {"gold": 1e3, "silver": 1e3, "copper": 1e6, "lead": 1e6, "zinc": 1e6}   # payable units -> ounces or pounds
 PROJECT_COLS = ["ticker", "project", "attributable_pct", "study_type", "study_date", "study_price",
                 "study_npv_usd_m", "study_discount_rate", "discounting", "marginal_tax_rate", "net_revenue_share", "sensitivity",
-                "initial_capex_usd_m", "construction_start", "first_production", "committed", "superseded",
+                "initial_capex_usd_m", "construction_start", "first_production", "permits", "committed", "superseded",
                 "source", "as_of", "notes"]
 CASHFLOW_COLS = ["ticker", "project", "study_date", "year", "pre_tax_fcf_usd_m", "post_tax_fcf_usd_m",
                  "payable_gold_koz", "payable_silver_koz", "payable_copper_mlb", "payable_lead_mlb",
                  "payable_zinc_mlb", "source"]
 STUDY_TYPES = ["PEA", "PFS", "FS", "construction"]
+STAGES = ["PEA", "PFS", "FS", "permitted", "construction"]       # [valuation.stage_probability] keys, least to most advanced
 
 
 def cfg() -> dict:
@@ -180,6 +181,28 @@ def time_factor(construction_start: str, rate: float, today: date) -> float | No
     return 1.0 if t <= 0 else 1 / (1 + rate) ** t
 
 
+def stage(p) -> str:
+    """The project's stage for the probability of success: construction (a construction decision, or a study of type
+    construction), else permitted (key permits in hand, `permits` = yes, after at least a PFS), else the study type."""
+    if p.study_type == "construction" or str(p.committed).strip().lower() == "yes":
+        return "construction"
+    if str(p.permits).strip().lower() == "yes" and p.study_type in ("PFS", "FS"):
+        return "permitted"
+    return p.study_type
+
+
+def years_to_start(p, today: date) -> tuple[float | None, str]:
+    """(years from today to the construction start, basis): the company's guided date, else the assumed time for the
+    stage ([valuation.years_to_start]); (None, why) when neither exists."""
+    if str(p.construction_start).strip():
+        t = (pd.Timestamp(p.construction_start).date() - today).days / 365.25
+        return max(t, 0.0), "guided"
+    y = cfg().get("years_to_start", {}).get(stage(p))
+    if y is None:
+        return None, "no guided construction start and no assumed time for the stage"
+    return float(y), f"assumed {y:g} years for {stage(p)} ([valuation.years_to_start])"
+
+
 def risk_adjusted(p, F: pd.DataFrame, prices: dict, rate: float, today: date) -> dict:
     """NPV at our rate and `prices`, then time, probability and share. Missing pieces leave it None, with why."""
     chk = rebuild(p, F)
@@ -193,16 +216,19 @@ def risk_adjusted(p, F: pd.DataFrame, prices: dict, rate: float, today: date) ->
     v = npv(F, rate, {**chk["study_prices"], **prices}, chk["study_prices"], chk["tax_share"], chk["rev_share"],
             p.discounting)
     out["npv"] = v
-    tf = time_factor(p.construction_start, rate, today)
-    prob = cfg().get("stage_probability", {}).get(p.study_type)
+    t, basis = years_to_start(p, today)
+    tf = None if t is None else 1 / (1 + rate) ** t
+    st = stage(p)
+    prob = cfg().get("stage_probability", {}).get(st)
     share = float(p.attributable_pct) / 100 if str(p.attributable_pct).strip() else 1.0
     if tf is None:
-        out["why"] = "no guided construction start"
+        out["why"] = basis
     elif prob is None:
-        out["why"] = f"no probability of success set for {p.study_type} ([valuation.stage_probability])"
+        out["why"] = f"no probability of success set for {st} ([valuation.stage_probability])"
     else:
         out["risk_adjusted"] = v * tf * prob * share
-    out.update(time_factor=tf, probability=prob, share=share)
+        out["why"] = "" if basis == "guided" else basis
+    out.update(time_factor=tf, years=t, stage=st, probability=prob, share=share)
     return out
 
 
@@ -237,6 +263,8 @@ def report(today: date | None = None, prices: dict | None = None) -> list[str]:
             if x["npv"] is None:
                 L.append(f"  {name}: no NPV ({x['why']})")
                 break
-            ra = "" if x["risk_adjusted"] is None else f"; risk-adjusted {x['risk_adjusted']:,.0f}"
+            ra = "" if x["risk_adjusted"] is None else (
+                f"; risk-adjusted {x['risk_adjusted']:,.0f} ({x['stage']}: x{x['probability']:g} probability, "
+                f"x{x['time_factor']:.2f} for {x['years']:.1f} years, x{x['share']:g} share)")
             L.append(f"  {name}: NPV {x['npv']:,.0f}{ra}" + (f" ({x['why']})" if x["why"] else ""))
     return L

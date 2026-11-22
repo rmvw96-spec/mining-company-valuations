@@ -18,7 +18,7 @@ def silver_sand(**k):
          "study_discount_rate": "5", "discounting": "mid-year", "marginal_tax_rate": "32.5",
          "net_revenue_share": "0.917",
          "sensitivity": "silver 18:329, 30:1124 @5%; silver 18:232, 30:882 @8%", "initial_capex_usd_m": "358",
-         "construction_start": "", "first_production": "", "committed": "", "superseded": "",
+         "construction_start": "", "first_production": "", "permits": "", "committed": "", "superseded": "",
          "source": "x", "as_of": "", "notes": ""}
     p.update(k)
     F = pd.DataFrame({"ticker": "NEWP", "project": "Silver Sand", "study_date": "2024-06-19",
@@ -68,11 +68,11 @@ def test_a_study_that_does_not_rebuild_is_flagged_and_not_used():
 def test_risk_adjusted_needs_a_construction_date_and_a_stage_probability(monkeypatch):
     p, F = silver_sand()
     x = S.risk_adjusted(p, F, {"silver": 30}, 0.09, date(2026, 11, 21))
-    assert x["npv"] > 0 and x["risk_adjusted"] is None and x["why"] == "no guided construction start"
+    assert x["npv"] > 0 and x["risk_adjusted"] is None and x["why"].startswith("no guided construction start")
     p2, _ = silver_sand(construction_start="2028-11-21", attributable_pct="80")
     y = S.risk_adjusted(p2, F, {"silver": 30}, 0.09, date(2026, 11, 21))
     assert "no probability of success" in y["why"]
-    monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {"PFS": 0.5}})
+    monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {"PFS": 0.5}, "years_to_start": {}})
     z = S.risk_adjusted(p2, F, {"silver": 30}, 0.09, date(2026, 11, 21))
     assert abs(z["risk_adjusted"] - y["npv"] / 1.09 ** 2 * 0.5 * 0.8) < 1      # two years, 50%, 80% share
 
@@ -103,3 +103,16 @@ def test_discount_rate_uses_the_country_table_add_on():
     assert abs(S.discount_rate("A", C, table) - (base + 0.03)) < 1e-9          # the country table
     assert abs(S.discount_rate("B", C, table) - (base + 0.02)) < 1e-9          # an override
     assert abs(S.discount_rate("C", C, table) - (base + 0.015)) < 1e-9         # the hand-set figure
+
+
+def test_stage_and_assumed_time_to_construction(monkeypatch):
+    p, F = silver_sand()
+    assert S.stage(p) == "PFS"
+    assert S.stage(silver_sand(permits="yes")[0]) == "permitted"
+    assert S.stage(silver_sand(permits="yes", study_type="PEA")[0]) == "PEA"      # permits before a PFS don't count
+    assert S.stage(silver_sand(committed="yes")[0]) == "construction"
+    monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {"PFS": 0.5}, "years_to_start": {"PFS": 3}})
+    x = S.risk_adjusted(p, F, {"silver": 30}, 0.09, date(2026, 11, 21))
+    assert abs(x["risk_adjusted"] - x["npv"] / 1.09 ** 3 * 0.5) < 1 and x["why"].startswith("assumed 3 years")
+    g = S.risk_adjusted(silver_sand(construction_start="2025-01-01")[0], F, {"silver": 30}, 0.09, date(2026, 11, 21))
+    assert g["years"] == 0.0 and g["why"] == ""                                     # a guided date in the past: no wait
