@@ -1,106 +1,80 @@
 # Signal backtest, and an industry AISC history
 
-Instructions for Claude Code. Roadmap item 2a. Follow CLAUDE.md.
+Roadmap 2a · Status: Built Nov 18, 2026 (the Q3 2026 AISC row is pending) · Depends on: 1a
+([signal-history-spec.md](signal-history-spec.md)), market signals
 
-**Status: built** (branch `signal-backtest`). Where the build differs from the plan below:
-- The AISC table holds figures **as first published**, not the latest revision. The WGC's revised series is
-  only on Goldhub's chart page, which can't be read without a browser, and first-published figures are what a
-  point-in-time backtest should use anyway. The notes column marks quarters a later report implies were revised.
-  The table starts in 2021Q1 (Gold Demand Trends reports quote no quarterly figure before then) and has no
-  2021Q3 or 2021Q4.
-- `[signals.inputs] industry_aisc` and its source are removed from settings.toml, with no override: the table is
-  the record. Q3 2026 is pending (due early December 2026).
-- The AISC margin's status is descriptive text, so the backtest buckets the margin as a share of the gold price
-  (`[signal_backtest] aisc_margin_share`, backtest only).
-- The royalty outcome is an equal-weight basket of RGLD, FNV and WPM (total return), not GDX.
-- Miners-against-metal percentiles count only once the ETF has 5 years of history.
-- Full daily histories are cached separately (`cache/signals/backtest/`); `cache/history/` isn't used. The AISC
-  margin is now backfilled in Signal history too.
+Instructions for Claude Code. Follow CLAUDE.md.
 
 ## Goal
 
-The Signals tab's thresholds are judgment calls (framework rules of thumb). Test each signal on history:
-when it said "lean in", did the tier it applies to do better over the following months than when it didn't?
-The result is a report the user reads to decide which signals to trust and where the thresholds (Signals G:H,
-`config/settings.toml` [signals.thresholds]) should sit. **The code reports; it never changes thresholds.**
+The Signals tab's thresholds are judgement calls. Test each signal on history: when it said "lean in", did its tier
+do better over the following months than when it didn't? The report helps the user decide which signals to trust
+and where thresholds sit. **The code reports; it never changes a threshold.** The industry AISC also becomes a dated
+record instead of one typed number, so the AISC margin can be tested.
 
-This job also makes the industry AISC a dated history instead of one hand-typed number, so the AISC margin can
-be backtested and the World Gold Council's Q3 2026 figure (due early December 2026) is entered once, in the record.
+## Scope
 
-## Part 1: industry AISC history
+- **In:** a dated industry AISC table, month-end signal values from truncated history, forward outcomes per tier,
+  and a threshold sweep.
+- **Out:** signals with no past inputs (fund FCF yields, the royalty median), reported as skipped; optimising
+  thresholds (on one 25-year period that is fitted noise).
 
-- New file `data/research/industry_aisc.csv`: `quarter` (e.g. `2026Q2`), `aisc_usd_oz`, `published` (date the
-  figure became public), `source` (report name and URL), `note`.
-- Fill it from the World Gold Council's quarterly gold-mining cost series (Metals Focus data) as far back as it
-  is published. Every figure must come from a source in the `source` column; leave a quarter out rather than
-  estimate it. Check whether WGC revises past quarters: if so, keep the latest figure and note the revision.
-- `signals.compute()` uses the latest **published** quarter as of `today` (so a backtest on 2024-03-15 uses
-  the figure that was public then, not a later one). `[signals.inputs] industry_aisc` and its source are then
-  derived from the table: remove them from settings.toml, or keep them only as an override (decide, and say
-  which in the PR).
-- The Signals tab input row `industry_aisc` stays (the AISC status formula reads it). Python writes the latest
-  published figure there, with the quarter and source in F, on each run. Treat that cell as Python-written
-  from now on: update CLAUDE.md's what-not-to-touch.
-- Add the Q3 2026 row when WGC publishes it (early December 2026). If this job lands before then, note in the
-  PR that the row is pending.
+## Design
 
-## Part 2: historical signal values
+- **Industry AISC** (`data/research/industry_aisc.csv`: `quarter`, `aisc_usd_oz`, `published`, `source`, `note`):
+  the World Gold Council's figures **as first published** (what a point-in-time test should use; the revised series
+  is only on a chart page), from 2021Q1, with no 2021Q3 or Q4; `note` marks quarters a later report implies were
+  revised. Never estimated. `signals.compute()` uses the latest quarter published by its date, and Python writes it
+  to the Signals `industry_aisc` input row; the table is the only record (no settings override).
+- **Signal values:** at each month-end, `compute()` on series truncated at that date (the shared helper from signal
+  history). Series start dates are in `[signals]` (GDX 2006, GDXJ 2009, SIL 2010, SILJ 2012, COPX 2010, DFII10
+  2003). Miners-against-metal percentiles count once the ETF has 5 years. Full daily histories are cached in
+  `cache/signals/backtest/`.
+- **Outcomes** over 3, 6 and 12 months:
 
-- Reuse the truncation helper from [signal-history-spec.md](signal-history-spec.md) (build it here if that job
-  hasn't landed): for each month-end since the earliest date the inputs allow, run `compute()` on series cut at
-  that date. Month-ends are enough for a 3- to 12-month question and keep it fast.
-- Data: daily and monthly Yahoo series already in `[signals]` (add `start` dates where needed: GDX from 2006,
-  GDXJ 2009, SIL 2010, SILJ 2012, COPX 2010), FRED DFII10 (from 2003), the AISC table above.
-- Signals with no history: the fund FCF yields (need past fundamentals) and the royalty median (needs past
-  P/NAVs). Skip them and say so in the report. The junior breadth signal
-  ([junior-breadth-spec.md](junior-breadth-spec.md)) is tested here if it exists.
-
-## Part 3: outcomes
-
-For each signal, define the tier outcome it is meant to predict. Starting point (confirm against the
-framework's wording on the Signals tab, note column):
-
-| Signal | Outcome over the next 3, 6 and 12 months |
+| Signal | Outcome |
 |---|---|
-| Gold/silver ratio high | Silver return minus gold return |
-| Real yield peaked and falling | Gold return |
-| Dollar 12-month change | Gold return |
-| SPY drawdown | Gold and royalty (GDX as proxy before royalty data) return |
-| Metal vs diesel | Miner ETF minus metal (GDX−gold, SIL−silver, COPX−copper) |
-| Miners vs metal percentile | Miner ETF minus metal |
-| AISC margin | GDX minus gold |
-| Uptrends (200-day) and junior timing | GDXJ and SILJ return; GDXJ minus GDX |
-| Tax-loss window | GDXJ return from window to end of February |
+| Gold/silver ratio | Silver minus gold |
+| Real yield, dollar 12-month change | Gold |
+| SPY drawdown | Gold, and an equal-weight RGLD, FNV, WPM basket (total return) |
+| Metal vs diesel; miners vs metal percentile | Miner ETF minus metal (GDX−gold, SIL−silver, COPX−copper) |
+| AISC margin (bucketed by `[signal_backtest] aisc_margin_share`, as its status is text) | GDX minus gold |
+| Uptrends, junior timing, junior breadth | GDXJ and SILJ; GDXJ minus GDX |
+| Tax-loss window | GDXJ from the window to the end of February |
 
-Report, per signal and status bucket: number of months, mean and median forward return, hit rate (share of
-months with a positive outcome), and the same for all months as the baseline. Use **non-overlapping** windows
-for the significance note, or say plainly that overlapping 12-month windows overstate confidence. Flag any
-bucket with fewer than 12 independent observations as "too few to judge".
+- **Report**, per signal and status bucket against all months: count, mean and median forward return, hit rate.
+  Significance uses non-overlapping windows; a bucket with fewer than 12 independent observations is "too few to
+  judge". The sweep (`[signal_backtest.sweep]`) repeats the table at a few thresholds around the current one, to
+  show plateaus or knife edges.
+- **Command:** `backtest-signals` → `out/backtest-signals/` (`report.txt`, `signals_history.csv`,
+  `outcomes.csv`); offline after the first download, `--refresh` to download again.
 
-Then a threshold sweep for the signals with numeric thresholds: the same table at a few thresholds around the
-current one (e.g. gold/silver ratio 70, 75, 80, 85, 90), so the user sees whether the current choice sits on a
-plateau or a knife edge. No optimisation: an optimised threshold on 25 years of data would be fitted noise.
+## Acceptance criteria
 
-## Commands and output
+- [x] A1. No lookahead: a spike after the date changes nothing. —
+  `tests/test_signal_backtest.py::test_no_lookahead_a_spike_after_the_date_changes_nothing`
+- [x] A2. The AISC used is the latest published by the date, and the margin is blank before the table starts. —
+  `tests/test_signal_backtest.py::test_aisc_used_is_the_latest_published_by_the_date`,
+  `tests/test_signal_backtest.py::test_compute_uses_the_dated_aisc_and_leaves_the_margin_blank_before_it`
+- [x] A3. Forward returns and differences, the tax-loss window, and the AISC share buckets. —
+  `tests/test_signal_backtest.py::test_forward_returns_and_differences`,
+  `tests/test_signal_backtest.py::test_tax_loss_returns_from_late_year_to_february`,
+  `tests/test_signal_backtest.py::test_aisc_share_buckets`
+- [x] A4. Non-overlapping windows, the "too few" flag, and bucket statistics against a baseline. —
+  `tests/test_signal_backtest.py::test_non_overlapping_windows_and_the_too_few_flag`,
+  `tests/test_signal_backtest.py::test_bucket_stats_with_a_baseline`
+- [x] A5. The sweep settings name real thresholds and include the current value. —
+  `tests/test_signal_backtest.py::test_sweep_settings_name_real_thresholds`
+- [x] A6. The command writes its report offline. —
+  `tests/test_signal_backtest.py::test_run_writes_the_report_offline`
+- [x] A7. The AISC table is well formed (unique ordered quarters, positive values, a source on every row). —
+  `tests/test_data_files.py::test_industry_aisc_table`
+- [x] A8. README gives what the backtest answers and its limits; CLAUDE.md says the table is the record.
+- [ ] A9. The WGC's Q3 2026 figure is in the table (due early December 2026).
+- [ ] A10. (user) The user has read the report; any threshold they change is changed in settings and Signals G:H
+  together, and `signals` reports "Sheet and Python statuses agree".
 
-- `uv run python -m minerval backtest-signals` → `out/backtest-signals/report.txt` and `signals_history.csv`
-  (the month-end signal values), plus `outcomes.csv`.
-- Offline after the first download: reads `cache/signals/` and `cache/history/`; `--refresh` downloads again.
+## Decisions
 
-## Tests (offline, synthetic series)
-
-- Truncation: `compute()` at date d sees no data after d (inject a spike after d; the value must not move).
-- AISC table: the figure used at a date is the latest with `published <= date`.
-- Outcomes: forward returns on a known series; non-overlapping sampling; the "too few" flag.
-- `data/research/industry_aisc.csv` validation in `tests/test_data_files.py`: quarters unique and ordered,
-  values positive, every row has a source.
-
-## Docs
-
-README: what the backtest answers and its limits (one cycle-heavy period; survivorship in the ETFs; Yahoo
-futures continuations roll). CLAUDE.md: the AISC table is the record; the Signals input is written by Python.
-
-## Done when
-
-The report exists, the user has read it, and any threshold changes they choose are made in both
-settings.toml and the Signals tab (and the run reports "Sheet and Python statuses agree").
+- First-published AISC figures, with the table as the only record (2026-11-18).
+- Royalty outcomes use an equal-weight RGLD, FNV, WPM basket rather than GDX (2026-11-18).
