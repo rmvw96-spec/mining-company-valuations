@@ -327,7 +327,7 @@ capex_overrun = [0.15, 0.30]
 
 # Probability that a project at each stage reaches production (minerval/studies.py stage(): construction = a
 # construction decision; permitted = key permits in hand after at least a PFS, projects.csv `permits`; else the
-# study type). PROPOSED Nov 21, 2026, pending the user's confirmation. No source publishes stage-by-stage conversion
+# study type). Researched Nov 21, 2026; kept by the user Nov 22, 2026. No source publishes stage-by-stage conversion
 # rates; the evidence found:
 #   - MinEx Consulting (R. Schodde): about 45% of significant discoveries since 1950 became mines (gold 51%, copper
 #     39%), on average 16-17 years after discovery; the rate has fallen in recent years.
@@ -349,7 +349,7 @@ permitted = 0.75
 construction = 0.90
 
 # Years from today to the construction start when the company hasn't guided one (a guided date in projects.csv
-# `construction_start` always wins). PROPOSED Nov 21, 2026, pending the user's confirmation: the usual sequence is
+# `construction_start` always wins). Researched Nov 21, 2026; kept by the user Nov 22, 2026. The usual sequence is
 # PEA to PFS 1-2 years, PFS to feasibility 1-2 years, feasibility to a construction decision (permits and
 # financing) 1-3 years; S&P's long averages come from projects that stall, which the probability already covers.
 [valuation.years_to_start]

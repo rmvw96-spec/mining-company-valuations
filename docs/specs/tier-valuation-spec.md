@@ -214,11 +214,10 @@ All by the user, Nov 21, 2026:
   Freeport, Imperial and Trekor stay on the fallback.
 - A study superseded by a press release has no NPV until a technical report is filed. Santa Cruz's years 19–24 are
   spread evenly over six years.
+- Stage probabilities PEA 0.35, PFS 0.50, FS 0.60, permitted 0.75, construction 0.90, and assumed years to
+  construction 4 / 3 / 2 / 1 / 0, as researched (evidence in `config/settings.toml`) (the user, 2026-11-22).
 
 ## Open questions
 
-1. Stage probabilities (PEA 0.35, PFS 0.50, FS 0.60, permitted 0.75, construction 0.90) and assumed years to
-   construction (4 / 3 / 2 / 1 / 0) are proposals in `config/settings.toml`, with their evidence, awaiting the
-   user's confirmation.
-2. Deck values for Pessimistic, Base and Optimistic, with sources: the user sets them when the decks are built.
+1. Deck values for Pessimistic, Base and Optimistic, with sources: the user sets them when the decks are built.
    For reference, Rule's own conservative deck was about $3,400 gold (Kitco, Sept 2026, from secondary write-ups).
