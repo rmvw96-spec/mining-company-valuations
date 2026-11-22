@@ -66,6 +66,7 @@ def test_a_study_that_does_not_rebuild_is_flagged_and_not_used():
 
 
 def test_risk_adjusted_needs_a_construction_date_and_a_stage_probability(monkeypatch):
+    monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {}, "years_to_start": {}})
     p, F = silver_sand()
     x = S.risk_adjusted(p, F, {"silver": 30}, 0.09, date(2026, 11, 21))
     assert x["npv"] > 0 and x["risk_adjusted"] is None and x["why"].startswith("no guided construction start")
