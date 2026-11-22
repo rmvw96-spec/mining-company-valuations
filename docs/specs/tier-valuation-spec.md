@@ -191,9 +191,13 @@ Valuation (to build):
   `tests/test_valuation.py::test_measures_ev_to_npv_fcf_yield_and_the_downside_test`
 - [x] A17. The pessimistic deck raises costs by `pessimistic_cost_increase`; base and optimistic don't. —
   `tests/test_valuation.py::test_only_the_pessimistic_deck_raises_costs`
-- [ ] A18. A committed project's risk-adjusted NPV is added at the company's share; an uncommitted one isn't. —
-  new test
-- [ ] A19. Developer overrun dilution at +15% and +30%, its test against 0.33, and capex-to-market cap. — new test
+- [x] A18. A committed project's risk-adjusted NPV is added at the company's share; an uncommitted or superseded
+  one isn't, and one that can't be valued is named. —
+  `tests/test_valuation.py::test_a_committed_projects_risk_adjusted_npv_is_added_and_an_uncommitted_one_isnt`,
+  `tests/test_valuation.py::test_a_committed_project_that_cant_be_valued_is_left_out_and_named`
+- [x] A19. Developer overrun dilution at +15% and +30%, its test against 0.33, and capex-to-market cap. —
+  `tests/test_valuation.py::test_overrun_dilution_at_each_overrun_and_its_downside_test`,
+  `tests/test_valuation.py::test_no_remaining_capex_means_no_overrun_test`
 - [ ] A20. `study_stage` holds only the six values and agrees with the latest study row. — new data-file test
 - [ ] A21. Royalty NPV of operating cash flow at each deck and its downside test. — new test
 - [ ] A22. The buy-below price at each binding condition (the discount, the downside test), and none without an

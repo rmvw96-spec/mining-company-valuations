@@ -10,7 +10,8 @@ DECKS = {"Pessimistic": {"gold": 1800.0, "silver": 22.0, "copper": 3.6},
          "Base": {"gold": 2200.0, "silver": 28.0, "copper": 4.4},
          "Optimistic": {"gold": 2600.0, "silver": 34.0, "copper": 5.2}}
 CFG = {"horizon_years": 10, "decks": ["Pessimistic", "Base", "Optimistic"], "pessimistic_deck": "Pessimistic",
-       "base_deck": "Base", "pessimistic_cost_increase": 0.10}
+       "base_deck": "Base", "pessimistic_cost_increase": 0.10, "capex_overrun": [0.15, 0.30],
+       "max_overrun_dilution": 0.33}
 
 
 @pytest.fixture(autouse=True)
@@ -106,3 +107,57 @@ def test_the_settings_name_the_decks_consistently():
     c = settings()["valuation"]
     assert len(c["decks"]) == 3 and c["pessimistic_deck"] in c["decks"] and c["base_deck"] in c["decks"]
     assert c["horizon_years"] == 10
+
+
+def projects(*rows):
+    import pandas as pd
+    cols = {"ticker": "PRD", "project": "", "committed": "", "superseded": ""}
+    return pd.DataFrame([{**cols, **r} for r in rows]), pd.DataFrame()
+
+
+def test_a_committed_projects_risk_adjusted_npv_is_added_and_an_uncommitted_one_isnt(monkeypatch):
+    from datetime import date
+
+    from minerval import studies as S
+    value = {"Pessimistic": 50.0, "Base": 80.0, "Optimistic": 120.0}
+    by_deck = {tuple(v.items()): d for d, v in DECKS.items()}
+    monkeypatch.setattr(S, "flows", lambda C, p: None)
+    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today: {
+        "risk_adjusted": value[by_deck[tuple(px.items())]] * (2 if p.project == "Big" else 1), "why": ""})
+    P, C = projects({"project": "Mill", "committed": "yes"}, {"project": "Big", "committed": ""},
+                    {"project": "Old", "committed": "yes", "superseded": "a later study"},
+                    {"ticker": "OTHER", "project": "Theirs", "committed": "yes"})
+    pipe, why = V.pipeline("PRD", DECKS, 0.09, date(2026, 11, 22), P, C)
+    assert pipe == value and why == []                       # only Mill: Big isn't committed, Old is superseded
+    with_pipe = V.producer_valuation(producer(), DECKS, 0.09, pipe)
+    alone = V.producer_valuation(producer(), DECKS, 0.09)
+    assert all(with_pipe[f"npv {d}"] == pytest.approx(alone[f"npv {d}"] + value[d]) for d in DECKS)
+
+
+def test_a_committed_project_that_cant_be_valued_is_left_out_and_named(monkeypatch):
+    from datetime import date
+
+    from minerval import studies as S
+    monkeypatch.setattr(S, "flows", lambda C, p: None)
+    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today: {"risk_adjusted": None,
+                                                                          "why": "no cash-flow table recorded"})
+    P, C = projects({"project": "Mill", "committed": "yes"})
+    pipe, why = V.pipeline("PRD", DECKS, 0.09, date(2026, 11, 22), P, C)
+    assert pipe == {d: 0.0 for d in DECKS} and why == ["Mill: no cash-flow table recorded"]
+
+
+def test_overrun_dilution_at_each_overrun_and_its_downside_test():
+    # remaining capex 400, cash 100, committed 50; 50M shares at $10 (market cap 500), raised at a 15% discount
+    o = V.overrun(400.0, 100.0, 50.0, 10.0, 500.0, discount=0.15)
+    assert o["dilution +15%"] == pytest.approx((400 * 1.15 - 150) / 8.5 / 50)
+    assert o["dilution +30%"] == pytest.approx((400 * 1.30 - 150) / 8.5 / 50)
+    assert o["overrun_ok"] is False and o["capex_to_mcap"] == pytest.approx(0.8)
+    funded = V.overrun(100.0, 200.0, 0.0, 10.0, 500.0, discount=0.15)
+    assert funded["dilution +30%"] == 0.0 and funded["overrun_ok"] is True
+    edge = V.overrun(100.0, 0.0, 0.0, 10.0, 500.0, discount=0.15)     # +30%: 130 / 8.5 = 15.3M new on 50M = 30.6%
+    assert edge["dilution +30%"] < 0.33 and edge["overrun_ok"] is True
+
+
+def test_no_remaining_capex_means_no_overrun_test():
+    o = V.overrun(None, 100.0, 0.0, 10.0, 500.0, discount=0.15)
+    assert o["overrun_ok"] is None and o["capex_to_mcap"] is None and o["why"] == "no remaining capex recorded"
