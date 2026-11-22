@@ -1,414 +1,241 @@
 # Model portfolio from a screen
 
-Instructions for Claude Code. Roadmap item 5. Follow CLAUDE.md.
+Roadmap 5 and 5b · Status: revision 1 built Nov 20, 2026; revision 2 proposed · Depends on: 6 for revision 2
+([tier-valuation-spec.md](tier-valuation-spec.md))
 
-**Revision 2 (roadmap 5b), being specified with the user from Nov 21, 2026. Depends on roadmap 6
-([tier-valuation-spec.md](tier-valuation-spec.md)).** What changes from the build:
-
-- **Selection is on business performance per share, not on price.** The portfolio holds each bucket's best
-  performers historically: cash flow, production and reserves per share at constant metal prices, margins through
-  the cycle, little dilution (developers: Rule's developer measures). Price plays no part in choosing them.
-- **Value triggers a buy signal per company.** Each row gets a buy-below price from its tier's valuation (EV
-  against a 10-year NPV at the base deck, with a downside test at the pessimistic deck; roadmap 6), and its status
-  says "Buy" when the price is at or below it. A great company that's expensive stays on the list with no buy signal.
-- **Review above fair value** replaces the peer-norm review level.
-- **Removed:** the valuation filter (Part 1), the jurisdiction filter (removed Nov 21, 2026: country risk counts
-  once, in the discount rate), and the `addon` and `addon_reliance` score measures.
-- **Kept:** the markets rule (with the OTC ADR volume floor, Nov 21, 2026), the data, size and dilution filters,
-  bucket sizes, weights, the write, Part 3 and the privacy rules. The turnover buffer is 0 until holdings are
-  bought (Nov 21, 2026).
-
-Sections below marked **(revision 2)** replace the built version; the rest describes the build.
-
-**Status of the first version: built**  (branch `model-portfolio-screen`). Where the build differs from the plan below:
-- Royalty companies aren't filtered on the peer norm. The Sheet's typical royalty multiple (1.5× × 0.94) sits below
-  where the whole group trades, so all seven read 1.5–1.9× their norm (Nov 2026) and a 1.3 level would exclude and
-  flag them all. They are excluded instead when the framework band is "Rich" or they are expensive for themselves
-  (own-history percentile ≥ 75), and their review level is 2.0.
-- Expanding producers may have diluted up to 100% in 3 years (30% excluded 5 of 8 US/Canadian names: they build and
-  merge with shares).
-- One row per company (Wheaton is in two funds). Tab rows are matched to companies by name (any case), else by
-  ticker, and a kept holding keeps its tab ticker; a new one gets a US Sprott ticker where the Sheet carries one
-  (KGC rather than K CN). Writing the P/NAV tab's name also mends rows whose name didn't look up.
-- `screen --init` writes `private/screen.toml` from the tab; `--rule-review-levels` resets typed levels to the rule
-  (with no state file, every level already on the tab counts as typed).
-- Listings for all 143 companies were checked against Yahoo quotes (exchange and name) on Nov 20, 2026: 113 have a
-  US or Canadian listing. DTC eligibility of the OTC symbols isn't recorded (Fidelity's quote page shows it); a
-  Canadian name without a recorded US OTC symbol counts as rep-assisted ($32.95) but stays eligible.
+Instructions for Claude Code. Follow CLAUDE.md, in particular its rule that Model portfolio content (names, weights,
+statuses) never goes into the repo, an issue, a log or the step summary.
 
 ## Goal
 
-The Model portfolio tab's inputs are typed by hand: which holdings (A–E), their target weights (F), the review
-levels (S) and the notes (U–V). Everything else on the tab is a formula. The user holds no miners yet, so the
-holdings can come from the framework's own numbers instead of a fixed list.
+The Model portfolio tab's inputs (holdings and weights A–F, levels S, notes U–V) were typed by hand. The user holds
+no miners yet and is building the portfolio from scratch. The screen holds each bucket's **best businesses**, judged
+by performance per share at constant metal prices, not by price. Each row gets a **buy signal** when its price is at
+good value by its tier's valuation (roadmap 6). A great company that is expensive stays on the list with no buy
+signal.
 
-Three parts, one PR:
+## Scope
 
-1. **Screen**: rank the companies on PNAV inputs within each bucket, including a new Royalty bucket, and propose
-   the holdings and target weights for A–F. By default only companies that can be bought on a US or Canadian
-   market are proposed. The user reviews the proposal before anything is written.
-2. **Review levels from a rule**: S set from the peer norm. A level the user types by hand is kept.
-3. **Backtest file from the tab**: write `private/portfolio.csv` from the Model portfolio, so `backtest` and
-   `project` test what the Sheet shows.
+- **In:** the screen (universe, buckets, markets, filters, score, selection, weights, the write), the buy signal
+  and fair-value status, and `portfolio-file`.
+- **Out:** share-price return in the score (it rewards stocks that have already risen; context only); physical
+  metal rows (kept as typed); bucket sizes in the repo (private).
 
-Decisions taken with the user (Nov 20, 2026):
-- Add a Royalty bucket.
-- Bucket sizes default to the tab's current split, with Royalty funded as below.
-- A review level typed by hand stays.
-- `config/portfolio.example.csv` is replaced with a neutral example.
-- Default to US and Canadian markets, with an option for the rest.
+## Changes from the build (revision 2)
 
-## Privacy (read first)
+- **Remove:** the valuation filters (peer norm above the review level; developers' `max_peer_ev_ratio`;
+  royalties' `royalty_excluded_bands`) and the valuation score measures (`peer_norm`, `pnav_low`, `breakeven_gap`,
+  `addon`, `addon_reliance`, `pnav_after`, `peer_ev_ratio`, `months_of_cash`, `independent_pnav`, `own_pctile`).
+- **Replace:** the score with the performance measures below; S's peer-norm level (`[portfolio_screen.review]`)
+  with the buy multiple; T's status with the buy-signal order; the generated U and V lines.
+- **Keep:** markets, the data, size, dilution and developer-cash filters, bucket sizes, limits, selection, weights,
+  the write and `portfolio-file`.
 
-Holding names, weights and statuses are Model portfolio content: they never go into the repo, an issue, a log or
-the step summary (CLAUDE.md).
+## Design
 
-- **Committed** (`config/settings.toml` [portfolio_screen]): the rules. These are the filters, the score's
-  measures and their weights, the bucket definitions, the market rule, the review-level rule, the turnover buffer,
-  the per-name cap and the research ranges below (as comments). They are a method, not a portfolio.
-- **Private** (`private/screen.toml`, with a committed `config/screen.example.toml` using neutral numbers): each
-  bucket's total target weight and how many names it holds.
-- **Output**: `out/screen/` (gitignored) and the Sheet. The command never runs on GitHub. With `--email`, the
-  summary of a write goes by private email (`alerts.send_email`).
-- **`config/portfolio.example.csv`** overlaps with the real Model portfolio (11 of its 18 tickers). Replace it with
-  a neutral example: the four Sprott funds (SGDM, SGDJ, COPP, SLVR) and PHYS, round amounts. Note in the PR that
-  the old file stays in the git history.
+### Privacy and files
 
-## Part 1: the screen
+- **Committed** (`[portfolio_screen]`): the rules, with the research behind each limit in its comment.
+- **Private:** `private/screen.toml` (each bucket's total weight and number of names; neutral example in
+  `config/screen.example.toml`) and `private/screen_state.json` (levels the screen wrote).
+- **Output:** `out/screen/` (local: `proposal.csv`, `report.txt`, `ranking.csv`), the Sheet, and with `--email` a
+  private email. The command never runs on GitHub.
+- `config/portfolio.example.csv` is neutral: the four Sprott funds (SGDM, SGDJ, COPP, SLVR) and PHYS, round amounts.
 
 ### Universe and buckets
 
-- **Universe**: rows of PNAV inputs with a market cap and a P/NAV (P/NAV tab D numeric, not "negative" or ">20"),
-  joined to data/derived/pnav.csv for the fields the Sheet doesn't show.
-  **Revision 2:** no P/NAV or NPV is required to be ranked; a company without one is ranked on performance and
-  shows "No NPV" in its status.
-- **Buckets**: the existing bucket names (`[signals.timing]` keys) plus **Royalty**. Physical metal is not
-  screened: its rows keep what the user typed, and they come first on the tab.
-- **Mapping each company to a bucket** (`[portfolio_screen.buckets]`: peer group, main metal and stage):
-  - Royalty: peer group "Royalty/streaming".
-  - Gold producers: Senior or Intermediate producer, main metal gold.
-  - Growth: expanding producers: Junior producer, or a producer whose reserve life or a study shows output rising.
-  - Copper producers and Silver and polymetallic producers: producers by main metal.
-  - Growth: developers: Developer, gold or copper (`[signals.timing]` already splits developers by metal).
-- **Main metal**: the largest revenue share (PNAV inputs J:L) for producers, the resource unit (AU) for
-  developers.
-- **Overrides**: where the mapping gets a company wrong, a new `bucket` column in `pnav_companies.csv` overrides
-  it, with a reason in `bucket_note`. This classifies the company; it isn't portfolio membership, so it can be
-  committed.
-- **Royalty in the other formulas:** Model portfolio W already shows a royalty company's framework band and
-  own-history band, so the new bucket needs no `[signals.timing]` entry. (Adding one would change W's formula and
-  make `setup-sheet` report a conflict.)
+- **Universe:** PNAV inputs rows with a market cap, joined to `data/derived/pnav.csv`. No NPV is needed to be
+  ranked; a company without one shows "No NPV" in its status. One row per company (Wheaton is in two funds).
+- **Buckets:** `bucket_order` (Physical metal first, then Royalty, then the `[signals.timing]` buckets), mapped by
+  `[portfolio_screen.buckets]` from peer group and main metal:
 
-### Markets: what can be bought without a per-trade fee
+| Bucket | Companies |
+|---|---|
+| Royalty | Peer group "Royalty/streaming" |
+| Gold producers | Senior or intermediate producers, main metal gold |
+| Growth: expanding producers | Junior gold producers, or producers whose reserve life or a study shows output rising |
+| Copper producers; Silver and polymetallic producers | Producers by main metal |
+| Growth: developers | Developers (split by metal in `[signals.timing]`) |
 
-**Why.** The user buys in small amounts when names are cheap, in an IRA. A flat fee per trade on a small purchase
-undoes that. Fidelity's Brokerage Commission and Fee Schedule (the PDF on fidelity.com, file dated Sep 2026)
-says:
+- **Main metal:** the largest revenue share (PNAV inputs J:L) for producers; the resource unit (AU) for developers.
+- **Overrides:** `bucket` and `bucket_note` in `pnav_companies.csv` (a classification, not membership).
+- Royalty needs no `[signals.timing]` entry: W already shows a royalty company's bands, and an entry would change
+  W's formula.
 
-| How the stock is bought | Cost per trade | In an IRA? |
-|---|---|---|
-| US exchange listing, ADR (NYSE, Nasdaq, NYSE American; sponsored ADRs on OTC, symbols ending in Y) | $0 online | Yes |
-| Foreign ordinary share on the US OTC market (symbol ending in F), placed online | $0, plus **$50** if the share isn't Depository Trust Company (DTC) eligible | Yes |
-| Dollarized International Trading (a foreign exchange, settled in US$) | Rep-assisted only: $32.95; Canada adds nothing; **all other countries add $50**; plus a currency markup of about 1% under $100K | Yes |
-| International Trading (local currency, online; e.g. C$19 in Canada, A$32 in Australia) | Per-country commission plus a currency markup | **No**: retirement accounts aren't eligible |
+### Markets (`[portfolio_screen.markets]`)
 
-So in an IRA, a company listed only in Australia, London, Hong Kong, Johannesburg and the like costs at least $50
-a trade, unless it has a DTC-eligible OTC symbol. A Canadian company costs nothing online through its US symbol
-(most TSX and TSX-V companies have a DTC-eligible OTC symbol ending in F). Without one, a rep-assisted trade costs
-$32.95 plus the currency markup, but no $50.
+- **Default:** a US listing (exchange or ADR) or a Canadian listing (TSX, TSX-V, CSE). Fidelity's IRA fees (in the
+  settings comments; check the schedule yearly) make other markets cost about $50 a trade.
+- **`--all-markets`:** adds the rest, marked `foreign_fee_note`.
+- **Canada without a recorded US OTC symbol:** eligible and marked `canada_rep_note` ($32.95, rep-assisted);
+  `canada_rep_assisted = false` drops them.
+- **Thin OTC ADRs:** out unless `--all-markets` when the median daily dollar volume over 3 months (no-trade days
+  count as $0) is below `otc_adr_min_dollar_volume`.
+- **Listing columns** in `pnav_companies.csv`: `us_listing`, `canada_listing`, `us_otc_symbol` (with "DTC eligible"
+  only where confirmed; never guessed), `listing_source`. A row not researched counts as foreign-only.
 
-**The rule** (`[portfolio_screen.markets]`):
-- **Default:** only companies with a **US listing** (US exchange or US ADR) or a **Canadian listing** (TSX,
-  TSX-V, CSE).
-- **`--all-markets`:** include the rest. The report then marks each such name "Foreign-only: about $50 a trade in
-  an IRA".
-- **Canadian names without a DTC-eligible US symbol:** in the default mode they stay eligible but are marked
-  "Canada, rep-assisted: $32.95 a trade". `[portfolio_screen.markets] canada_rep_assisted = true` keeps them, and
-  false drops them.
+### Hard filters (`[portfolio_screen.filters]`)
 
-**Data** (new columns in `pnav_companies.csv`, the record):
-- `us_listing`: the US symbol and venue, for example "GFI (NYSE ADR)" or "NCMGY (OTC ADR)". Blank if none.
-- `canada_listing`: for example "TSX: EDV" or "TSX-V: OMG".
-- `us_otc_symbol`: the F symbol, with "DTC eligible" or "not DTC eligible" where known.
-- `listing_source`: the source and date.
-- **Filled automatically** from the Sprott ticker. No exchange code (36 companies) means a US listing, and CN (68)
-  means a Canadian listing.
-- **The other 39** (AU 21, LN 7, HK 3, TI 2, and one each PW, SJ, IJ, PM, FH, SS) need researching: a NYSE ADR
-  (Gold Fields, Harmony, AngloGold, Sibanye, DRDGOLD), a sponsored OTC ADR, or a TSX listing (some Australian and
-  London miners have one). Until a row is researched it counts as foreign-only, and the report lists the
-  unresearched names.
-- **DTC eligibility:** the per-trade fee depends on it, so record it where it can be confirmed (Fidelity's quote
-  page shows it). Don't guess it.
-- **Fee table:** keep it in `[portfolio_screen.markets]` comments with its source and date. Check the schedule
-  once a year, since the amounts change.
-
-### Hard filters (revision 2)
-
-A company failing any one isn't eligible. Every threshold is in `[portfolio_screen.filters]` with a comment giving
-the reason:
-
-- **Market:** the rule above, including the OTC ADR volume floor (`otc_adr_min_dollar_volume`: median daily dollar
-  volume over 3 months, days without a trade counting as $0).
-- **Data:** financials through (Holdings N) within the last 9 months, and a price date (Holdings T) within 6 days.
-- **Size:** market cap at least $300M for producers and royalty companies, and $100M for developers, as a
-  liquidity floor.
-- **Dilution:** share-count change over 3 years no more than 30% for producers (100% for expanding producers).
-- **History:** at least `min_history_years` (3) years of the performance measures; fewer, and the company is
-  listed as "too little history" rather than ranked.
+- **Market:** as above.
+- **Data:** financials (Holdings N) within `financials_max_days`; price date (Holdings T) within `price_max_days`.
+- **Size:** market cap at least `min_mcap_m` ($300M; producers, royalties) or `min_mcap_developer_m` ($100M; developers).
+- **Dilution:** 3-year share change at most `max_share_change_3y_pct` (30%), or 100% for expanding producers (they
+  build and merge with shares).
+- **History:** at least `min_history_years` (3) of the performance measures, else "too little history", not ranked.
 - **Developers:** the developer check isn't "Short of cash".
-- **No price or valuation filter, and no jurisdiction filter.** Value only drives the buy signal (Part 2).
+- **No price, valuation or jurisdiction filter.** Value only drives the buy signal; country risk is in the
+  discount rate.
 
-### Score: business performance per share (revision 2)
+### Score: business performance per share
 
-**What "performance" means** (the user, Nov 21, 2026): how the business has grown per share, not how the share
-price did. All figures are per share, each year with that year's share count, and **at constant metal prices**:
-each year's figures are re-priced to the base deck with the valuation's price adjustment, so a rising gold price
-doesn't count as performance. The period is the last 3 fiscal years for which data exists (2022–2025 today).
+Per share with each year's share count, **at constant metal prices** (each year re-priced to the base deck with
+the valuation's price adjustment), over the last 3 fiscal years with data:
 
-| Bucket | Measure (better = ...) | Data |
-|---|---|---|
-| Producers (gold, copper, silver, expanding) | Cash flow per share growth: operating cash flow − sustaining spending (higher) | Yahoo annual OCF and shares; sustaining spending per year (research; FCF where not recorded, labelled) |
-| | Production per share growth, attributable (higher) | Research: annual reports, unit as reported |
-| | Reserves and M&I resources per share growth, attributable, weighted by category as roadmap 3 weights developers (higher) | Research: year-end reserve and resource statements (the user, Nov 21, 2026: juniors publish resources more often than reserves) |
-| | Cash margin through the cycle: average and lowest year of cash flow ÷ revenue (higher) | As above |
-| | Share-count change over 3 years (lower) | Holdings downside H |
-| | Net cash, % of market value (higher) | Holdings downside D |
-| | AISC margin at the base deck (higher) | Roadmap 4a (company AISC) when built; the breakeven measure until then |
-| Royalty | Operating cash flow per share growth (higher) | Yahoo |
-| | Attributable gold-equivalent ounces sold per share growth (higher) | Research |
-| | Cash margin through the cycle (higher) | Yahoo |
-| | Share-count change over 3 years (lower) | Holdings downside H |
-| Developers ("everything Rule states", the user, Nov 21, 2026) | Resource per share growth, by category weight (higher): did drilling add more than the dilution? | Roadmap 3 resource rows, by year (research) |
-| | Study progress over 3 years: PEA → PFS → FS → permitted → construction (more steps) | `projects.csv` study dates, `study_stage` |
-| | Money into the ground: exploration and development spending ÷ all spending (higher); G&A ÷ all spending (lower) | Yahoo cash-flow and income statements where split; research otherwise |
-| | Risk-adjusted NPV per share across successive studies at a constant deck (higher) | Roadmap 6 |
-| | Share-count change over 3 years (lower) | Holdings downside H |
+| Bucket | Measures (better = higher unless marked) |
+|---|---|
+| Producers | Cash flow per share growth (OCF − sustaining; FCF where not recorded, labelled); attributable production per share growth; reserves plus M&I resources per share growth (category weights as roadmap 3); cash margin through the cycle (average and lowest year of cash flow ÷ revenue); 3-year share change (lower); net cash, % of market value; AISC margin at the base deck (roadmap 4a; the breakeven until then) |
+| Royalty | OCF per share growth; attributable GEOs sold per share growth; cash margin through the cycle; 3-year share change (lower) |
+| Developers | Resource per share growth by category weight; study progress over 3 years (PEA → PFS → FS → permitted → construction; `projects.csv` dates, `study_stage`); exploration and development spending ÷ all spending, and G&A ÷ all spending (lower); risk-adjusted NPV per share across successive studies at a constant deck; 3-year share change (lower) |
 
-- Rank percentiles within the bucket as before; a measure a company lacks is left out of its average, and the
-  report says how many it had.
-- **Weighting: open.** The user will decide it once the valuation work is settled (Nov 21, 2026). The likely
-  shape, from the research given in conversation: equal weights across themes (growth per share, margins, balance
-  sheet and dilution), not across every measure, so a theme with more measures doesn't count more. Not tuned to
-  the backtest.
-- **Not measured:** share-price return. It rewards stocks that have already risen, which works against buying on
-  value. The report may show it for context, outside the score.
+- Rank percentiles within the bucket; a measure a company lacks is left out of its average, and the report says how
+  many it had.
+- Production, reserves, resources and GEOs per year are research inputs (filings, with sources; never estimated).
 
-### Bucket sizes: defaults and the research behind the limits
+### Sizes, limits, selection and weights
 
-- **Defaults** (`private/screen.toml`, written once at build time from the tab):
-  - Each bucket's current total weight and number of names.
-  - **Royalty:** its weight is taken from Gold producers, the same metal with the operating risk removed (Rick
-    Rule's preference). The user sets the amount at build time; the recommendation from the research is below.
-  - The file is the user's to edit afterwards.
-- **What the sources say** (as comments in `[portfolio_screen]`, so the limits can be explained):
+- **Sizes:** `private/screen.toml`, written once by `screen --init` from the tab; the user edits it afterwards.
+- **Limits** (`[portfolio_screen.limits]`; warnings, not stops): per-name cap `max_name_weight` (6%) or
+  `max_name_weight_speculation` (3%); speculation at most `max_speculation` (25%); developers `min_developers`
+  (6) to `max_developers` (15) when held; Royalty `royalty_names` (2–4).
+- **Selection:** the top N per bucket. A name on the tab stays while it ranks within N + `buffer` and passes the
+  filters (`buffer` = 0 while nothing is bought; 2 once holdings are bought); one that fails a filter is dropped
+  with the reason.
+- **Weights:** each bucket's weight split equally (optional `tilt` by score, default 0), the cap spreading the
+  excess; fewer eligible names than N keeps the leftover in the bucket up to the cap and reports the rest as
+  unallocated. Physical rows keep their typed weights and the screened weights are scaled so F sums to 1.
+- The silver rule in G (PSLV first, from C4) is unaffected: PSLV is a Physical metal row, silver stocks keep E =
+  "Silver".
 
-| Source | Royalty / streaming | Producers ("investments") | Developers and juniors ("speculation") |
-|---|---|---|---|
-| Rick Rule (interviews; a secondary summary for the sleeve figures) | The best business in mining: margins near 80% against 15–20% for operators. His own core holdings lead with Franco-Nevada and Wheaton. | High-quality producers as "investments", after savings (bullion, about 40% of his liquid portfolio in one report). Gold equities about 10%, split between seniors and juniors. | "70% of resource juniors are never cheap because they're worth nothing." A junior sleeve of 5–10% of total assets, at most 12–15 names, 8–10 core convictions at 3–10% of the sleeve each (secondary source, not in his own words). |
-| Doug Casey | — | — | Cautious investors: about 90% in lower-risk holdings, the rest in speculation; overweighting juniors is "very dangerous". |
-| Newsletter and blog models | 20–40% streaming/royalty in a growth mix; seniors and streamers 50–70% of a defensive mix | 30–50% miners | Juniors 15–30% of a mining-stock portfolio; 2–5% of total wealth for conservative investors |
+### Buy signal and fair value (revision 2)
 
-- **Committed limits from that research** (`[portfolio_screen.limits]`). They are warnings in the report, not
-  hard stops, because the user decides the sizes:
-  - **Per-name cap:** royalty and producers 6% of the portfolio; developers and expanding producers 3%. Rule's
-    "3–10% of the sleeve" is about 1% of a whole portfolio, and this model is a mining-only sleeve, so it can be
-    larger.
-  - **Speculation (developers + expanding producers):** at most 25% of the model portfolio, warned above 25%.
-    Rule's 5–10% and Casey's ~10% are shares of *total* wealth. This tab is a mining sleeve alongside bullion, so
-    the newsletter range of 15–30% of the mining stocks is the comparable figure.
-  - **Developers:** at least 6 names when the bucket holds any. With most juniors worth nothing, fewer names is a
-    concentrated bet. At most 15 names, Rule's cap.
-  - **Royalty:** 2–4 names. The universe is about six companies, and the large ones dominate.
-
-### Selection and weights
-
-- **Names**: the top N per bucket, with N from `private/screen.toml`.
-- **Turnover buffer** (`buffer`; 2 once holdings are bought, 0 while the portfolio is still being built): a holding already on the tab stays while it ranks within N + buffer
-  and passes the filters, so the list doesn't churn on small rank changes. A holding that fails a filter is
-  dropped and the reason is reported.
-- **Weights**: each bucket's total weight is split equally among its names. Optionally tilt by score within
-  ±`tilt` (default 0, which means equal weights). The per-name cap spreads any excess over the rest of the bucket.
-  Physical metal rows keep their typed weights, and the screened weights are scaled so all of F sums to 1.
-- **Fewer eligible names than N** (likely in Royalty or Silver with the default markets): hold what's eligible,
-  give the bucket's leftover weight to the same bucket's names up to the cap, and report the rest as unallocated
-  rather than moving it to another bucket.
-- **The silver rule in G** (PSLV filled first from C4) is unaffected: PSLV stays a Physical metal row, and silver
-  stocks keep E = "Silver".
+- **Levels:** `[valuation.buy]` by tier (tier-valuation spec, Part 5).
+- **S:** the row's buy multiple from the rule. A level typed by hand is kept (it differs from
+  `private/screen_state.json`); `--rule-review-levels` resets typed levels to the rule.
+- **Buy-below price:** a new column after Z (placed by `setup-sheet`), US$ and listing currency, a formula over
+  PNAV inputs, so it moves with financials and decks. Every company gets one on PNAV inputs (roadmap 6).
+- **T (formula), in order:** "No NPV: <why>"; "Fails downside test"; "Buy: below <price>"; "Above fair value:
+  review"; "Hold". Physical metal rows unchanged.
+- **Alerts:** a change in T is emailed privately by `prices` (`alerts.notify_portfolio`).
+- **Review on performance:** a row whose score falls below its bucket's cut is listed by the next `screen` run.
 
 ### The command
 
-`python -m minerval screen` (needs the Sheet; reads PNAV inputs, P/NAV, Holdings, Holdings downside and the Model
-portfolio):
+`python -m minerval screen` reads PNAV inputs, P/NAV, Holdings, Holdings downside and the Model portfolio.
 
-- **`--dry-run`** (the default): writes `out/screen/proposal.csv` and `out/screen/report.txt`.
-  - The report shows each bucket's ranked eligible companies, with their score and measures.
-  - It lists the companies excluded by a filter, with the filter (including "market").
-  - It shows any limit warnings.
-  - It shows the proposal against what's on the tab now: added, kept, dropped (with why) and weight changes.
-  - These files are local only. Show the user the report before any write.
-- **`--all-markets`**: include companies without a US or Canadian listing, marked with their fee.
-- **`--write`**: writes the proposal to Model portfolio rows 6–31:
-  - **A–F:** bucket, holding (the P/NAV tab's name, exactly, since H–N look it up by B), where it trades,
-    Sprott ticker (Holdings downside L, since O–R look it up by D), main metal and target weight.
-  - **C ("Where it trades"):** comes from the listing columns, for example "NYSE (ADR)", "TSX; US OTC: XXXXF",
-    "ASX only: about $50 a trade in an IRA".
-  - **S:** the review level (Part 2).
-  - **U** ("Why it's in"): a generated line from the measures, for example "Screen: valuation 0.71× peer norm;
-    breakeven 38% below today's gold; net cash 14% of market value; add-on 0.5". Kept for a holding that stays if
-    the user has edited it (any text not starting with "Screen:").
-  - **V** ("What would change the view"): kept for a holding that stays; for a new one, "Screen: review above
-    <S>× peer norm, or if it fails a filter".
-  - **Rows:** Physical metal rows first, as they are, then buckets in `[signals.timing]` order with Royalty after
-    Physical metal. If the proposal needs more than 26 rows, stop and say so: rows can't be added below 31
-    (CLAUDE.md). Clear any rows left over in A–F, S and U–V with empty values.
-  - **Never** write G–R, T or W–Z (formulas; K has its own formula in each row and follows B).
-  - **Before writing:**
-    - Save A6:V31 (with formulas) to `out/screen/backup-<time>.json`.
-    - Check that every B is on the P/NAV tab and every D is on Holdings downside L, and stop if not.
-  - **After writing:** read back H, K and T. Report rows showing "" or "Check by hand" where the screen had
-    numbers, which means a lookup failed.
-- **`--email`** (with `--write`): one private email listing what changed (added, dropped, weights), through the
-  alerts SMTP settings. The next `prices` run will also email the Status changes, as usual.
-- **Part 3** runs at the end of `--write`.
+- **Default (dry run):** writes `out/screen/`: each bucket's ranked eligible companies with score and measures
+  (`ranking.csv` has each measure's percentile), exclusions with the filter, limit warnings, and the proposal against
+  the tab (added, kept, dropped with why, weight changes). Shown to the user before any write.
+- **`--init`:** writes `private/screen.toml` from the tab (never overwrites).
+- **`--write`:** Model portfolio rows 6–31, Physical metal rows first, then buckets in `bucket_order`:
+  - A–F: bucket, holding (the P/NAV tab's name exactly), where it trades (from the listing columns), Sprott ticker
+    (Holdings downside L; a kept holding keeps its tab ticker), main metal, weight. S as above.
+  - U: a generated line starting "Screen:", from the measures; V: for a new row, "Screen: review above fair value,
+    or if it fails a filter". Text the user typed (not starting "Screen:") is kept.
+  - More than 26 rows stops the write (rows can't be added below 31). Leftover rows are cleared. G–R, T and W–Z are
+    never written.
+  - Before: save A6:V31 with formulas to `out/screen/backup-<time>.json`; stop if any B isn't on the P/NAV tab or any
+    D isn't on Holdings downside L. After: read back H, K and T and report lookups that failed.
+  - Then runs `portfolio-file`. `--email` sends the summary of changes privately.
 
-## Part 2: buy signal and fair value (revision 2)
+### `portfolio-file`
 
-Replaces the peer-norm review level. The valuation is roadmap 6's (Part 5 of
-[tier-valuation-spec.md](tier-valuation-spec.md)):
+Reads Model portfolio A–F, B3 and C4 and writes `private/portfolio.csv` for `backtest` and `project` (keeping the
+old file as `private/portfolio.<date>.csv`): key = D, label = B, group = A, metal = E, amount_usd = F × (B3 + C4),
+already_held = "yes" only for the PSLV silver covered by C4, yahoo from Holdings P (`physical_symbols` for the
+trusts), `toronto_listing_in_cad` for .TO/.V symbols quoted in CAD, `first_month` carried over. The report gives
+the row count, never names or amounts.
 
-| Tier | Buy when (both) | Above fair value |
-|---|---|---|
-| Producers | EV ≤ 0.6 × base NPV, and EV ≤ pessimistic NPV with costs raised | EV ≥ 1.0 × base NPV |
-| Royalties | EV ≤ 1.0 × base NPV, and EV ≤ pessimistic NPV | EV ≥ 1.5 × base NPV |
-| Developers | EV ≤ 0.6 × base risk-adjusted NPV, and the +30% capex-overrun test passes | EV ≥ 1.0 × base risk-adjusted NPV |
+## Acceptance criteria
 
-- **S (level):** the buy multiple for that row: blank or the rule's value from `[valuation.buy]`. A level typed by
-  hand is kept, with the existing state file (`private/screen_state.json`).
-- **Buy-below price** (new column, placed by `setup-sheet` after Z): US$ and the listing currency, a formula over
-  PNAV inputs, so it moves with the financials and the decks.
-- **T (status)**, a formula, in this order:
-  1. "No NPV: <why>" (negative at the base deck, inputs missing, or a study that failed its check);
-  2. "Fails downside test" (EV above the pessimistic NPV, or the overrun test fails);
-  3. "Buy: below <price>";
-  4. "Above fair value: review";
-  5. "Hold".
-- **Alerts:** a change in T is already emailed privately by `prices` (`alerts.notify_portfolio`), so a name entering
-  or leaving its buy zone arrives by email. Names, prices and statuses never go into an issue, a log or the step
-  summary.
-- **Every company,** not just the portfolio's rows, gets a buy-below price on PNAV inputs (roadmap 6), with no email.
-- **Review** also follows performance: a row whose score falls below the bucket's cut is listed by the next
-  `screen` run (and, after holdings are bought, the turnover buffer decides when it is replaced).
-- Physical metal rows: unchanged (S and T as typed and as today).
+Revision 1 (built Nov 20, 2026):
 
-## Part 3: `private/portfolio.csv` from the tab
+- [x] A1. Companies map to buckets, Royalty included; the override wins; a developer's metal is its resource
+  unit. — `tests/test_screen.py::test_bucket_mapping`, `tests/test_screen.py::test_bucket_override_wins`,
+  `tests/test_screen.py::test_developer_metal_from_the_resource_unit`
+- [x] A2. US and Canadian names pass by default; foreign-only names need `--all-markets`; Canada rep-assisted is
+  kept or dropped by the setting; "where it trades" reads from the listing columns. —
+  `tests/test_screen.py::test_markets_and_where`, `tests/test_screen.py::test_all_markets_lets_foreign_names_in`
+- [x] A3. Thin OTC ADRs are left out unless `--all-markets`, with no-trade days at $0. —
+  `tests/test_screen.py::test_thin_otc_adrs_are_left_out_unless_all_markets`,
+  `tests/test_screen.py::test_dollar_volume_counts_missing_days_as_zero`
+- [x] A4. Each hard filter fails at its edge and passes inside it, with expanding producers' own dilution limit
+  and the developer filters. — `tests/test_screen.py::test_each_filter`, `tests/test_screen.py::test_filter_edges_pass`,
+  `tests/test_screen.py::test_a_good_company_passes`,
+  `tests/test_screen.py::test_expanding_producers_have_their_own_dilution_limit`,
+  `tests/test_screen.py::test_developer_filters`
+- [x] A5. There is no jurisdiction filter. — `tests/test_screen.py::test_no_jurisdiction_filter_unless_configured`
+- [x] A6. Rank percentiles; a missing measure is left out of the average. — `tests/test_screen.py::test_rank_pct`,
+  `tests/test_screen.py::test_score_averages_the_measures_each_company_has`
+- [x] A7. A held name at rank N + buffer stays and one below is replaced. —
+  `tests/test_screen.py::test_select_with_the_turnover_buffer`
+- [x] A8. Weights: equal split, tilt, the cap and unallocated weight. —
+  `tests/test_screen.py::test_weights_equal_cap_and_unallocated`
+- [x] A9. The plan keeps physical rows and typed U and V, scales weights so F sums to 1, and reports drops. —
+  `tests/test_screen.py::test_plan_keeps_physical_scales_weights_and_keeps_typed_levels`
+- [x] A10. A typed S is kept, a screen-written S follows the rule, and `--rule-review-levels` resets typed ones. —
+  `tests/test_screen.py::test_a_level_written_by_the_screen_follows_the_rule_and_rule_levels_resets_typed_ones`
+- [x] A11. Warnings for more than 26 rows, speculation, developer count and too few eligible names. —
+  `tests/test_screen.py::test_plan_warnings`
+- [x] A12. The write touches only A–F, S and U–V, clears leftover rows, and stops past 26 rows. —
+  `tests/test_screen.py::test_write_rows_touches_only_the_inputs_and_clears_the_rest`
+- [x] A13. `portfolio-file` rows and columns match what the backtest reads. —
+  `tests/test_screen.py::test_portfolio_rows`,
+  `tests/test_screen.py::test_portfolio_file_columns_match_what_the_backtest_reads`
+- [x] A14. `--init` sizes the buckets from the tab and doesn't overwrite. —
+  `tests/test_screen.py::test_init_sizes_from_the_tab`
+- [x] A15. `ranking.csv` shows each measure's percentile, pick and exclusion. —
+  `tests/test_screen.py::test_ranking_table_shows_each_measures_rank`
+- [x] A16. Settings, listing columns and the neutral example portfolio are well formed. —
+  `tests/test_data_files.py::test_screen_settings`, `tests/test_data_files.py::test_listing_columns`,
+  `tests/test_data_files.py::test_example_portfolio_is_neutral`
+- [x] A17. (user) The user reviewed the first dry-run report and ranking (Nov 21, 2026).
+- [ ] A18. The write stops when a B or D wouldn't look up. — new test
+- [ ] A19. `screen --write` has filled the tab with no lookup failures, and `backtest` runs on the
+  `private/portfolio.csv` it wrote. — commands
 
-- `python -m minerval portfolio-file` (also run at the end of `screen --write`) reads Model portfolio A–F and B3,
-  C4, and writes `private/portfolio.csv` in the format `backtest.portfolio()` reads:
+Revision 2 (to build):
 
-| Column | From |
-|---|---|
-| key | D (Sprott ticker) |
-| label | B |
-| group | A |
-| metal | E, lower case |
-| amount_usd | F × (B3 + C4), the target position in US$ |
-| already_held | "yes" only for the silver covered by C4 (the PSLV row up to C4); else "no" |
-| yahoo | Holdings P for that ticker (Holdings O); for physical trusts, `[portfolio_screen.physical_symbols]` (PHYS, PSLV, COP-U.TO) |
-| toronto_listing_in_cad | "yes" when the Yahoo symbol ends in .TO or .V and its currency (Holdings S) is CAD |
-| first_month | blank (the backtest finds each series' start), unless the old file had a value for the same key, which is kept |
+- [ ] A20. A year's cash flow and production are re-priced to the base deck and taken per share with that year's
+  share count. — new test
+- [ ] A21. Each performance measure, the FCF-basis label and "too little history". — new tests
+- [ ] A22. Selection ignores price: an expensive company with the best score is selected, with no buy status. —
+  new test
+- [ ] A23. The valuation filters and valuation score measures are gone from code and settings. — updated tests
+- [ ] A24. T's status at each edge (no NPV, downside test, buy, above fair value, hold) and the buy-below price at
+  each binding condition; a typed S is kept. — new tests
+- [ ] A25. `setup-sheet --dry-run` places the buy-below column after Z, and the user has seen it. — command (user)
+- [ ] A26. Annual production, reserves plus M&I resources, and royalty GEOs for 2022–2025 are recorded with
+  sources for every screened company that publishes them. — data-file test
+- [ ] A27. (user) The user has set the score weighting.
+- [ ] A28. README and CLAUDE.md describe revision 2; the roadmap marks 5b.
 
-- Before overwriting, keep the old file as `private/portfolio.<date>.csv`.
-- Then `backtest` and `project` test the tab's portfolio. The report says the file was written and how many rows,
-  never the names or amounts.
-- If a symbol has no monthly history (`fetch-history` reports it), say so; the backtest already skips such series.
+## Decisions
 
-## Tests (offline, MemorySheet; no real names or weights in fixtures)
+- Royalty bucket; sizes default to the tab's split with Royalty funded from Gold producers; a typed level is kept;
+  a neutral example portfolio; US and Canadian markets by default, with an option for the rest (the user,
+  2026-11-20).
+- Skip thinly traded OTC ADRs; no jurisdiction filter (country risk counts once, in the discount rate); turnover
+  buffer 0 until holdings are bought (the user, 2026-11-21).
+- Select on business performance per share at constant metal prices, with no price test; value drives a buy signal
+  per row, on the Sheet and by private email (the user, 2026-11-21).
+- Production and reserves are researched from the start; reserves plus M&I resources, since juniors publish
+  resources more often than reserves (the user, 2026-11-21).
+- Developers' measures: everything Rule states that can be quantified (the user, 2026-11-21).
 
-- Bucket mapping, Royalty included, and the override column.
-- Market rule:
-  - US and Canadian listings in, foreign-only out by default and in with `--all-markets`;
-  - Canada rep-assisted kept or dropped by the setting;
-  - unresearched rows count as foreign-only;
-  - the listing columns are filled from the Sprott exchange code.
-- Each hard filter, at its edge.
-- Rank-percentile score: ties, missing measures (a royalty company with no own-history percentile), and a
-  one-company bucket.
-- Selection with the turnover buffer: a holding at rank N + 2 stays, and one at N + 3 is replaced.
-- Weights:
-  - an equal split, and the cap spreading the excess;
-  - a bucket with fewer eligible names than N;
-  - physical rows kept;
-  - F sums to 1.
-- Limit warnings: speculation share, developer count, per-name cap.
-- The write:
-  - only A–F, S and U–V are touched;
-  - leftover rows are cleared with CLEAR;
-  - the 26-row limit stops the write;
-  - a B or D that doesn't look up stops it;
-  - U lines typed by the user are kept.
-- Review level:
-  - the rule's level, and a bucket override;
-  - a typed S kept (it differs from the state file);
-  - a screen-written S updated;
-  - with no state file, typed S kept.
-- portfolio-file:
-  - columns and types match `config/portfolio.example.csv`;
-  - amount = F × (B3 + C4);
-  - already_held for PSLV;
-  - the CAD flag;
-  - first_month carried over.
-- Data-file checks:
-  - `[portfolio_screen]` thresholds present;
-  - every bucket is in `[signals.timing]` or is Royalty;
-  - listing columns well formed;
-  - the new example portfolio holds no Model portfolio ticker other than PHYS (checked against a fixed list in
-    the test, not the Sheet).
+## Open questions
 
-## Docs
-
-- **README:** a "Model portfolio from a screen" section covering:
-  - what is screened and what isn't;
-  - the market rule and why (the fee table);
-  - the filters, the score and the research limits;
-  - that the rules are public and the bucket sizes private;
-  - the run order: `refresh`, `financials`, `screen --dry-run`, review, then `screen --write`.
-- **CLAUDE.md:**
-  - the commands table (`screen`, `portfolio-file`) and what they write (Model portfolio A–F, S, U–V;
-    `private/portfolio.csv`, `private/screen_state.json`);
-  - that A–F, S and U–V are now written by `screen`, and S typed by hand is kept;
-  - that the screen's output stays out of the repo and the logs;
-  - to research a new company's listings when it's added to `pnav_companies.csv`.
-- **Roadmap:**
-  - mark item 5 built;
-  - add the yearly fee-schedule check to the calendar;
-  - add the unresearched listings as a small item if any are left.
-
-## Tests for revision 2 (offline, MemorySheet; no real names in fixtures)
-
-- Constant-price re-pricing of a year's cash flow and production, per share with that year's share count.
-- Each performance measure, the FCF fallback label, and "too little history".
-- Selection ignores price: an expensive company with the best score is selected, with no buy status.
-- Status order in T at each edge (no NPV, downside test, buy, above fair value, hold), a typed S kept, and the
-  buy-below price at each binding condition.
-
-## Done when
-
-- `screen --dry-run` gives a ranked, explained proposal for each equity bucket, Royalty included, with US and
-  Canadian names only by default, and the user has reviewed it.
-- `screen --write` has filled the tab with no lookup failures.
-- S follows the rule except where the user typed it.
-- `backtest` runs on the `private/portfolio.csv` written from the tab.
-- The example portfolio is neutral.
-
-## Open questions for revision 2
-
-1. **Weighting** of the performance measures (after the valuation work is settled).
-2. **Period:** 3 fiscal years today (Yahoo carries 4 annual years for 220 of 237 companies). Longer periods need
-   research from filings; decide after the Step 0 pilot (roadmap 6).
-
-## At build time, ask the user (first version)
-
-1. **Royalty's weight:** how much to move from Gold producers, and how many names. The research suggests 2–4
-   names; the recommendation is given in conversation, not here, because the weights are private.
-2. **Listings:** confirm the researched US and Canadian listings for the 39 non-US, non-Canadian companies before
-   the first `--write`.
+1. **Weighting** of the performance measures, after the valuation work is settled. The likely shape: equal weights
+   across themes (growth per share, margins, balance sheet and dilution), not across measures, and not tuned to the
+   backtest.
+2. **Period:** 3 fiscal years today (Yahoo carries 4 annual years for 220 of 237 companies); longer needs research
+   from filings.
