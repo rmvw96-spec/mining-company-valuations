@@ -1,68 +1,77 @@
 # Producer costs from company AISC and energy exposure
 
-Instructions for Claude Code. Roadmap item 4a. Follow CLAUDE.md.
+Roadmap 4a · Status: Proposed · Depends on: market signals (the diesel signal); improves roadmap 6's pessimistic
+costs
+
+Instructions for Claude Code. Follow CLAUDE.md.
 
 ## Goal
 
-The producer cost increase (Signals input `producer_cost_increase`, PNAV inputs H7) applies one percentage to
-every producer's costs, and a company's costs are inferred as revenue minus cash flow
-(`price_model.cost_change`: −k × max(0, revenue − cash flow) × c). Two problems:
+The producer cost increase (Signals input `producer_cost_increase`, PNAV inputs H7) applies one percentage to every
+producer, on a cost base inferred as revenue minus cash flow (`price_model.cost_change`: −k × max(0, revenue − cash
+flow) × c). That proxy includes taxes, interest and working-capital swings, and diesel up 46% doesn't raise a
+grid-powered underground mine and a haul-truck open pit by the same amount. Use reported AISC as the cost base, and
+each company's energy exposure to turn the diesel move into its own cost increase.
 
-1. **The cost base is a proxy.** Revenue minus cash flow includes taxes, interest and working-capital swings,
-   so it overstates costs for some companies and understates them for others.
-2. **Every company gets the same increase.** Diesel up 46% doesn't raise an underground mine on grid power and an
-   open pit running a haul-truck fleet by the same amount.
+## Scope
 
-Replace the proxy with reported AISC where available, and let each company's energy exposure turn the diesel
-move into its own cost increase, so the diesel signal feeds the cost scenario directly.
+- **In:** a company AISC record, an AISC cost base with the proxy as fallback, a per-company cost increase from the
+  diesel signal.
+- **Out:** forecasting AISC; company figures for energy share that aren't disclosed (a default by mine type
+  instead).
 
-## Part 1: company AISC (the record)
+## Design
 
-- New file `data/research/producer_costs.csv`: `ticker`, `period` (e.g. `2026Q4` or `FY2026`), `aisc_usd_per_oz`,
-  `unit` (oz Au, oz AuEq, oz AgEq, lb Cu, lb CuEq; copper producers report C1 or AISC per lb), `production`
-  (in the unit, same period), `energy_share` (share of operating costs from fuel and power, 0–1), `mine_type`
-  (open pit, underground, mixed), `power` (grid, diesel generation, mixed), `source`.
-- Fill it for the producers on the Model portfolio first (read the list from the Sheet; don't write it into the
-  repo, which is public), then by fund weight. Use Q4 2026 / FY2026 reports (February to March 2027).
-- `energy_share`: from company disclosure where given (many report fuel and power as a share of site costs).
-  Otherwise leave blank and use the default by mine type (`[price_model] energy_share_default`, e.g. open pit
-  0.20, underground 0.12, mixed 0.16, with a comment naming the source of the defaults). Never invent a
-  company figure.
+### Part 1: company AISC (the record)
 
-## Part 2: cost base from AISC
+- `data/research/producer_costs.csv`: `ticker`, `period` (`2026Q4`, `FY2026`), `aisc_usd_per_oz`, `unit` (oz Au,
+  oz AuEq, oz AgEq, lb Cu, lb CuEq; copper producers report C1 or AISC per lb), `production` (same unit and
+  period), `energy_share` (fuel and power ÷ operating costs, 0–1), `mine_type` (open pit / underground / mixed),
+  `power` (grid / diesel generation / mixed), `source`.
+- Fill it for the Model portfolio's producers first (read the list from the Sheet; it never goes in the repo), then
+  by fund weight, from FY2026 reports (February to March 2027).
+- `energy_share` only from company disclosure; otherwise blank, and the default by mine type applies
+  (`[price_model] energy_share_default`, e.g. open pit 0.20, underground 0.12, mixed 0.16, with the source of the
+  defaults in its comment).
 
-- Cost base = AISC × production (annualised), when the row is filled in. Falls back to today's proxy otherwise,
-  and the row says which basis it used (new column next to the cost base, e.g. `cost_basis` = `AISC` or `proxy`).
-- `stress.py` (cost_base_m), `pnav.py` and the PNAV inputs Z:AC / H7 formulas use the same cost base. On the
-  Sheet, add the cost base as an input column on PNAV inputs (written by `financials` from the CSV), and change
-  the Z:AC formula to use it when present. That's an installer step in `layout.py` with the old and new formulas,
-  as PR #5 did.
-- With `producer_cost_increase` = 0 every output must be unchanged (the post-install check already verifies this).
+### Part 2: cost base from AISC
 
-## Part 3: company cost increase from the diesel signal
+- Cost base = AISC × production (annualised) when recorded, else today's proxy; `cost_basis` (`AISC` / `proxy`)
+  beside it says which.
+- `stress.py` (`cost_base_m`), `pnav.py` and the PNAV inputs Z:AC / H7 formulas use the same cost base: a new PNAV
+  inputs column written by `financials`, and Z:AC changed to use it when present (a `layout.py` installer step with
+  the old and new formulas, as the market-signals installer did).
+- With `producer_cost_increase` = 0 every output is unchanged.
 
-- New Signals input `diesel_pass_through` (default 1.0): how much of the diesel move to apply.
-- Company cost increase = `producer_cost_increase` (the user's general input) + energy share ×
-  `diesel_12m` × pass-through, where `diesel_12m` is the Signals value. One new Sheet column holds each company's
-  increase; the cost formulas use it instead of H7 alone.
-- The Signals inputs already have `energy_share_of_costs` (one industry-wide estimate, the user's to fill in) and
-  `implied_cost_increase` (a formula: that share × the diesel move). Keep `energy_share_of_costs` as the fallback
-  for companies with no figure and no mine type, and add a formula row `implied_cost_increase_median`: the median
-  company increase, so the Signals tab shows what the diesel move means across the producers.
-- Keep it switchable: `[price_model] use_energy_pass_through = true`; false gives today's single input.
+### Part 3: company cost increase from the diesel signal
 
-## Tests (offline)
+- New Signals input `diesel_pass_through` (default 1.0).
+- Company cost increase = `producer_cost_increase` + energy share × `diesel_12m` × pass-through. One new Sheet
+  column holds it, and the cost formulas use it instead of H7 alone.
+- `energy_share_of_costs` (the user's industry-wide estimate) stays as the fallback for a company with no figure and
+  no mine type. New formula row `implied_cost_increase_median`: the median company increase.
+- `[price_model] use_energy_pass_through = true`; false gives today's single input.
 
-- Cost base from AISC vs proxy, and the fallback label.
-- Company increase arithmetic, the default energy share by mine type, the switch.
-- The zero-increase invariant on the derived frames and on the installed formulas (MemorySheet check).
-- Data-file validation for `producer_costs.csv`.
+## Acceptance criteria
 
-## Docs
+- [ ] A1. The cost base uses AISC × production when recorded and the proxy otherwise, with `cost_basis` saying
+  which. — new test
+- [ ] A2. A company's increase = general input + energy share × diesel move × pass-through, with the mine-type
+  default and the industry fallback in that order. — new test
+- [ ] A3. `use_energy_pass_through = false` reproduces today's outputs exactly. — new test
+- [ ] A4. With `producer_cost_increase` = 0 and pass-through 0, the derived frames and the installed formulas are
+  unchanged. — new test (MemorySheet)
+- [ ] A5. `producer_costs.csv` is well formed: units from the list, shares 0–1, a source on every row. — new
+  data-file test
+- [ ] A6. The Model portfolio's producers have AISC cost bases from FY2026 reports. — `financials --dry-run`
+  report
+- [ ] A7. With pass-through 1.0, each producer's P/NAV moves by its own energy exposure. — `compute` output
+- [ ] A8. README explains the cost scenario; CLAUDE.md adds the record file and its earnings-season step.
 
-README (how the cost scenario works now), CLAUDE.md (new record file, earnings-season step to update it).
+## Decisions
 
-## Done when
+- None yet.
 
-The Model portfolio producers have AISC-based cost bases from FY2026 reports, and setting diesel pass-through
-to 1.0 moves each producer's P/NAV by its own energy exposure.
+## Open questions
+
+1. The default energy shares by mine type, and their source, at build time.
