@@ -1,6 +1,6 @@
 # Model portfolio from a screen
 
-Roadmap 5 and 5b · Status: revision 1 built Nov 20, 2026; revision 2 proposed · Depends on: 6 for revision 2
+Roadmap 5 and 5b · Status: revision 1 Built Nov 20, 2026; revision 2 Outstanding · Depends on: 6 for revision 2
 ([tier-valuation-spec.md](tier-valuation-spec.md))
 
 Instructions for Claude Code. Follow CLAUDE.md, in particular its rule that Model portfolio content (names, weights,
@@ -199,8 +199,9 @@ Revision 1 (built Nov 20, 2026):
   `tests/test_data_files.py::test_screen_settings`, `tests/test_data_files.py::test_listing_columns`,
   `tests/test_data_files.py::test_example_portfolio_is_neutral`
 - [x] A17. (user) The user reviewed the first dry-run report and ranking (Nov 21, 2026).
-- [ ] A18. The write stops when a B or D wouldn't look up. — new test
-- [ ] A19. `screen --write` has filled the tab with no lookup failures, and `backtest` runs on the
+- [x] A18. The write stops when a B or D wouldn't look up. —
+  `tests/test_screen.py::test_write_stops_when_a_name_or_ticker_wouldnt_look_up`
+- [ ] A19. (user) `screen --write` has filled the tab with no lookup failures, and `backtest` runs on the
   `private/portfolio.csv` it wrote. — commands
 
 Revision 2 (to build):

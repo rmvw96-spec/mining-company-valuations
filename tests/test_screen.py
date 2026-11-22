@@ -273,6 +273,29 @@ def test_write_rows_touches_only_the_inputs_and_clears_the_rest():
         SC.write_rows(MemorySheet(), P)
 
 
+def test_write_stops_when_a_name_or_ticker_wouldnt_look_up(tmp_path, monkeypatch):
+    S = settings()["sheet"]
+    L = S["downside_cols"]["ticker"]
+    sheet = MemorySheet({S["pnav_tab"]: {f"B{S['pnav_tab_first_row']}": "Alpha Gold"},
+                         S["downside_tab"]: {f"{L}{S['downside_first_row']}": "ALP"},
+                         S["portfolio_tab"]: {}})
+    monkeypatch.setattr(SC, "load_sizes", lambda path=None: SIZES)
+    monkeypatch.setattr(SC, "read_universe", lambda sh, research=None: (gold_universe(), {}))
+    monkeypatch.setattr(SC, "otc_volumes", lambda U, fetch=None: {})
+    monkeypatch.setattr(SC, "read_tab", lambda sh: tab_rows())
+    monkeypatch.setattr(SC, "load_state", lambda path=None: None)
+    monkeypatch.setattr(SC, "STATE", tmp_path / "screen_state.json")     # never the real private/ files,
+    monkeypatch.setattr(SC, "PORTFOLIO_FILE", tmp_path / "portfolio.csv")  # even if the guard breaks
+    P = SC.plan(gold_universe(), tab_rows(), SIZES, TODAY, None)
+    bad = SC.check_lookups(sheet, P)
+    assert "Beta Gold not on the P/NAV tab" in bad and "BET not on Holdings downside" in bad
+    assert not any(x.startswith("Alpha Gold") or x.startswith("ALP ") for x in bad)
+    lines = SC.run(sheet, write=True, today=TODAY, out_dir=tmp_path)
+    assert any(x.startswith("Not written:") for x in lines)
+    assert sheet.cells[S["portfolio_tab"]] == {}                        # nothing written to the tab
+    assert not list(tmp_path.glob("backup-*.json"))
+
+
 def test_portfolio_rows():
     tab = tab_rows({"A": "Physical metal", "B": "Silver trust", "D": "PSLV", "E": "Silver", "F": 0.2},
                    {"A": "Gold producers", "B": "Alpha Gold", "D": "ALP", "E": "Gold", "F": 0.3},
