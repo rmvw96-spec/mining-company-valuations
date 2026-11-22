@@ -23,6 +23,7 @@ TYPES = [
     "trailingTotalRevenue", "annualTotalRevenue",
     "quarterlyStockholdersEquity", "annualStockholdersEquity",
     "quarterlyTotalDebt", "annualTotalDebt",
+    "quarterlyMinorityInterest", "annualMinorityInterest",        # partners' stakes in consolidated mines
     "quarterlyCashCashEquivalentsAndShortTermInvestments", "annualCashCashEquivalentsAndShortTermInvestments",
     "quarterlyCashAndCashEquivalents", "annualCashAndCashEquivalents",
     # share counts (history is used for dilution) and working capital

@@ -297,10 +297,14 @@ def compute(I: pd.DataFrame, deck_prices: dict, today, P=None, C=None,
     for _, s in I.iterrows():
         r = s.to_dict()
         mcap, nc, price = r.get("mcap_m"), r.get("net_cash_m"), r.get("price_usd")
-        ev = mcap - nc if _num(mcap) and _num(nc) else None
+        mi = r.get("minority_m")
+        mi = mi if _num(mi) else None
+        # EV includes partners' stakes (balance-sheet minority interest): the cash flow valued is consolidated
+        ev = mcap - nc + (mi or 0.0) if _num(mcap) and _num(nc) else None
+        nc_eq = nc - (mi or 0.0) if _num(nc) else nc          # per share: what's left for shareholders
         shares = mcap / price if _num(mcap) and _num(price) and price > 0 else None
         d = {"sheet_row": r["sheet_row"], "ticker": r["ticker"], "yahoo": r.get("yahoo"), "holding": r.get("holding"),
-             "price_usd": price,
+             "price_usd": price, "minority_m": mi,
              "ev_m": ev, "shares_m": shares, "tier": "", "valuation_basis": "", "why": "", "flags": ""}
         basis = r.get("basis") if isinstance(r.get("basis"), str) else ""
         if _num(r.get("fixed_price_usd")):
@@ -325,7 +329,7 @@ def compute(I: pd.DataFrame, deck_prices: dict, today, P=None, C=None,
             for dk in deck_prices:
                 d[f"ev/npv {dk}"] = ev_to_npv(ev, d[f"npv {dk}"]) if ev is not None else None
             fin = {"base": o["cases"][0.0], "worst": o["cases"][max(c["capex_overrun"])]} if o["cases"] else None
-            b = buy_levels("developer", d[f"npv {base}"], None, nc, shares, financing=fin)
+            b = buy_levels("developer", d[f"npv {base}"], None, nc_eq, shares, financing=fin)
         else:
             if tier == "producer":
                 pipe, pwhy = pipeline(r["ticker"], deck_prices, rate, today, P, C)
@@ -336,11 +340,11 @@ def compute(I: pd.DataFrame, deck_prices: dict, today, P=None, C=None,
                 v = royalty_valuation(r, deck_prices, rate)
                 cf = royalty_cash_flow(r, deck_prices[base])[0]
             d.update({k: x for k, x in v.items() if k != "npv_basis"}, valuation_basis=v["npv_basis"], cf_base=cf)
-            b = buy_levels(tier, d[f"npv {base}"], d[f"npv {pess}"], nc, shares)
+            b = buy_levels(tier, d[f"npv {base}"], d[f"npv {pess}"], nc_eq, shares)
         d.update(buy_below=b["buy_below"], fair_value=b["fair_value"], binding=b["binding"])
         if b["why"] and not d["why"]:
             d["why"] = b["why"]
-        d["flags"] = "; ".join(validation_flags(d.get(f"npv {base}"), nc, shares, r.get("model_nav_per_share_usd"),
+        d["flags"] = "; ".join(validation_flags(d.get(f"npv {base}"), nc_eq, shares, r.get("model_nav_per_share_usd"),
                                                 r.get("analyst_consensus_pnav_dec2025"), price))
         rows.append(d)
     return pd.DataFrame(rows)

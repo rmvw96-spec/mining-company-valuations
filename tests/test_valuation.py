@@ -352,3 +352,26 @@ def test_compute_says_why_a_row_has_no_valuation(monkeypatch):
     T = V.compute(pd.concat([F, more]), DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04).set_index("ticker")
     assert T.loc["EXP", "tier"] == "" and T.loc["EXP", "why"] == "no cash-flow basis or study recorded"
     assert T.loc["NOJ", "tier"] == "producer" and T.loc["NOJ", "why"] == "no jurisdiction add-on"
+
+
+def test_ev_adds_minority_interest_because_cash_flow_is_consolidated(monkeypatch):
+    from datetime import date
+    P, C = study_stub(monkeypatch)
+    F = inputs_frame()
+    F["minority_m"] = [250.0, np.nan, np.nan, np.nan]
+    T = V.compute(F, DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04).set_index("ticker")
+    assert T.loc["PRD", "ev_m"] == pytest.approx(1000.0 - 100.0 + 250.0)       # market cap − net cash + minorities
+    assert T.loc["ROY", "ev_m"] == pytest.approx(5000.0)                       # none recorded: nothing added
+    assert T.loc["PRD", "minority_m"] == pytest.approx(250.0)
+
+
+def test_per_share_figures_subtract_minority_interest(monkeypatch):
+    from datetime import date
+    P, C = study_stub(monkeypatch)
+    F = inputs_frame()
+    F["minority_m"] = [250.0, np.nan, np.nan, np.nan]
+    prd = V.compute(F, DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04).set_index("ticker").loc["PRD"]
+    want = V.buy_levels("producer", prd["npv Base"], prd["npv Pessimistic"], 100.0 - 250.0, 100.0)
+    assert prd["buy_below"] == pytest.approx(want["buy_below"])                 # equity holders' share only
+    assert prd["fair_value"] == pytest.approx(want["fair_value"])
+    assert f"NAV ${(prd['npv Base'] - 150.0) / 100.0:.2f}/share" in prd["flags"]

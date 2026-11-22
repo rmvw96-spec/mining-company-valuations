@@ -131,3 +131,16 @@ def test_fund_multiple_is_blank_when_losses_dominate():
     f = fund_multiples(X).loc["SGDM"]
     assert math.isnan(f["P/fcf"])
     assert f["P/fcf (positive only)"] == pytest.approx(10.0)
+
+
+def test_minority_interest_is_carried_in_usd_and_zero_when_none(run_per_holding):
+    H = {"AAA CN": company(quarterlyOrdinarySharesNumber=p("2026-09-30", 100e6, "CAD"),
+                           annualMinorityInterest=p("2025-12-31", 50e6, "CAD"),
+                           quarterlyMinorityInterest=p("2026-09-30", 80e6, "CAD")),
+         "BBB CN": company(quarterlyOrdinarySharesNumber=p("2026-09-30", 100e6, "CAD"))}
+    rows = [{"fund": "SGDM", "holding": "A", "ticker": "AAA CN", "weight_pct": 5.0},
+            {"fund": "SGDM", "holding": "B", "ticker": "BBB CN", "weight_pct": 4.0}]
+    X = run_per_holding(H, rows)
+    assert X.loc["AAA CN"].minority == pytest.approx(56e6)          # the latest quarter, at 0.7 US$/CAD
+    assert X.loc["BBB CN"].minority == 0.0
+    assert {"quarterlyMinorityInterest", "annualMinorityInterest"} <= set(fundamentals.TYPES)

@@ -52,6 +52,7 @@ def per_holding(cache=None) -> pd.DataFrame:
                 r["mcap"] = r["price_usd"] * sh["val"]
         eq = pick(ts, ["quarterlyStockholdersEquity", "annualStockholdersEquity"])
         debt = pick(ts, ["quarterlyTotalDebt", "annualTotalDebt"])
+        minority = pick(ts, ["quarterlyMinorityInterest", "annualMinorityInterest"])
         cash = (pick(ts, ["quarterlyCashCashEquivalentsAndShortTermInvestments",
                           "annualCashCashEquivalentsAndShortTermInvestments"]) or
                 pick(ts, ["quarterlyCashAndCashEquivalents", "annualCashAndCashEquivalents"]))
@@ -66,7 +67,8 @@ def per_holding(cache=None) -> pd.DataFrame:
         fcf = pick(ts, ["trailingFreeCashFlow", "annualFreeCashFlow"])
         ebitda = pick(ts, ["trailingEBITDA", "annualEBITDA"])
         rev = pick(ts, ["trailingTotalRevenue", "annualTotalRevenue"])
-        r.update(book=usd(eq), debt=usd(debt) or 0.0, cash=usd(cash) or 0.0, ocf=usd(ocf), fcf=usd(fcf),
+        r.update(book=usd(eq), debt=usd(debt) or 0.0, cash=usd(cash) or 0.0, minority=usd(minority) or 0.0,
+                 ocf=usd(ocf), fcf=usd(fcf),
                  ebitda=usd(ebitda), revenue=usd(rev),
                  fin_date=max([p["date"] for p in (eq, ocf, fcf, ebitda) if p] or [None], key=lambda x: x or ""))
         r["stale"] = bool(r["fin_date"] and r["fin_date"] < S["stale_before"])
