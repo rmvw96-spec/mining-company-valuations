@@ -211,7 +211,8 @@ Valuation (to build):
   `tests/test_valuation.py::test_the_settings_set_a_buy_level_below_fair_value_for_every_tier`
 - [x] A23. The validation check flags an NAV more than 2× from the independent NAV or the consensus P/NAV. —
   `tests/test_valuation.py::test_validation_flags_npvs_more_than_twice_away_from_the_outside_views`
-- [ ] A24. `setup-sheet --dry-run` places the new columns after CB, and the user has seen it. — command (user)
+- [x] A24. `setup-sheet --dry-run` places the new columns after CB, and the user has seen it. — command (user):
+  the dry run (23 cells, no conflicts) approved and installed Nov 22, 2026; read back with no error values
 - [ ] A25. Every Model portfolio candidate has an NPV at the three decks with its basis shown. —
   `financials --dry-run` report
 - [ ] A26. (user) The validation report has been read with the user.

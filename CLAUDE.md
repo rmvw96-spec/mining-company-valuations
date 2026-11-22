@@ -103,8 +103,9 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
 
 - Holdings: D2:H2 and V2 (open-ended ranges to row 1000). Never write into D3:H1000 or V3:V1000.
 - PNAV inputs: C12 and D12 (to row 154), AL12:AO12 (to row 146 only), and AR12:AS12, AZ12:BE12, BJ12:BO12 and
-  BT12:BX12 and CB12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146, AR13:AS154, AZ13:BE154,
-  BJ13:BO154, BT13:BX154 or CB13:CB154. BY:CA (royalty P/OCF and own-history percentiles) are written by `signals`
+  BT12:BX12, CB12, CH12:CL12 and CP12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146,
+  AR13:AS154, AZ13:BE154, BJ13:BO154, BT13:BX154, CB13:CB154, CH13:CL154 or CP13:CP154. CC:CG, CM:CO and CQ:CS
+  (valuation by tier) are written by `financials` from data/derived/valuation.csv. BY:CA (royalty P/OCF and own-history percentiles) are written by `signals`
   on every run, from `data/research/royalty_ocf.csv` (annual operating cash flow from SEC filings, the record,
   written by `royalty-ocf`) and the Company history tab. H7 is a formula (the Signals cost input). AT:AW (resources), BF:BI (developer financing) and
   BP:BS (resource split) are inputs, recorded in `data/research/pnav_companies.csv` with a source for every
