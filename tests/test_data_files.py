@@ -195,6 +195,11 @@ def test_docs_name_real_tests_and_links_resolve():
     point at a renamed or deleted test. Relative links in README, CLAUDE.md and docs/ must resolve."""
     import re
     docs = [ROOT / "README.md", ROOT / "CLAUDE.md", *sorted((ROOT / "docs").rglob("*.md"))]
+    for d in sorted((ROOT / "docs" / "specs").glob("*.md")):                  # the template's sections
+        text = d.read_text()
+        for section in ("## Goal", "## Scope", "## Design", "## Acceptance criteria"):
+            assert f"\n{section}\n" in text, f"{d.name} has no '{section}' section (docs/specs/TEMPLATE.md)"
+        assert re.search(r"^Roadmap\b.*· Status: ", text, re.M), f"{d.name} has no status line"
     for d in docs:
         text = d.read_text()
         for f, name in re.findall(r"(tests/test_\w+\.py)::(test_\w+)", text):
