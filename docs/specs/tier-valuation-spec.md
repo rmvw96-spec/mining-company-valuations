@@ -121,11 +121,7 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
 - **Buy-below price per share** (US$ and listing currency, a Sheet formula) = (min(buy × base NPV, pessimistic
   NPV) + net cash) ÷ shares. No NPV (negative at base, inputs missing, failed check): no price, and the status
   says why.
-- **Basis for the starting values** (into the `[valuation.buy]` comment when built): Rule buys at large discounts
-  to his own NPV (about 40% in a Dec 2025 example) and checks the downside first; he cites 15–20× cash flow for
-  precious-metals royalties against 5–7× for base-metal producers (Kitco, Feb 2026); Sprott's typical P/NAV by
-  stage (Aug 2022): PEA 0.2–0.5×, PFS/FS 0.5–0.7×, construction 0.5–0.8×, production 0.6–1.5×. None is a
-  published Rule threshold, and none is fitted to data.
+- The evidence for the starting values is in the `[valuation.buy]` comment in `config/settings.toml`.
 
 ### Sheet
 
@@ -199,10 +195,15 @@ Valuation (to build):
   `tests/test_valuation.py::test_overrun_dilution_at_each_overrun_and_its_downside_test`,
   `tests/test_valuation.py::test_no_remaining_capex_means_no_overrun_test`
 - [ ] A20. `study_stage` holds only the six values and agrees with the latest study row. — new data-file test
-- [ ] A21. Royalty NPV of operating cash flow at each deck and its downside test. — new test
-- [ ] A22. The buy-below price at each binding condition (the discount, the downside test), and none without an
-  NPV. — new test
-- [ ] A23. The validation report lists NPVs more than 2× from the independent NAV or consensus P/NAV. — new test
+- [x] A21. Royalty NPV of operating cash flow over 10 years at each deck and its downside test. —
+  `tests/test_valuation.py::test_royalty_npv_is_ten_years_of_operating_cash_flow_at_each_deck_with_no_cost_increase`
+- [x] A22. The buy-below price at each binding condition (the discount, the downside test, developers' overrun
+  test), and none without an NPV. — `tests/test_valuation.py::test_buy_below_price_at_each_binding_condition`,
+  `tests/test_valuation.py::test_developers_buy_below_needs_the_overrun_test`,
+  `tests/test_valuation.py::test_no_npv_means_no_buy_below_price_and_says_why`,
+  `tests/test_valuation.py::test_the_settings_set_a_buy_level_below_fair_value_for_every_tier`
+- [x] A23. The validation check flags an NAV more than 2× from the independent NAV or the consensus P/NAV. —
+  `tests/test_valuation.py::test_validation_flags_npvs_more_than_twice_away_from_the_outside_views`
 - [ ] A24. `setup-sheet --dry-run` places the new columns after CB, and the user has seen it. — command (user)
 - [ ] A25. Every Model portfolio candidate has an NPV at the three decks with its basis shown. —
   `financials --dry-run` report

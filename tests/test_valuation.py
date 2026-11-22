@@ -11,7 +11,9 @@ DECKS = {"Pessimistic": {"gold": 1800.0, "silver": 22.0, "copper": 3.6},
          "Optimistic": {"gold": 2600.0, "silver": 34.0, "copper": 5.2}}
 CFG = {"horizon_years": 10, "decks": ["Pessimistic", "Base", "Optimistic"], "pessimistic_deck": "Pessimistic",
        "base_deck": "Base", "pessimistic_cost_increase": 0.10, "capex_overrun": [0.15, 0.30],
-       "max_overrun_dilution": 0.33}
+       "max_overrun_dilution": 0.33, "check_factor": 2.0,
+       "buy": {"producer": {"buy": 0.6, "fair": 1.0}, "royalty": {"buy": 1.0, "fair": 1.5},
+               "developer": {"buy": 0.6, "fair": 1.0}}}
 
 
 @pytest.fixture(autouse=True)
@@ -161,3 +163,76 @@ def test_overrun_dilution_at_each_overrun_and_its_downside_test():
 def test_no_remaining_capex_means_no_overrun_test():
     o = V.overrun(None, 100.0, 0.0, 10.0, 500.0, discount=0.15)
     assert o["overrun_ok"] is None and o["capex_to_mcap"] is None and o["why"] == "no remaining capex recorded"
+
+
+def royalty(**k):
+    r = {"ocf_m": 400.0, "revenue_m": 500.0, "share_gold": 1.0, "share_silver": 0.0, "share_copper": 0.0,
+         "avg_gold": 2000.0, "avg_silver": 25.0, "avg_copper": 4.0, "reserve_life_years": 4.0, "ev_m": 3000.0}
+    r.update(k)
+    return r
+
+
+def test_royalty_npv_is_ten_years_of_operating_cash_flow_at_each_deck_with_no_cost_increase():
+    v = V.royalty_valuation(royalty(), DECKS, 0.08)
+    for d, px in DECKS.items():
+        cf = 400.0 + 0.7 * 500.0 * (px["gold"] / 2000 - 1)                     # no sustaining, no cost increase
+        assert v[f"npv {d}"] == pytest.approx(cf * annuity(0.08, 10))           # 10 years, not the 4-year life
+    assert v["npv_basis"] == V.ROYALTY_BASIS
+    assert v["downside_ok"] is (3000.0 <= v["npv Pessimistic"])
+    assert V.royalty_valuation(royalty(ev_m=100.0), DECKS, 0.08)["downside_ok"] is True
+
+
+def test_buy_below_price_at_each_binding_condition():
+    # 50M shares, net cash $100M; producers buy at 0.6 x base NPV and no higher than the pessimistic NPV
+    a = V.buy_levels("producer", npv_base=1000.0, npv_pessimistic=900.0, net_cash_m=100.0, shares_m=50.0)
+    assert a["buy_below"] == pytest.approx((600 + 100) / 50) and a["binding"] == "discount"
+    assert a["fair_value"] == pytest.approx((1000 + 100) / 50)
+    b = V.buy_levels("producer", npv_base=1000.0, npv_pessimistic=400.0, net_cash_m=100.0, shares_m=50.0)
+    assert b["buy_below"] == pytest.approx((400 + 100) / 50) and b["binding"] == "downside test"
+    r = V.buy_levels("royalty", npv_base=1000.0, npv_pessimistic=1200.0, net_cash_m=100.0, shares_m=50.0)
+    assert r["buy_below"] == pytest.approx(1100 / 50) and r["fair_value"] == pytest.approx(1600 / 50)
+
+
+def test_developers_buy_below_needs_the_overrun_test():
+    ok = V.buy_levels("developer", npv_base=500.0, net_cash_m=20.0, shares_m=40.0, overrun_ok=True)
+    assert ok["buy_below"] == pytest.approx((0.6 * 500 + 20) / 40) and ok["binding"] == "discount"
+    no = V.buy_levels("developer", npv_base=500.0, net_cash_m=20.0, shares_m=40.0, overrun_ok=False)
+    assert no["buy_below"] is None and no["why"] == "fails the capex-overrun test"
+    unk = V.buy_levels("developer", npv_base=500.0, net_cash_m=20.0, shares_m=40.0, overrun_ok=None)
+    assert unk["buy_below"] is None and unk["why"] == "no capex-overrun test (no remaining capex recorded)"
+
+
+def test_no_npv_means_no_buy_below_price_and_says_why():
+    assert V.buy_levels("producer", None, 900.0, 100.0, 50.0)["why"] == "no NPV"
+    assert V.buy_levels("producer", -5.0, -50.0, 100.0, 50.0)["why"] == "negative NPV at the base deck"
+    deep = V.buy_levels("producer", 1000.0, -300.0, 100.0, 50.0)          # min(600, -300) + 100 <= 0
+    assert deep["buy_below"] is None and deep["why"] == "fails the downside test at any price"
+    assert V.buy_levels("producer", 1000.0, 900.0, 100.0, None)["why"] == "no share count"
+
+
+def test_validation_flags_npvs_more_than_twice_away_from_the_outside_views():
+    # our NAV per share = (base NPV + net cash) / shares = (900 + 100) / 50 = $20
+    assert V.validation_flags(900.0, 100.0, 50.0, independent_nav=9.0) == [
+        "NAV $20.00/share is 2.2x the independent NAV ($9.00)"]
+    assert V.validation_flags(900.0, 100.0, 50.0, independent_nav=12.0) == []          # 1.7x: within 2x
+    # consensus P/NAV 0.5 at a $5 price means a consensus NAV of $10/share: ours is 2.0x, not more
+    assert V.validation_flags(900.0, 100.0, 50.0, consensus_pnav=0.5, price=5.0) == []
+    assert V.validation_flags(900.0, 100.0, 50.0, consensus_pnav=2.0, price=5.0) == [
+        "NAV $20.00/share is 8.0x the consensus NAV ($2.50)"]                            # consensus NAV = 5 / 2.0
+    assert V.validation_flags(900.0, 100.0, 50.0, consensus_pnav=0.2, price=5.0) == []  # $25: ours is 0.8x
+    assert V.validation_flags(-200.0, 100.0, 50.0, independent_nav=9.0) == [
+        "NAV -$2.00/share against the independent NAV ($9.00)"]
+    assert V.validation_flags(900.0, 100.0, 50.0) == []                                   # nothing to compare with
+
+
+def test_the_settings_set_a_buy_level_below_fair_value_for_every_tier():
+    from minerval.config import settings
+    c = settings()["valuation"]
+    assert set(c["buy"]) == {"producer", "royalty", "developer"}
+    assert all(0 < v["buy"] < v["fair"] for v in c["buy"].values()) and c["check_factor"] > 1
+
+
+def test_missing_inputs_give_no_price_and_no_flags():
+    assert V.buy_levels("producer", 1000.0, None, 100.0, 50.0)["why"] == "no pessimistic NPV"
+    assert V.validation_flags(None, 100.0, 50.0, independent_nav=9.0) == []
+    assert V.validation_flags(900.0, 100.0, None, independent_nav=9.0) == []

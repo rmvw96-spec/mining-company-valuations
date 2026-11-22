@@ -21,6 +21,7 @@ from .price_model import METALS, cost_change
 
 OCF_BASIS = "OCF − sustaining"
 FCF_BASIS = "FCF basis: sustaining not recorded"
+ROYALTY_BASIS = "OCF (royalty)"
 
 
 def cfg() -> dict:
@@ -53,6 +54,14 @@ def ev_to_npv(ev, npv_):
     return "negative NPV" if npv_ <= 0 else ev / npv_
 
 
+def _price_change(r, prices: dict) -> float:
+    """Cash-flow change moving from the reporting period's average metal prices to `prices`, by revenue mix."""
+    rev = r.get("revenue_m")
+    rev = rev if _num(rev) and rev > 0 else 0.0
+    k = settings()["price_model"]["cash_flow_share"]
+    return k * rev * sum(r[f"share_{m}"] * (prices[m] / r[f"avg_{m}"] - 1) for m in METALS if r.get(f"share_{m}"))
+
+
 def producer_cash_flow(r, prices: dict, cost_increase: float = 0.0) -> tuple[float | None, str]:
     """(cash flow at `prices`, its basis): OCF − sustaining when sustaining is recorded, else FCF (labelled)."""
     sus, ocf, fcf = r.get("sustaining_capex_usd_m"), r.get("ocf_m"), r.get("fcf_m")
@@ -64,26 +73,29 @@ def producer_cash_flow(r, prices: dict, cost_increase: float = 0.0) -> tuple[flo
         return None, "no cash flow"
     rev = r.get("revenue_m")
     rev = rev if _num(rev) and rev > 0 else 0.0
-    k = settings()["price_model"]["cash_flow_share"]
-    chg = k * rev * sum(r[f"share_{m}"] * (prices[m] / r[f"avg_{m}"] - 1) for m in METALS if r.get(f"share_{m}"))
-    return base + chg + cost_change(rev, base, cost_increase), basis
+    return base + _price_change(r, prices) + cost_change(rev, base, cost_increase), basis
 
 
-def producer_valuation(r, deck_prices: dict, rate: float, pipeline: dict | None = None) -> dict:
-    """NPV and EV / NPV at each deck, the basis, the sustaining FCF yield (base-deck cash flow ÷ EV) and the
-    downside test (EV ≤ the pessimistic NPV with costs raised). `pipeline` ({deck: US$M}, from pipeline()) adds
-    committed projects."""
+def royalty_cash_flow(r, prices: dict) -> tuple[float | None, str]:
+    """Operating cash flow at `prices`: royalties carry no sustaining spending and no operating-cost increase."""
+    ocf = r.get("ocf_m")
+    return (ocf + _price_change(r, prices), ROYALTY_BASIS) if _num(ocf) else (None, "no cash flow")
+
+
+def _valuation(deck_prices: dict, rate: float, years: float, ev, cash_flow, extra: dict | None = None) -> dict:
+    """NPV and EV / NPV at each deck from `cash_flow(deck, prices)`, plus the base-deck cash flow ÷ EV and the
+    downside test (EV ≤ the pessimistic NPV)."""
     c = cfg()
-    out = {f"npv {d}": None for d in deck_prices} | {f"ev/npv {d}": None for d in deck_prices}
-    out.update(npv_basis="", sustaining_fcf_yield=None, downside_ok=None, why="")
-    years, ev = r.get("reserve_life_years"), r.get("ev_m")
-    if not (_num(years) and years > 0):
-        return out | {"why": "no reserve life"}
+
+    def blank(why: str = "") -> dict:
+        return {f"npv {d}": None for d in deck_prices} | {f"ev/npv {d}": None for d in deck_prices} | {
+            "npv_basis": "", "sustaining_fcf_yield": None, "downside_ok": None, "why": why}
+    out = blank()
     for d, px in deck_prices.items():
-        cf, basis = producer_cash_flow(r, px, c["pessimistic_cost_increase"] if d == c["pessimistic_deck"] else 0.0)
+        cf, basis = cash_flow(d, px)
         if cf is None:
-            return out | {"why": basis}
-        out[f"npv {d}"] = npv(cf, rate, years) + (pipeline or {}).get(d, 0.0)
+            return blank(basis)
+        out[f"npv {d}"] = npv(cf, rate, years) + (extra or {}).get(d, 0.0)
         out[f"ev/npv {d}"] = ev_to_npv(ev, out[f"npv {d}"]) if _num(ev) else None
         out["npv_basis"] = basis
         if d == c["base_deck"] and _num(ev) and ev > 0:
@@ -93,6 +105,80 @@ def producer_valuation(r, deck_prices: dict, rate: float, pipeline: dict | None 
         out["downside_ok"] = bool(pess > 0 and ev <= pess)
     return out
 
+
+def producer_valuation(r, deck_prices: dict, rate: float, pipeline: dict | None = None) -> dict:
+    """NPV and EV / NPV at each deck over min(reserve life, horizon), the basis, the sustaining FCF yield (base-deck
+    cash flow ÷ EV) and the downside test (EV ≤ the pessimistic NPV with costs raised). `pipeline` ({deck: US$M},
+    from pipeline()) adds committed projects."""
+    c = cfg()
+    years = r.get("reserve_life_years")
+    if not (_num(years) and years > 0):
+        return _valuation(deck_prices, rate, 1.0, None, lambda d, px: (None, "no reserve life"))
+
+    def cf(d, px):
+        return producer_cash_flow(r, px, c["pessimistic_cost_increase"] if d == c["pessimistic_deck"] else 0.0)
+    return _valuation(deck_prices, rate, years, r.get("ev_m"), cf, pipeline)
+
+
+def royalty_valuation(r, deck_prices: dict, rate: float) -> dict:
+    """Part 4: NPV of operating cash flow over horizon_years at each deck (not the reserve life: a royalty's
+    portfolio outlives any one mine), EV / NPV, and the downside test at the pessimistic deck."""
+    return _valuation(deck_prices, rate, cfg()["horizon_years"], r.get("ev_m"),
+                      lambda d, px: royalty_cash_flow(r, px))
+
+
+def buy_levels(tier: str, npv_base, npv_pessimistic=None, net_cash_m=None, shares_m=None, overrun_ok=None) -> dict:
+    """Part 5, per share: buy-below = (min(buy × base NPV, pessimistic NPV) + net cash) ÷ shares, the highest price
+    meeting both conditions (developers: buy × base risk-adjusted NPV, only when the capex-overrun test passes);
+    fair value = (fair × base NPV + net cash) ÷ shares. Levels from [valuation.buy]. None, with why, otherwise."""
+    L = cfg()["buy"][tier]
+    out = {"buy_below": None, "fair_value": None, "binding": "", "why": ""}
+    if npv_base is None:
+        return out | {"why": "no NPV"}
+    if npv_base <= 0:
+        return out | {"why": "negative NPV at the base deck"}
+    if not (_num(shares_m) and shares_m > 0):
+        return out | {"why": "no share count"}
+    nc = net_cash_m if _num(net_cash_m) else 0.0
+    out["fair_value"] = (L["fair"] * npv_base + nc) / shares_m
+    disc = L["buy"] * npv_base
+    if tier == "developer":
+        if overrun_ok is None:
+            return out | {"why": "no capex-overrun test (no remaining capex recorded)"}
+        if not overrun_ok:
+            return out | {"why": "fails the capex-overrun test"}
+        cap, binding = disc, "discount"
+    elif npv_pessimistic is None:
+        return out | {"why": "no pessimistic NPV"}
+    else:
+        cap, binding = (disc, "discount") if disc <= npv_pessimistic else (npv_pessimistic, "downside test")
+    price = (cap + nc) / shares_m
+    if price <= 0:
+        return out | {"why": "fails the downside test at any price"}
+    return out | {"buy_below": price, "binding": binding}
+
+
+def validation_flags(npv_base, net_cash_m, shares_m, independent_nav=None, consensus_pnav=None, price=None,
+                     factor: float | None = None) -> list[str]:
+    """Our NAV per share at the base deck ((NPV + net cash) ÷ shares) against the independent NAV per share (PNAV
+    inputs R) and the consensus NAV implied by the consensus P/NAV (P_NAV I): one line for each more than `factor`
+    ([valuation] check_factor) away, so a bad input shows before it reaches a buy signal."""
+    f = cfg()["check_factor"] if factor is None else factor
+    if npv_base is None or not (_num(shares_m) and shares_m > 0):
+        return []
+    ours = (npv_base + (net_cash_m if _num(net_cash_m) else 0.0)) / shares_m
+    others = []
+    if _num(independent_nav) and independent_nav > 0:
+        others.append(("independent NAV", independent_nav))
+    if _num(consensus_pnav) and consensus_pnav > 0 and _num(price) and price > 0:
+        others.append(("consensus NAV", price / consensus_pnav))
+    out = []
+    for name, v in others:
+        if ours <= 0:
+            out.append(f"NAV -${abs(ours):.2f}/share against the {name} (${v:.2f})")
+        elif ours / v > f or ours / v < 1 / f:
+            out.append(f"NAV ${ours:.2f}/share is {ours / v:.1f}x the {name} (${v:.2f})")
+    return out
 
 
 def pipeline(ticker: str, deck_prices: dict, rate: float, today, P=None, C=None) -> tuple[dict, list[str]]:

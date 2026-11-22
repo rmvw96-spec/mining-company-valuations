@@ -326,6 +326,7 @@ decks = ["Pessimistic", "Base", "Optimistic"]
 pessimistic_deck = "Pessimistic"   # runs with costs raised by pessimistic_cost_increase
 base_deck = "Base"
 horizon_years = 10                  # producers and royalties: min(reserve life, this), no terminal value
+check_factor = 2.0                  # validation: flag an NAV more than 2x from the independent or consensus NAV
 check_npv = 0.05
 check_sensitivity = 0.10
 max_overrun_dilution = 0.33         # developers' downside test: dilution at a 30% capex overrun (the user, Nov 21, 2026)
@@ -364,6 +365,18 @@ PFS = 3
 FS = 2
 permitted = 1
 construction = 0
+
+# Buy level and fair value by tier (Part 5): buy below buy x base-deck NPV (developers: base risk-adjusted NPV) and no
+# higher than the pessimistic NPV (developers: only when the capex-overrun test passes); review above fair x base NPV.
+# Starting values from the spec, decided with the user Nov 21, 2026 (royalty fair value 1.5x): Rule buys at large
+# discounts to his own NPV (about 40% in a Dec 2025 example) and checks the downside first; he cites 15-20x cash flow
+# for precious-metals royalties against 5-7x for base-metal producers (Kitco, Feb 2026); Sprott's typical P/NAV by
+# stage (Aug 2022): PEA 0.2-0.5x, PFS/FS 0.5-0.7x, construction 0.5-0.8x, production 0.6-1.5x. None is a published
+# Rule threshold, and none is fitted to data.
+[valuation.buy]
+producer = { buy = 0.6, fair = 1.0 }
+royalty = { buy = 1.0, fair = 1.5 }
+developer = { buy = 0.6, fair = 1.0 }
 
 [portfolio_screen]
 # `python -m minerval screen` (roadmap 5): proposes the Model portfolio's holdings and weights (A-F), review levels
