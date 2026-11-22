@@ -33,7 +33,8 @@ and update the item's row in the status table at the top of `docs/roadmap.md` (a
 | Once, or after adding a signal | `history --backfill 2022-01-01` (`--dry-run` first) | Signal history (past dates) |
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
-| After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, and P for country-table rows |
+| After `refresh` | `valuation` (read `out/valuation/report.txt`: what was valued, what wasn't, and NAVs far from outside views) | data/derived/valuation.csv; out/valuation/ |
+| After `refresh` and `valuation` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, P for country-table rows, and CC:CG, CM:CO, CQ:CS (valuation; skipped while valuation.csv is older than pnav.csv) |
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
 | Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CB; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |

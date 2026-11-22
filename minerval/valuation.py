@@ -299,7 +299,8 @@ def compute(I: pd.DataFrame, deck_prices: dict, today, P=None, C=None,
         mcap, nc, price = r.get("mcap_m"), r.get("net_cash_m"), r.get("price_usd")
         ev = mcap - nc if _num(mcap) and _num(nc) else None
         shares = mcap / price if _num(mcap) and _num(price) and price > 0 else None
-        d = {"sheet_row": r["sheet_row"], "ticker": r["ticker"], "holding": r.get("holding"), "price_usd": price,
+        d = {"sheet_row": r["sheet_row"], "ticker": r["ticker"], "yahoo": r.get("yahoo"), "holding": r.get("holding"),
+             "price_usd": price,
              "ev_m": ev, "shares_m": shares, "tier": "", "valuation_basis": "", "why": "", "flags": ""}
         basis = r.get("basis") if isinstance(r.get("basis"), str) else ""
         if _num(r.get("fixed_price_usd")):
