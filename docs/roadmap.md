@@ -27,7 +27,7 @@ built. **Outstanding**: not started. `tests/test_data_files.py` checks this tabl
 | 4c | Royalty history | [royalty-history-spec.md](specs/royalty-history-spec.md) | Built | A1–A10 | 10 of 10 | — |
 | 5 | Model portfolio screen, revision 1 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Built | A1–A19 | 18 of 19 | the first `screen --write` (user) |
 | 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Outstanding | A20–A28 | 0 of 9 | all |
-| 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | In progress | A1–A28 | 22 of 28 | decks, NPVs and EV / NPV, the pipeline, royalties, the overrun test, buy level, Sheet columns, validation report |
+| 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | In progress | A1–A28 | 23 of 28 | decks, NPVs and EV / NPV, the pipeline, royalties, the overrun test, buy level, Sheet columns, validation report |
 
 ## Principles
 

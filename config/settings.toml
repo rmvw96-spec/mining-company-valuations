@@ -210,6 +210,25 @@ pocf = "BY"                         # P/OCF on the latest annual operating cash 
 pocf_pctile = "BZ"                  # where that sits in the company's own last [royalty_history] years, 0-100
 pnav_pctile = "CA"                  # independent P/NAV against its own recorded history (blank until enough days)
 own_band = "CB"                     # "Cheap for itself" / "Normal for itself" / "Expensive for itself"
+# Valuation by tier (roadmap 6): CC:CG, CM:CO and CQ:CS written by `financials` from data/derived/valuation.csv;
+# CH:CL and CP formulas over today's EV (AZ), so the daily price run moves them
+valuation_basis = "CC"
+npv_pessimistic = "CD"
+npv_base = "CE"
+npv_optimistic = "CF"
+cf_base = "CG"
+ev_npv_pessimistic = "CH"
+ev_npv_base = "CI"
+ev_npv_optimistic = "CJ"
+downside = "CK"
+fcf_yield = "CL"
+dilution_15 = "CM"
+dilution_30 = "CN"
+overrun_test = "CO"
+capex_to_mcap = "CP"
+buy_below_value = "CQ"
+fair_value_price = "CR"
+valuation_why = "CS"
 study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 

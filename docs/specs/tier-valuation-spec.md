@@ -45,11 +45,13 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
   deck. Net cash is not added (EV nets it). Developers keep the study's whole mine life (Part 3).
 - **EV / NPV:** EV = market cap + debt − cash (PNAV inputs AZ). 1.0 = priced at the deck's value; NPV ≤ 0 reads
   "negative NPV", never a number.
-- **Where computed:** Python writes the NPVs from `financials` (they change only with financials, research inputs
-  or decks). EV / NPV and the buy-below price are Sheet formulas over today's EV, so `prices` moves them. Python
-  computes the same values in `data/derived/` for tests and the screen. Reserve-life P/NAV stays as a context column.
-- **Validation report:** `valuation --check` (or part of `financials --dry-run`) lists each NPV more than 2× away
-  from the independent NAV (PNAV inputs R) or the consensus P/NAV (P_NAV I).
+- **Where computed:** `valuation` (minerval/valuation.py) values every research row offline and writes
+  `data/derived/valuation.csv`; `financials` writes its values to the Sheet (they change only with financials, research
+  inputs or decks). EV / NPV, the downside test and the FCF yield are Sheet formulas over today's EV, so `prices`
+  moves them. Reserve-life P/NAV stays as a context column.
+- **Validation report:** `valuation` writes `out/valuation/report.txt`: the decks, what was valued on which basis,
+  what wasn't and why, and each NAV more than `check_factor` (2×) away from the independent NAV (PNAV inputs R) or
+  the consensus NAV implied by the consensus P/NAV.
 
 ### Part 2: producers
 
@@ -118,16 +120,17 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
 | Royalties | EV ≤ 1.0 × base NPV, and EV ≤ pessimistic NPV | EV ≥ 1.5 × base NPV |
 | Developers | EV ≤ 0.6 × base risk-adjusted NPV, and the +30% overrun test passes | EV ≥ 1.0 × base risk-adjusted NPV |
 
-- **Buy-below price per share** (US$ and listing currency, a Sheet formula) = (min(buy × base NPV, pessimistic
-  NPV) + net cash) ÷ shares. No NPV (negative at base, inputs missing, failed check): no price, and the status
+- **Buy-below price per share** (US$) = (min(buy × base NPV, pessimistic NPV) + net cash) ÷ shares, written by
+  `financials`: it doesn't depend on today's price, only on the NPVs, net cash and the share count. No NPV (negative at base, inputs missing, failed check): no price, and the status
   says why.
 - The evidence for the starting values is in the `[valuation.buy]` comment in `config/settings.toml`.
 
 ### Sheet
 
-- New PNAV inputs columns after CB, placed by `setup-sheet` (layout in `[sheet.pnav_inputs]`): sustaining spending
-  and source; NPV at each deck and its basis (OCF − sustaining / FCF fallback / study); EV / NPV at each deck
-  (formulas); downside test; sustaining FCF yield; overrun dilution and capex-to-market cap; buy-below price.
+- PNAV inputs CC:CS, placed by `setup-sheet` (layout in `[sheet.pnav_inputs]`). Written by `financials`: CC the
+  basis, CD:CF the NPV at each deck, CG the base-deck cash flow, CM:CO the overrun dilutions and test, CQ:CR the
+  buy-below and fair-value prices, CS why there's none. Formulas: CH:CJ EV / NPV at each deck, CK the downside test,
+  CL the sustaining FCF yield, CP capex-to-market cap.
 - Company history records each company's daily EV / base NPV.
 
 ## Acceptance criteria
@@ -208,7 +211,8 @@ Valuation (to build):
 - [ ] A25. Every Model portfolio candidate has an NPV at the three decks with its basis shown. —
   `financials --dry-run` report
 - [ ] A26. (user) The validation report has been read with the user.
-- [ ] A27. README describes the valuation by tier and the decks; the roadmap marks item 6.
+- [x] A27. README describes the valuation by tier and the decks (its "Valuation by tier" section); the roadmap's
+  status table tracks item 6.
 - [ ] A28. (user) `[scenarios]` holds the user's Pessimistic, Base and Optimistic decks, each with a source and date,
   and `[valuation] pessimistic_cost_increase` is set.
 

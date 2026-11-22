@@ -363,6 +363,35 @@ skips that step and is reported, inputs are only filled when blank, and a rewrit
 exact old formula. It saves a snapshot of every cell it touches to `out/layout/backup-<time>.json`
 first, and running it again changes nothing. Cell addresses are in `config/settings.toml` `[sheet]`.
 
+## Valuation by tier
+
+Rick Rule's test, as the user summarised it: **enterprise value against the NPV of a company's assets at a
+pessimistic, a base and an optimistic price deck**, each tier valued as the business it is. Spot prices are only a
+cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `docs/specs/tier-valuation-spec.md`.)
+
+- **Decks** are yours, in `config/settings.toml` [scenarios] (Pessimistic, Base, Optimistic), with each metal set on
+  its own and its source beside it. Nothing in the code depends on their values.
+- **Producers**: operating cash flow (trailing 12 months) minus sustaining capital spending, including capitalized
+  stripping and sustaining lease payments (`data/research/capex_periods.csv`, built by `research sustaining`), or
+  free cash flow where a company doesn't split sustaining from growth (labelled "FCF basis: sustaining not
+  recorded"). Re-priced to each deck by revenue mix, for the shorter of the reserve life and 10 years, with no
+  terminal value. The pessimistic deck also raises costs by `[valuation] pessimistic_cost_increase`. A committed
+  growth project (a construction decision and a published study) adds its risk-adjusted study NPV.
+- **Royalties**: 10 years of operating cash flow at each deck (no sustaining spending).
+- **Developers**: each study's own cash-flow table rebuilt at our discount rate and the deck
+  (`data/research/projects.csv`, `project_cashflows.csv`; `research studies` checks each rebuild against the
+  published NPV), then discounted for the years to construction and the probability of reaching production by stage
+  (`[valuation.stage_probability]`, `[valuation.years_to_start]`), at the company's share. The downside test is a
+  +30% capex overrun funded with equity: it passes at 33% dilution or less.
+- **Discount rate**: the 10-year Treasury yield + 3% + the jurisdiction add-on (the only place country risk counts).
+- **Buy level and fair value** (`[valuation.buy]`): buy below the tier's multiple of the base NPV (producers and
+  developers 0.6, royalties 1.0), and no higher than the pessimistic NPV allows (developers: only when the overrun
+  test passes); review above fair value (1.0, or 1.5 for royalties). Prices are per share, with net cash added.
+- **Run it**: `python -m minerval valuation` writes `data/derived/valuation.csv` and a validation report
+  (`out/valuation/report.txt`): what was valued on which basis, what wasn't and why, and every NAV more than 2× away
+  from the independent or consensus NAV, so a bad input shows before it reaches a buy signal. On the Sheet, PNAV
+  inputs CC:CS hold the results (`setup-sheet` adds them).
+
 ## Model portfolio from a screen
 
 `python -m minerval screen` proposes the Model portfolio's holdings, target weights, review levels and notes

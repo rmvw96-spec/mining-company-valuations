@@ -30,7 +30,7 @@ def test_fresh_install(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     text = "\n".join(rep)
     assert "conflict" not in text and "Created the Signals tab." in text
-    assert sh.sizes["PNAV inputs"][1] == col_to_num("CB")
+    assert sh.sizes["PNAV inputs"][1] == col_to_num("CS")                     # through the valuation columns
     sig, p = sh.cells["Signals"], sh.cells["PNAV inputs"]
     keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit() and int(k[1:]) >= 5}
     assert set(s.key for s in SIGNALS) <= set(keys)
@@ -239,3 +239,15 @@ def test_notes_in_the_sensitivity_column_skip_its_step(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     assert any("P/NAV with a higher add-on" in line and "conflict" in line for line in rep)
     assert "BX12" not in sh.cells["PNAV inputs"]
+
+
+def test_valuation_columns_after_cb(tmp_path):
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, P, f = sh.cells["PNAV inputs"], settings()["sheet"]["pnav_inputs"], layout.valuation_formulas()
+    assert p[f"{P['npv_base']}11"].startswith("NPV, Base deck") and p[f"{P['ev_npv_base']}12"] == f["ev_npv_base"]
+    assert f"{P['ev']}12:{P['ev']}154/{P['npv_base']}12:{P['npv_base']}154" in f["ev_npv_base"]
+    assert '"negative NPV"' in f["ev_npv_base"] and f"{P['overrun_test']}12:{P['overrun_test']}154" in f["downside"]
+    for name in ("valuation_basis", "npv_base", "cf_base", "overrun_test", "buy_below_value", "valuation_why"):
+        assert f"{P[name]}12" not in p and p[f"{P[name]}11"]               # written by `financials`: header only
+    assert P["valuation_why"] == "CS"
