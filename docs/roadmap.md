@@ -1,7 +1,8 @@
 # Roadmap
 
 What to build next, in order, and why that order. Each item has a spec in `docs/specs/` written for Claude Code
-to implement, on its own branch and PR, following CLAUDE.md. Sizes are rough: S is an afternoon, M a day or
+to implement, on its own branch and PR, following CLAUDE.md and the format in
+[specs/TEMPLATE.md](specs/TEMPLATE.md). Sizes are rough: S is an afternoon, M a day or
 two, L several days.
 
 Written Nov 18, 2026, after the market-signals work (PR #5) and the scheduled GitHub price update went live.

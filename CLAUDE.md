@@ -1,7 +1,9 @@
 # Notes for Claude: maintaining the miner ETF valuations
 
 README.md explains the project for people; this file is how Claude should run and change it.
-Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`.
+Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`. Specs follow
+`docs/specs/TEMPLATE.md`: the end state only (no build history or research write-ups; a setting's evidence goes in
+its settings comment), and acceptance criteria that each name their proof. Tick a criterion when its test passes.
 
 ## Ground rules
 
@@ -218,7 +220,7 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
   builds the trailing 12 months to each company's financials date (FY + year to date − the prior year to date, or
   the quarters where a company reports only quarters, as Amerigo does), converting at period-average rates. Take the
   prior-year comparative from the current filing, not last year's (restatements, discontinued operations).
-  Sustaining finance leases are noted, not added. EDGAR filers' quarterly exhibits can be listed from
+  Sustaining lease payments are added (`sustaining_leases`; the user, Nov 21, 2026). EDGAR filers' quarterly exhibits can be listed from
   `data.sec.gov/submissions/CIK##########.json` and each filing's `index.json`; Canadian-only juniors post MD&As on
   their own sites (Orezone, Andean and Amerigo do).
 - **Recording sustaining spending (lessons from 31 producers, Nov 2026):**

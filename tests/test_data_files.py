@@ -188,3 +188,21 @@ def test_sources_log():
     assert set(S.read) <= {"yes", "partial", "via search", "no"}
     assert S.url.str.startswith("https://").all()
     assert (S.document != "").all() and (S.company != "").all()
+
+
+def test_docs_name_real_tests_and_links_resolve():
+    """Spec acceptance criteria name their tests (`tests/test_x.py::test_y`): each must exist, so a criterion can't
+    point at a renamed or deleted test. Relative links in README, CLAUDE.md and docs/ must resolve."""
+    import re
+    docs = [ROOT / "README.md", ROOT / "CLAUDE.md", *sorted((ROOT / "docs").rglob("*.md"))]
+    for d in docs:
+        text = d.read_text()
+        for f, name in re.findall(r"(tests/test_\w+\.py)::(test_\w+)", text):
+            if (d.name, name) == ("TEMPLATE.md", "test_y"):
+                continue
+            assert (ROOT / f).exists() and re.search(rf"^def {name}\(", (ROOT / f).read_text(), re.M), \
+                f"{d.relative_to(ROOT)} names {f}::{name}, which doesn't exist"
+        for link in re.findall(r"\]\(([^)\s]+)\)", text):
+            if re.match(r"(https?:|mailto:|#)", link):
+                continue
+            assert (d.parent / link.split("#")[0]).exists(), f"{d.relative_to(ROOT)} links to missing {link}"
