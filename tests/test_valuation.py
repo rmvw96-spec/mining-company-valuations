@@ -236,3 +236,90 @@ def test_missing_inputs_give_no_price_and_no_flags():
     assert V.buy_levels("producer", 1000.0, None, 100.0, 50.0)["why"] == "no pessimistic NPV"
     assert V.validation_flags(None, 100.0, 50.0, independent_nav=9.0) == []
     assert V.validation_flags(900.0, 100.0, None, independent_nav=9.0) == []
+
+
+def test_an_unset_cost_increase_leaves_the_pessimistic_deck_at_reported_costs(monkeypatch):
+    monkeypatch.setattr(V, "cfg", lambda: {k: v for k, v in CFG.items() if k != "pessimistic_cost_increase"})
+    v = V.producer_valuation(producer(), DECKS, 0.09)
+    cf, _ = V.producer_cash_flow(producer(), DECKS["Pessimistic"])
+    assert v["npv Pessimistic"] == pytest.approx(V.npv(cf, 0.09, 25.0, 10))
+    assert V.cost_increase_note() == "[valuation] pessimistic_cost_increase isn't set: the pessimistic deck uses reported costs"
+
+
+def test_the_real_decks_are_complete_and_ordered():
+    d = V.decks()
+    assert list(d) == ["Pessimistic", "Base", "Optimistic"]
+    assert all(d["Pessimistic"][m] < d["Base"][m] < d["Optimistic"][m] for m in ("gold", "silver", "copper"))
+
+
+def inputs_frame():
+    """Three research rows as pnav.inputs gives them: a producer (FCF basis), a royalty (OCF) and a developer."""
+    import pandas as pd
+    base = {"share_gold": 1.0, "share_silver": 0.0, "share_copper": 0.0, "avg_gold": 2000.0, "avg_silver": 25.0,
+            "avg_copper": 4.0, "addon_pct_points": 1.0, "fixed_price_usd": np.nan, "model_nav_per_share_usd": np.nan,
+            "analyst_consensus_pnav_dec2025": np.nan, "remaining_capex_usd_m": np.nan, "committed_funding_usd_m": np.nan}
+    rows = [
+        {**base, "sheet_row": 12, "ticker": "PRD", "holding": "Producer Co", "basis": "FCF", "price_usd": 10.0,
+         "mcap_m": 1000.0, "net_cash_m": 100.0, "cash_m": 150.0, "revenue_m": 1000.0, "ocf_m": 500.0, "fcf_m": 120.0,
+         "sustaining_capex_usd_m": 200.0, "reserve_life_years": 12.0, "model_nav_per_share_usd": 2.0},
+        {**base, "sheet_row": 13, "ticker": "ROY", "holding": "Royalty Co", "basis": "OCF", "price_usd": 50.0,
+         "mcap_m": 5000.0, "net_cash_m": 0.0, "cash_m": 50.0, "revenue_m": 400.0, "ocf_m": 350.0, "fcf_m": 300.0,
+         "sustaining_capex_usd_m": np.nan, "reserve_life_years": np.nan},
+        {**base, "sheet_row": 14, "ticker": "DEV", "holding": "Developer Co", "basis": np.nan, "price_usd": 2.0,
+         "mcap_m": 200.0, "net_cash_m": 30.0, "cash_m": 30.0, "revenue_m": 0.0, "ocf_m": np.nan, "fcf_m": np.nan,
+         "sustaining_capex_usd_m": np.nan, "reserve_life_years": np.nan, "remaining_capex_usd_m": 300.0,
+         "committed_funding_usd_m": 0.0},
+        {**base, "sheet_row": 15, "ticker": "PHYS", "holding": "Gold trust", "basis": np.nan, "price_usd": 30.0,
+         "mcap_m": 9000.0, "net_cash_m": 0.0, "fixed_price_usd": 30.0},
+    ]
+    return pd.DataFrame(rows)
+
+
+def study_stub(monkeypatch, value=400.0):
+    from minerval import studies as S
+    monkeypatch.setattr(S, "flows", lambda C, p: None)
+    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today: {
+        "risk_adjusted": value * px["gold"] / 2200.0, "why": ""})
+    P, C = projects({"ticker": "DEV", "project": "Big Pit"})
+    return P, C
+
+
+def test_compute_values_each_tier_and_skips_what_it_cant_value(monkeypatch):
+    from datetime import date
+    P, C = study_stub(monkeypatch)
+    T = V.compute(inputs_frame(), DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04).set_index("ticker")
+    assert T.loc["PRD", "tier"] == "producer" and T.loc["PRD", "valuation_basis"] == V.OCF_BASIS
+    assert T.loc["ROY", "tier"] == "royalty" and T.loc["ROY", "valuation_basis"] == V.ROYALTY_BASIS
+    assert T.loc["DEV", "tier"] == "developer" and T.loc["DEV", "valuation_basis"] == V.STUDY_BASIS
+    assert T.loc["DEV", "npv Base"] == pytest.approx(400.0)                       # the projects' risk-adjusted sum
+    assert T.loc["PHYS", "tier"] == "" and T.loc["PHYS", "why"] == "physical metal"
+    rate = 0.04 + 0.03 + 0.01                                                       # 10-year + premium + add-on
+    prd = V.producer_valuation({**inputs_frame().iloc[0].to_dict(), "ev_m": 900.0}, DECKS, rate)
+    assert T.loc["PRD", "npv Base"] == pytest.approx(prd["npv Base"])
+    assert T.loc["PRD", "ev_m"] == pytest.approx(900.0) and T.loc["PRD", "shares_m"] == pytest.approx(100.0)
+
+
+def test_compute_gives_buy_levels_overrun_and_validation_flags(monkeypatch):
+    from datetime import date
+    P, C = study_stub(monkeypatch)
+    T = V.compute(inputs_frame(), DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04).set_index("ticker")
+    prd = T.loc["PRD"]
+    want = V.buy_levels("producer", prd["npv Base"], prd["npv Pessimistic"], 100.0, 100.0)
+    assert prd["buy_below"] == pytest.approx(want["buy_below"]) and prd["binding"] == want["binding"]
+    assert "the independent NAV ($2.00)" in prd["flags"]                          # far from the outside NAV
+    dev = T.loc["DEV"]
+    o = V.overrun(300.0, 30.0, 0.0, 2.0, 200.0)
+    assert dev["dilution +30%"] == pytest.approx(o["dilution +30%"]) and dev["overrun_ok"] == o["overrun_ok"]
+    assert dev["capex_to_mcap"] == pytest.approx(1.5)
+
+
+def test_report_states_the_decks_the_cost_note_and_the_flags(monkeypatch):
+    from datetime import date
+    P, C = study_stub(monkeypatch)
+    monkeypatch.setattr(V, "cfg", lambda: {k: v for k, v in CFG.items() if k != "pessimistic_cost_increase"})
+    T = V.compute(inputs_frame(), DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04)
+    text = "\n".join(V.report(T, DECKS))
+    assert "Base: gold 2,200, silver 28, copper 4.4" in text
+    assert V.cost_increase_note() in text
+    assert "Producer Co" in text and "independent NAV" in text
+    assert "Not valued: 1 (physical metal: 1)" in text

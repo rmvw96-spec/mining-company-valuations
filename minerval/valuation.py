@@ -15,13 +15,16 @@ Developers (Part 3, steps 7-8): the funding gap with remaining capex raised by e
 funded by an equity raise at the Signals input raise_discount; the downside test passes when the dilution at the
 largest overrun is at most max_overrun_dilution. Capex-to-market cap = remaining capex ÷ market cap.
 """
-from .config import settings
+import pandas as pd
+
+from .config import DERIVED, OUT, RESEARCH, ensure, settings
 from .pnav import _num, annuity, funding_gap, raise_after
 from .price_model import METALS, cost_change
 
 OCF_BASIS = "OCF − sustaining"
 FCF_BASIS = "FCF basis: sustaining not recorded"
 ROYALTY_BASIS = "OCF (royalty)"
+STUDY_BASIS = "study (risk-adjusted)"
 
 
 def cfg() -> dict:
@@ -40,6 +43,12 @@ def decks(scenarios: dict | None = None, names: list | None = None) -> dict:
             raise ValueError(f"[scenarios] {n} has no {', '.join(miss)} price")
         out[n] = {m: float(S[n][m]) for m in METALS}
     return out
+
+
+def cost_increase_note() -> str:
+    """What the report says when the pessimistic cost increase hasn't been set (the deck then uses reported costs)."""
+    return "" if cfg().get("pessimistic_cost_increase") is not None else \
+        "[valuation] pessimistic_cost_increase isn't set: the pessimistic deck uses reported costs"
 
 
 def npv(cash_flow: float, rate: float, years: float, horizon: float | None = None) -> float:
@@ -116,7 +125,8 @@ def producer_valuation(r, deck_prices: dict, rate: float, pipeline: dict | None 
         return _valuation(deck_prices, rate, 1.0, None, lambda d, px: (None, "no reserve life"))
 
     def cf(d, px):
-        return producer_cash_flow(r, px, c["pessimistic_cost_increase"] if d == c["pessimistic_deck"] else 0.0)
+        return producer_cash_flow(r, px, (c.get("pessimistic_cost_increase") or 0.0) if d == c["pessimistic_deck"]
+                                  else 0.0)
     return _valuation(deck_prices, rate, years, r.get("ev_m"), cf, pipeline)
 
 
@@ -181,25 +191,44 @@ def validation_flags(npv_base, net_cash_m, shares_m, independent_nav=None, conse
     return out
 
 
-def pipeline(ticker: str, deck_prices: dict, rate: float, today, P=None, C=None) -> tuple[dict, list[str]]:
-    """({deck: risk-adjusted NPV of the company's committed, unsuperseded projects}, [projects left out, and why]).
-    A project counts only when it can be valued at every deck."""
+def _projects_value(ticker: str, deck_prices: dict, rate: float, today, P, C, committed_only: bool):
+    """({deck: sum of risk-adjusted study NPVs}, [projects left out, and why], number valued) for a company's
+    unsuperseded projects (only committed ones when `committed_only`). A project counts only when it can be valued
+    at every deck."""
     from . import studies as S
-    if P is None:
-        P, C = S.load()
-    out, why = {d: 0.0 for d in deck_prices}, []
-    yes = P.committed.astype(str).str.strip().str.lower().eq("yes")
-    live = P.superseded.astype(str).str.strip().eq("")
-    for _, p in P[P.ticker.eq(ticker) & yes & live].iterrows():
+    out, why, n = {d: 0.0 for d in deck_prices}, [], 0
+    sel = P.ticker.eq(ticker) & P.superseded.astype(str).str.strip().eq("")
+    if committed_only:
+        sel &= P.committed.astype(str).str.strip().str.lower().eq("yes")
+    for _, p in P[sel].iterrows():
         F = S.flows(C, p)
         got = {d: S.risk_adjusted(p, F, px, rate, today) for d, px in deck_prices.items()}
         bad = next((x["why"] for x in got.values() if x["risk_adjusted"] is None), None)
         if bad is not None:
             why.append(f"{p.project}: {bad}")
             continue
+        n += 1
         for d, x in got.items():
             out[d] += x["risk_adjusted"]
+    return out, why, n
+
+
+def pipeline(ticker: str, deck_prices: dict, rate: float, today, P=None, C=None) -> tuple[dict, list[str]]:
+    """({deck: risk-adjusted NPV of the company's committed, unsuperseded projects}, [projects left out, and why])."""
+    if P is None:
+        from . import studies as S
+        P, C = S.load()
+    out, why, _ = _projects_value(ticker, deck_prices, rate, today, P, C, committed_only=True)
     return out, why
+
+
+def developer_valuation(ticker: str, deck_prices: dict, rate: float, today, P, C) -> dict:
+    """Part 3: the sum of the company's risk-adjusted study NPVs at each deck (each study rebuilt at our rate and the
+    deck, discounted for time and probability by stage, at its share)."""
+    v, why, n = _projects_value(ticker, deck_prices, rate, today, P, C, committed_only=False)
+    if n == 0:
+        return {f"npv {d}": None for d in deck_prices} | {"why": "; ".join(why) or "no study recorded"}
+    return {f"npv {d}": v[d] for d in deck_prices} | {"why": "; ".join(why)}
 
 
 def overrun(remaining_capex_m, cash_m, committed_m, price, mcap_m, discount: float | None = None) -> dict:
@@ -220,3 +249,136 @@ def overrun(remaining_capex_m, cash_m, committed_m, price, mcap_m, discount: flo
     if _num(mcap_m) and mcap_m > 0:
         out["capex_to_mcap"] = remaining_capex_m / mcap_m
     return out
+
+
+EXTRA = ["sustaining_capex_usd_m", "analyst_consensus_pnav_dec2025"]
+
+
+def compute(I: pd.DataFrame, deck_prices: dict, today, P=None, C=None,
+            ten_year_yield: float | None = None) -> pd.DataFrame:
+    """One row per research row (pnav.inputs): its tier, valuation basis, NPV and EV / NPV at each deck, downside test,
+    buy-below and fair-value prices, and validation flags; `why` says what's missing where there's no NPV."""
+    from . import studies as S
+    if P is None:
+        P, C = S.load()
+    if any(c not in I for c in EXTRA):
+        R = pd.read_csv(RESEARCH / "pnav_companies.csv")[["sheet_row"] + EXTRA]
+        I = I.drop(columns=[c for c in EXTRA if c in I]).merge(R, on="sheet_row", how="left")
+    Pn = settings()["pnav"]
+    y = Pn["ten_year_yield"] if ten_year_yield is None else ten_year_yield
+    c = cfg()
+    base, pess = c["base_deck"], c["pessimistic_deck"]
+    studied = set(P.ticker)
+    rows = []
+    for _, s in I.iterrows():
+        r = s.to_dict()
+        mcap, nc, price = r.get("mcap_m"), r.get("net_cash_m"), r.get("price_usd")
+        ev = mcap - nc if _num(mcap) and _num(nc) else None
+        shares = mcap / price if _num(mcap) and _num(price) and price > 0 else None
+        d = {"sheet_row": r["sheet_row"], "ticker": r["ticker"], "holding": r.get("holding"), "price_usd": price,
+             "ev_m": ev, "shares_m": shares, "tier": "", "valuation_basis": "", "why": "", "flags": ""}
+        basis = r.get("basis") if isinstance(r.get("basis"), str) else ""
+        if _num(r.get("fixed_price_usd")):
+            rows.append(d | {"why": "physical metal"})
+            continue
+        tier = {"FCF": "producer", "OCF": "royalty"}.get(basis) or ("developer" if r["ticker"] in studied else "")
+        if not tier:
+            rows.append(d | {"why": "no cash-flow basis or study recorded"})
+            continue
+        addon = r.get("addon_pct_points")
+        if not _num(addon):
+            rows.append(d | {"tier": tier, "why": "no jurisdiction add-on"})
+            continue
+        rate = y + Pn["risk_premium"] + addon / 100
+        d.update(tier=tier, discount_rate=rate)
+        r["ev_m"] = ev
+        if tier == "developer":
+            v = developer_valuation(r["ticker"], deck_prices, rate, today, P, C)
+            o = overrun(r.get("remaining_capex_usd_m"), r.get("cash_m"), r.get("committed_funding_usd_m"), price, mcap)
+            d.update({k: v[k] for k in v if k.startswith("npv ")}, valuation_basis=STUDY_BASIS, why=v["why"])
+            d.update({k: o[k] for k in o if k != "why"}, downside_ok=o["overrun_ok"])
+            for dk in deck_prices:
+                d[f"ev/npv {dk}"] = ev_to_npv(ev, d[f"npv {dk}"]) if ev is not None else None
+            b = buy_levels("developer", d[f"npv {base}"], None, nc, shares, o["overrun_ok"])
+        else:
+            if tier == "producer":
+                pipe, pwhy = pipeline(r["ticker"], deck_prices, rate, today, P, C)
+                v = producer_valuation(r, deck_prices, rate, pipe)
+                cf = producer_cash_flow(r, deck_prices[base])[0]
+                v["why"] = "; ".join([x for x in [v["why"]] + pwhy if x])
+            else:
+                v = royalty_valuation(r, deck_prices, rate)
+                cf = royalty_cash_flow(r, deck_prices[base])[0]
+            d.update({k: x for k, x in v.items() if k != "npv_basis"}, valuation_basis=v["npv_basis"], cf_base=cf)
+            b = buy_levels(tier, d[f"npv {base}"], d[f"npv {pess}"], nc, shares)
+        d.update(buy_below=b["buy_below"], fair_value=b["fair_value"], binding=b["binding"])
+        if b["why"] and not d["why"]:
+            d["why"] = b["why"]
+        d["flags"] = "; ".join(validation_flags(d.get(f"npv {base}"), nc, shares, r.get("model_nav_per_share_usd"),
+                                                r.get("analyst_consensus_pnav_dec2025"), price))
+        rows.append(d)
+    return pd.DataFrame(rows)
+
+
+def _money(v) -> str:
+    return "" if v is None or pd.isna(v) else f"{v:,.0f}"
+
+
+def _ratio(v) -> str:
+    if isinstance(v, str):
+        return v
+    return "" if v is None or pd.isna(v) else f"{v:.2f}"
+
+
+def report(T: pd.DataFrame, deck_prices: dict) -> list[str]:
+    """The validation report: decks, what was valued and on what basis, what wasn't and why, NAVs far from the
+    outside views, and each company's NPV, EV / NPV and buy-below price at the base deck."""
+    c = cfg()
+    base = c["base_deck"]
+    out = ["Valuation by tier at the decks in [scenarios] (spot is not used):"]
+    out += [f"  {d}: gold {px['gold']:,g}, silver {px['silver']:,g}, copper {px['copper']:,g}"
+            for d, px in deck_prices.items()]
+    if cost_increase_note():
+        out += ["", cost_increase_note()]
+    val, skip = T[T.tier != ""], T[T.tier == ""]
+    has = val[f"npv {base}"].notna() if f"npv {base}" in val else pd.Series(False, index=val.index)
+    out += ["", f"Valued: {int(has.sum())} of {len(val)} with a tier ("
+            + ", ".join(f"{k}: {v}" for k, v in val[has].groupby("valuation_basis").size().items()) + ")"]
+    for why, n in val[~has].groupby("why").size().sort_values(ascending=False).items():
+        out.append(f"  No NPV ({n}): {why}")
+    out.append(f"Not valued: {len(skip)} (" + ", ".join(f"{k}: {v}" for k, v in skip.groupby("why").size().items())
+               + ")")
+    flagged = T[T["flags"].astype(str).str.len() > 0]
+    out += ["", f"Check against outside views (more than {c['check_factor']:g}x away): {len(flagged)}"]
+    out += [f"  {r.holding}: {r.flags}" for r in flagged.itertuples()]
+    for tier in ("producer", "royalty", "developer"):
+        X = val[(val.tier == tier) & has]
+        if X.empty:
+            continue
+        out += ["", f"{tier.capitalize()}s at the {base} deck (US$M; prices US$/share):",
+                f"  {'Company':<34}{'Basis':<36}{'NPV':>9}{'EV/NPV':>9}{'Buy below':>11}{'Price':>9}"]
+        for _, r in X.sort_values(f"npv {base}", ascending=False).iterrows():
+            bb = f"{r.buy_below:,.2f}" if _num(r.buy_below) else "—"
+            px = f"{r.price_usd:,.2f}" if _num(r.price_usd) else ""
+            out.append(f"  {str(r.holding)[:33]:<34}{str(r.valuation_basis)[:35]:<36}{_money(r[f'npv {base}']):>9}"
+                       f"{_ratio(r[f'ev/npv {base}']):>9}{bb:>11}{px:>9}")
+    return out
+
+
+def run(today=None) -> list[str]:
+    """`valuation`: value every research row at the decks, offline; writes data/derived/valuation.csv and
+    out/valuation/report.txt."""
+    from datetime import date
+
+    from .pnav import inputs
+    from .price_model import Metals
+    D = decks()
+    m = Metals()
+    T = compute(inputs(pd.read_csv(DERIVED / "holdings_detail.csv"), m), D, today or date.today())
+    ensure(DERIVED)
+    T.to_csv(DERIVED / "valuation.csv", index=False)
+    dest = OUT / "valuation"
+    ensure(dest)
+    rep = report(T, D)
+    (dest / "report.txt").write_text("\n".join(rep) + "\n")
+    return rep[:12] + ["", f"Full report: {dest / 'report.txt'}; data: {DERIVED / 'valuation.csv'}"]

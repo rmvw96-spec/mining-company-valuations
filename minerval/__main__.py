@@ -96,6 +96,7 @@ def main(argv=None):
                             "(default: price_model.cost_increase in settings.toml)")
     p = sub.add_parser("financials", help="write refreshed company data to the Sheet")
     google(p)
+    sub.add_parser("valuation", help="value every company at the decks (roadmap 6); report in out/valuation/")
     p = sub.add_parser("snapshots", help="rewrite the fund tables from data/derived/")
     google(p)
     p = sub.add_parser("jurisdiction", help="compare the hand-set and country-table jurisdiction add-ons")
@@ -182,6 +183,9 @@ def main(argv=None):
     if a.cmd == "financials":
         from . import financials
         lines = financials.run(open_sheet(a), dry_run=a.dry_run)
+    if a.cmd == "valuation":
+        from . import valuation
+        lines = valuation.run()
     if a.cmd == "snapshots":
         from . import snapshots
         lines = snapshots.run(open_sheet(a), dry_run=a.dry_run)

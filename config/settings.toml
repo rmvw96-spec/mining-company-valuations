@@ -40,6 +40,13 @@ Severe = { gold = 2200, silver = 25, copper = 3.0 }
 Low = { gold = 3500, silver = 35, copper = 4.0 }
 High = { gold = 4500, silver = 70, copper = 7.0 }
 "All-time high" = { gold = 5586.2, silver = 121.3, copper = 6.83 }
+# Valuation decks (roadmap 6, [valuation] decks): the user's, Nov 22, 2026, each the midpoint of the range they gave
+# (gold $3,200-4,265 / $4,250-4,850 / $5,250-6,300 an oz; silver $35-50 / $63-66.75 / $80-100+; copper $4.55-5.65 /
+# $5.90-7.08 / $7.70-9.50 a lb, i.e. $10,000-12,500 / $13,000-15,600 / $17,000-20,900 a tonne). Each metal is set on its
+# own. The single reference values given beside them: gold ~$3,515, silver ~$41.56, copper ~$5.57 ($12,280/t).
+Pessimistic = { gold = 3732.5, silver = 42.5, copper = 5.10 }
+Base = { gold = 4550.0, silver = 64.875, copper = 6.49 }
+Optimistic = { gold = 5775.0, silver = 90.0, copper = 8.60 }
 
 [stress]
 scenarios = ["Severe", "Low", "Today", "High"]   # columns of the stress test, in order
