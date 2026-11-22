@@ -1,85 +1,65 @@
 # Signal history: record every run on the Sheet
 
-**Status: built** (branch `signal-history`). Where the build differs from the plan below: the source column is B
-(not last), so new signals can be added on the right; the history code creates and manages both tabs itself
-rather than `setup-sheet` (they're data tabs with nothing to protect); weekend runs and values kept stale from an
-earlier day aren't recorded; daily closes are now cached for five years so the backfill reaches back to 2022.
+Roadmap 1a · Status: Built Nov 18, 2026 · Depends on: market signals
 
-Instructions for Claude Code. Roadmap item 1a. Follow CLAUDE.md (branch, tests, ruff, ask before `git push`,
-Sheet safety, `--dry-run`).
+Instructions for Claude Code. Follow CLAUDE.md.
 
 ## Goal
 
-Today each run overwrites Signals E:F, so yesterday's readings are gone. Record them, so we can:
+Each run overwrites Signals E:F, so yesterday's readings are lost. Record them on the Sheet (the scheduled run is on
+GitHub, where `out/` is thrown away), so each signal can be charted, a status change dated, and royalty P/NAV and
+developers' cash runway tracked between reports (used by [royalty-history-spec.md](royalty-history-spec.md) and the
+alerts).
 
-- chart each signal over time (gold/silver ratio, royalty median, miner ratios, FCF yields);
-- see when a status changed and how long it has held;
-- build our own P/NAV history for royalty companies (needed by [royalty-history-spec.md](royalty-history-spec.md))
-  and track developers' cash runway between quarterly reports.
+## Scope
 
-The history must live on the **Sheet**, not in `out/`: the scheduled run is on GitHub, where `out/` is thrown
-away after each run.
+- **In:** a Signal history tab (wide, one row per date), a Company history tab (long), and a backfill of the market
+  signals.
+- **Out:** backfilling FCF yields or company metrics (no past inputs); archiving old years (note in CLAUDE.md if the
+  tab passes 100,000 rows).
 
 ## Design
 
-### New tab: **Signal history** (one row per run date)
+- **Signal history:** A `Date` (run date in New York), B `Source` (`live` or `backfill`), then one column per signal
+  key, found by its header, so new keys go on the right and columns can be reordered. Values only (statuses are
+  recomputed from values and thresholds), written raw.
+- **Company history:** `Date`, `Holding` (PNAV inputs B), `Yahoo` (AP), `Metric`, `Value`. Royalty rows record
+  `independent_pnav` (AJ) and `price_usd` (C); developer rows (a developer check in BE) `ev_per_aueq_oz` (BB),
+  `months_of_cash` (BC) and `cash_share` (BD). About 40 rows a day.
+- **Writing** (`minerval/history.py`, at the end of `signals.run()`): find rows by date; a second run on the same
+  date replaces that date's rows, a new date appends, and other rows are never touched. Company history refuses to
+  write before a later recorded date. Weekend runs and values kept stale from an earlier day aren't recorded. The
+  code creates and grows both tabs itself (data tabs with nothing to protect). A history failure never fails the
+  signals or price update.
+- **Backfill:** `history --backfill <date>` reruns `compute()` for each past weekday on series truncated at that
+  date (a shared helper the signal backtest also uses), inserts older dates in order and never replaces a live
+  row. Daily closes are cached for five years, so it reaches back to 2022.
+- **Settings:** `[sheet]` `signal_history_tab`, `company_history_tab`.
 
-- Row 1: headers. Column A `Date` (YYYY-MM-DD, the run date in New York), then one column per signal key in the
-  order of `signals.SIGNALS` (value only; the status can be recomputed from the value and thresholds, and
-  storing text would bloat the tab). Headers are the keys themselves, so a reordering on the Sheet is caught.
-- One row per date. A second run on the same date **replaces** that date's row (intraday then after-close: the
-  later run wins). Find the row by date in column A; append when absent.
-- New signals added later get a new column at the right; old rows stay blank there.
-- Values are written raw (no rounding); number formats as on the Signals tab.
+## Acceptance criteria
 
-### New tab: **Company history** (long format)
-
-- Columns: `Date`, `Holding` (PNAV inputs B), `Yahoo` (AP), `Metric`, `Value`.
-- Metrics, per run:
-  - royalty/streaming rows (peer group "Royalty/streaming" with a NAV per share): `independent_pnav` (AJ),
-    `price_usd` (C);
-  - developer rows (rows with a developer check in BE): `ev_per_aueq_oz` (BB), `months_of_cash` (BC),
-    `cash_share` (BD).
-- Same-date rows are replaced, as above. Long format keeps the tab narrow as holdings come and go.
-- About 40 rows a day, around 10,000 a year: well inside Sheet limits. If it ever passes 100,000 rows,
-  archive older years to `Company history YYYY` tabs (not part of this job; note it in CLAUDE.md).
-
-### Code
-
-- `minerval/history.py`:
-  - `history_row(rows, today) -> list` from `signals.compute()` output.
-  - `company_rows(pnav_cells, today) -> list[list]`.
-  - `upsert_by_date(sheet, tab, header, rows, key_cols)`: reads column A (and B:D for the long tab), writes
-    replacements in place and appends the rest in one batch. Never touches other rows.
-  - `run(sheet, rows, today, dry_run)` called at the end of `signals.run()` when the Signals tab exists.
-    A history failure must not fail the signals or price update (same pattern as `prices.run_signals`).
-- `setup-sheet` (`layout.py`) gains a step that creates the two tabs with headers (exact mode; skip and report
-  if a header differs).
-- Settings, `[sheet]`: `signal_history_tab = "Signal history"`, `company_history_tab = "Company history"`.
-
-### Backfill
-
-The market signals (not the FCF yields or company metrics) can be recomputed for past dates from Yahoo and
-FRED history. Add `uv run python -m minerval history --backfill 2025-01-01`, which reruns `compute()` with
-`today` set to each past weekday on series truncated at that date. Mark backfilled rows in a last column
-`Source` = `backfill` (live rows: `live`). The signal backtest ([signal-backtest-spec.md](signal-backtest-spec.md))
-reuses the same truncation helper, so build it as a shared function.
-
-## Tests (offline)
-
-- `upsert_by_date`: append on a new date, replace on the same date, leave other rows alone, add a column for a
-  new key without disturbing old rows (MemorySheet).
-- `company_rows` picks royalty and developer rows exactly as the Signals and Model portfolio formulas do.
-- A history write failure leaves the signals report intact, with one line saying the history wasn't written.
-- Backfill on synthetic series gives the same values as `compute()` run on the truncated data.
-
-## Docs
-
-- README: what the two tabs hold.
-- CLAUDE.md: run-order table (writes Signal history and Company history); what-not-to-touch (don't edit history
-  rows by hand; the code finds rows by date).
-
-## Done when
-
-- Two scheduled GitHub runs on consecutive days leave two rows on Signal history and two dates on Company history.
-- A manual run on the same day replaces that day's row instead of adding one.
+- [x] A1. The first write creates the tab with headers and formats. —
+  `tests/test_history.py::test_first_write_creates_the_tab_with_headers_and_formats`
+- [x] A2. The same date replaces and a new date appends. —
+  `tests/test_history.py::test_same_date_replaces_and_a_new_date_appends`
+- [x] A3. Columns are found by key and new keys go on the right; a moved header stops the write. —
+  `tests/test_history.py::test_columns_are_found_by_key_and_new_keys_go_on_the_right`,
+  `tests/test_history.py::test_a_moved_header_stops_the_write`
+- [x] A4. Backfill inserts older dates in order, never replaces live rows, and matches `compute()` on truncated
+  data. — `tests/test_history.py::test_backfill_inserts_older_dates_in_order_and_never_replaces_live_rows`,
+  `tests/test_history.py::test_truncate_hides_later_data`,
+  `tests/test_history.py::test_backfill_matches_compute_on_the_truncated_data`,
+  `tests/test_history.py::test_backfill_command_writes_rows`
+- [x] A5. `--dry-run` writes nothing; the tab grows in chunks. — `tests/test_history.py::test_dry_run_writes_nothing`,
+  `tests/test_history.py::test_the_tab_grows_in_chunks`
+- [x] A6. Company history picks royalty and developer rows, replaces the same date, and refuses to write before a
+  later date. — `tests/test_history.py::test_company_rows_pick_royalties_and_developers`,
+  `tests/test_history.py::test_company_history_appends_then_replaces_the_same_date`,
+  `tests/test_history.py::test_company_history_refuses_to_write_before_a_later_date`
+- [x] A7. A `signals` run records history, skips weekends, and survives a history failure. —
+  `tests/test_history.py::test_signals_run_records_history`, `tests/test_history.py::test_weekends_are_not_recorded`,
+  `tests/test_history.py::test_a_history_failure_never_fails_the_signals_run`
+- [x] A8. Values and cleared cells are written as the Sheet expects. —
+  `tests/test_history.py::test_values_and_clear_cells`
+- [x] A9. README says what the two tabs hold; CLAUDE.md lists them in the run order and says not to edit them by
+  hand.
