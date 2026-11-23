@@ -105,6 +105,7 @@ def _fx_average():
             cache[cur] = closes(j) if j else pd.Series(dtype=float)
         s = cache[cur]
         s = s[(s.index >= pd.Timestamp(start)) & (s.index <= pd.Timestamp(end))]
+        s = s[(s / s.median() - 1).abs() <= 0.25]          # a bad print (PHP=X read 16.2 on Apr 30, 2026) is dropped
         return float((1 / s).mean()) if len(s) else None
     return rate
 
