@@ -1,6 +1,6 @@
 # Valuation by tier: EV against a 10-year NPV at three price decks
 
-Roadmap 6 · Status: In progress (research inputs built Nov 21, 2026) · Depends on: 3 (developer financing),
+Roadmap 6 · Status: Built Nov 23, 2026 · Depends on: 3 (developer financing),
 4b (jurisdiction); 4a improves the pessimistic costs
 
 Instructions for Claude Code. Follow CLAUDE.md, including its Research section for recording filings.
@@ -212,7 +212,8 @@ Valuation (to build):
   doubling note, and capex-to-market cap. —
   `tests/test_valuation.py::test_overrun_financing_uses_rules_equity_share_and_notes_a_doubling`,
   `tests/test_valuation.py::test_no_remaining_capex_means_the_dilution_cant_be_priced`
-- [ ] A20. `study_stage` holds only the six values and agrees with the latest study row. — new data-file test
+- [x] A20. `study_stage` holds only the six values and agrees with the latest study row. —
+  `tests/test_data_files.py::test_study_stage_holds_the_six_values_and_agrees_with_the_latest_study`
 - [x] A21. Royalty NPV is a perpetuity of operating cash flow at each deck, with its downside test. —
   `tests/test_valuation.py::test_royalty_npv_is_a_perpetuity_of_operating_cash_flow_at_each_deck_with_no_cost_increase`
 - [x] A22. The buy-below price at each binding condition (the discount, the downside test, developers' financing
@@ -224,8 +225,8 @@ Valuation (to build):
   `tests/test_valuation.py::test_validation_flags_npvs_more_than_twice_away_from_the_outside_views`
 - [x] A24. `setup-sheet --dry-run` places the new columns after CB, and the user has seen it. — command (user):
   the dry run (23 cells, no conflicts) approved and installed Nov 22, 2026; read back with no error values
-- [ ] A25. Every Model portfolio candidate has an NPV at the three decks with its basis shown. —
-  `financials --dry-run` report
+- [x] A25. The screen's report counts the candidates with an NPV at all three decks and a basis, and names the
+  rest. — `tests/test_screen.py::test_report_names_candidates_without_an_npv_at_every_deck`
 - [ ] A26. (user) The validation report has been read with the user.
 - [x] A27. README describes the valuation by tier and the decks (its "Valuation by tier" section); the roadmap's
   status table tracks item 6.
@@ -244,6 +245,9 @@ Valuation (to build):
   `tests/test_studies.py::test_a_commissioning_year_still_carrying_construction_capex_isnt_a_production_year`,
   `tests/test_studies.py::test_a_project_under_construction_is_valued_from_first_production`,
   `tests/test_studies.py::test_under_construction_needs_first_production_and_remaining_capex`
+- [ ] A31. (data) Every Model portfolio candidate has an NPV at the three decks with its basis shown: 43 of 46 on
+  Nov 23, 2026; open: Koryx (PFS due early Jan 2027), KSM (its table aggregates years), Diablillos (DFS on SEDAR+
+  only). — the `screen` report's Valuation line
 
 ## Decisions
 
@@ -270,6 +274,9 @@ All by the user, Nov 21, 2026:
 - A committed project already under construction (Skouries, Oko West) is valued from first production, at the
   guided date, less the remaining capex the company states, rather than re-pricing the whole study from today or
   leaving it out until production (the user, 2026-11-22).
+- `study_stage` (Nov 23, 2026): KSM stays PFS as recorded (its permits have no source), Marimaca is FS (an
+  environmental approval isn't the full set of key permits), PDI Gold is FS (Bankan DFS June 2025; exploitation
+  permit and investment decision pending); A25 split into the report check and a data follow-up (A31).
 - Oko West stays unvalued until the combined Oko West / Oko-Ghanie FS (mid-2027): its gold price grid can't come
   from its own cash-flow table, so the re-pricing check fails (the user, 2026-11-22).
 

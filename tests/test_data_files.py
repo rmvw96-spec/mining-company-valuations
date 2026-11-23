@@ -262,3 +262,23 @@ def test_roadmap_status_matches_the_specs():
     phase = {line.split("|")[1].strip() for line in road.split("\n## Status\n", 1)[1].split("\n")
              if re.match(r"\| \d+[a-z]? \| \*\*", line)}
     assert phase <= {r[0] for r in rows}, f"phase rows missing from the status table: {sorted(phase - {r[0] for r in rows})}"
+
+
+STUDY_STAGES = {"PEA", "PFS", "FS", "permitted", "construction", "none"}
+
+
+def test_study_stage_holds_the_six_values_and_agrees_with_the_latest_study():
+    """pnav_companies.csv `study_stage` (tier-valuation A20): every developer valued on studies (`stage` names a
+    developer, no FCF/OCF basis) has one of the six values, nothing else has one, and where the company has a study
+    on record its stage is the latest unsuperseded study's (studies.stage)."""
+    from minerval import studies as S
+    C = pd.read_csv(DATA / "research" / "pnav_companies.csv", keep_default_na=False, dtype=str)
+    dev = C.stage.str.contains("eveloper") & C.basis.eq("")
+    assert set(C.loc[dev, "study_stage"]) <= STUDY_STAGES, C.loc[dev & ~C.study_stage.isin(STUDY_STAGES), "ticker"]
+    assert C.loc[~dev, "study_stage"].eq("").all(), C.loc[~dev & C.study_stage.ne(""), "ticker"].tolist()
+    P, _ = S.load()
+    P = P[P.superseded.str.strip().eq("")]
+    for _, r in C[dev].iterrows():
+        mine = P[P.ticker.eq(r.ticker)].sort_values("study_date")
+        if len(mine):
+            assert r.study_stage == S.stage(mine.iloc[-1]), (r.ticker, r.study_stage, S.stage(mine.iloc[-1]))
