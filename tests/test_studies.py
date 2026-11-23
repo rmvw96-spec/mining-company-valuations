@@ -78,6 +78,13 @@ def test_risk_adjusted_needs_a_construction_date_and_a_stage_probability(monkeyp
     assert abs(z["risk_adjusted"] - y["npv"] / 1.09 ** 2 * 0.5 * 0.8) < 1      # two years, 50%, 80% share
 
 
+def test_start_year_discounting_leaves_year_one_undiscounted():
+    """Oko West's FS discounts from the start of year 1 (its NPV is the mid-year one x 1.05^0.5)."""
+    _, F = silver_sand()
+    mid = S.npv(F, 0.05, {}, {}, 0.7, 0.9, "mid-year")
+    assert abs(S.npv(F, 0.05, {}, {}, 0.7, 0.9, "start-year") - mid * 1.05 ** 0.5) < 1e-9
+
+
 def test_production_years_start_at_the_first_year_with_payable_metal():
     _, F = silver_sand()
     P = S.production_years(F)

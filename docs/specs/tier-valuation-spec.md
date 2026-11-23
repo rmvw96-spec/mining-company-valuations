@@ -87,7 +87,8 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
   1. **Re-price each year:** after-tax cash flow + tax share × net revenue share × Σ payable × (deck − study
      price). Tax share = 1 − the study's marginal tax rate (stated, or derived from its stated terms and noted);
      the average after-tax ÷ pre-tax ratio only when there is none, flagged.
-  2. **Discount** at our rate, mid-year or end-year as the study does, over the whole mine life.
+  2. **Discount** at our rate, mid-year, end-year or from the start of year 1 (`start-year`) as the study does,
+     over the whole mine life.
   3. **Check:** at the study's own price and rate, the rebuild is within `check_npv` (5%) of the published NPV and
      the re-pricing within `check_sensitivity` (10% of the base NPV) of its sensitivity rows. A study that fails,
      has no cash-flow table, or is superseded by a press release without a new technical report, gets no NPV and
@@ -167,7 +168,8 @@ Research inputs (built Nov 21, 2026):
   `tests/test_sustaining.py::test_record_file_columns`
 - [x] A6. A study rebuild reproduces a published NPV and its sensitivity rows, with tax share = 1 − the marginal
   rate. — `tests/test_studies.py::test_rebuild_matches_the_published_npv_and_sensitivities`,
-  `tests/test_studies.py::test_all_metals_sensitivity_rows`
+  `tests/test_studies.py::test_all_metals_sensitivity_rows`,
+  `tests/test_studies.py::test_start_year_discounting_leaves_year_one_undiscounted`
 - [x] A7. Without a marginal rate the average share is used and flagged. —
   `tests/test_studies.py::test_without_a_marginal_rate_the_average_share_is_used_and_flagged`
 - [x] A8. A study that fails its check, or is superseded, gets no NPV and says why. —

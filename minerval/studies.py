@@ -126,7 +126,7 @@ def tax_share(F: pd.DataFrame) -> float | None:
 def npv(F: pd.DataFrame, rate: float, prices: dict, study_prices: dict, tshare: float, rev_share: float,
         discounting: str = "mid-year") -> float:
     """The study's after-tax cash flows re-priced to `prices` and discounted at `rate` (US$M)."""
-    shift = 0.5 if discounting != "end-year" else 1.0
+    shift = {"end-year": 1.0, "start-year": 0.0}.get(discounting, 0.5)     # mid-year unless the study says otherwise
     tot = 0.0
     for _, r in F.iterrows():
         cf = r.post_tax_fcf_usd_m
