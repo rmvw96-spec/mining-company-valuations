@@ -320,7 +320,7 @@ Offline, `compute --cost-increase 0.1` does the same for `data/derived/`.
 
 PNAV inputs AT:AW hold each developer's resource (millions of the unit: oz Au, oz AuEq, oz AgEq, lb Cu
 or lb CuEq), its category and source, seeded from `data/research/pnav_companies.csv`. From those and
-AX:AY: EV (AZ), EV per unit (BA), EV per gold-equivalent ounce (BB; silver ounces converted at the live
+AX:AY: EV (AZ, adding the minority interest in CT: partners' stakes in consolidated mines), EV per unit (BA), EV per gold-equivalent ounce (BB; silver ounces converted at the live
 gold/silver ratio, copper shown per pound in BA only), months of cash (BC), cash as a share of market
 value (BD), and a check (BE): "Short of cash: financing likely" under 12 months, "Watch" under 18, plus
 "trading near cash" when cash is at least half the market value. Model portfolio X:Z show EV per ounce,

@@ -30,7 +30,7 @@ def test_fresh_install(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     text = "\n".join(rep)
     assert "conflict" not in text and "Created the Signals tab." in text
-    assert sh.sizes["PNAV inputs"][1] == col_to_num("CS")                     # through the valuation columns
+    assert sh.sizes["PNAV inputs"][1] == col_to_num("CT")                     # through minority interest
     sig, p = sh.cells["Signals"], sh.cells["PNAV inputs"]
     keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit() and int(k[1:]) >= 5}
     assert set(s.key for s in SIGNALS) <= set(keys)
@@ -219,6 +219,32 @@ def test_a_hand_edited_check_formula_is_left_alone(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     assert sh.cells["PNAV inputs"][ref] == "=MY_OWN()"
     assert any("conflict" in line and ref in line for line in rep)
+
+
+def test_ev_adds_minority_interest(tmp_path):
+    """EV in AZ = market cap − net cash + minority interest (CT, written by `financials`; blank counts as zero)."""
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, P = sh.cells["PNAV inputs"], S["pnav_inputs"]
+    assert P["minority"] == "CT" and p["CT11"] == layout.MINORITY_HEADER and "CT12" not in p
+    ev = layout.pnav_formulas()["ev"]
+    assert p[f"{P['ev']}{A}"] == ev and p[f"{P['ev']}{A - 1}"] == layout.PNAV_HEADERS["ev"]
+    assert "-E12:E154+IF(ISNUMBER(CT12:CT154),CT12:CT154,0)" in ev
+
+
+def test_installed_ev_is_upgraded_to_add_minority_interest(tmp_path):
+    """A Sheet with the first EV formula and header gets the new ones; a hand-edited EV is a conflict, left alone."""
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, ref = sh.cells["PNAV inputs"], f"{S['pnav_inputs']['ev']}{A}"
+    p[ref], p[f"{S['pnav_inputs']['ev']}{A - 1}"] = layout.pnav_formulas_v1()["ev"], "EV $M (market cap − net cash)"
+    p.pop("CT11")
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert not any("conflict" in line for line in rep)
+    assert p[ref] == layout.pnav_formulas()["ev"] and p["CT11"] == layout.MINORITY_HEADER
+    p[ref] = "=MY_OWN()"
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert p[ref] == "=MY_OWN()" and any("conflict" in line and ref in line for line in rep)
 
 
 def test_financing_seeds_come_from_the_research_file():

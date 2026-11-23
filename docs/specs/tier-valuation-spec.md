@@ -43,8 +43,9 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
   `country_weights` like producers). This is the only place jurisdiction counts.
 - **NPV:** cash flow for min(reserve life, `[valuation] horizon_years` = 10) years, no terminal value, at each
   deck. Net cash is not added (EV nets it). Developers keep the study's whole mine life (Part 3).
-- **EV / NPV:** EV = market cap + debt − cash (PNAV inputs AZ). 1.0 = priced at the deck's value; NPV ≤ 0 reads
-  "negative NPV", never a number.
+- **EV / NPV:** EV = market cap − net cash + minority interest (PNAV inputs AZ; minority interest in CT, the
+  balance-sheet value from Yahoo, written by `financials`), because the cash flow valued is consolidated; per-share
+  prices subtract it again. 1.0 = priced at the deck's value; NPV ≤ 0 reads "negative NPV", never a number.
 - **Where computed:** `valuation` (minerval/valuation.py) values every research row offline and writes
   `data/derived/valuation.csv`; `financials` writes its values to the Sheet (they change only with financials, research
   inputs or decks). EV / NPV, the downside test and the FCF yield are Sheet formulas over today's EV, so `prices`
@@ -220,6 +221,13 @@ Valuation (to build):
   status table tracks item 6.
 - [ ] A28. (user) `[scenarios]` holds the user's Pessimistic, Base and Optimistic decks, each with a source and date,
   and `[valuation] pessimistic_cost_increase` is set.
+- [x] A29. EV includes minority interest and per-share prices subtract it, in `valuation` and in the Sheet's AZ
+  (CT written by `financials`; an installed EV formula is upgraded in place). —
+  `tests/test_valuation.py::test_ev_adds_minority_interest_because_cash_flow_is_consolidated`,
+  `tests/test_valuation.py::test_per_share_figures_subtract_minority_interest`,
+  `tests/test_layout.py::test_ev_adds_minority_interest`,
+  `tests/test_layout.py::test_installed_ev_is_upgraded_to_add_minority_interest`,
+  `tests/test_financials.py::test_financials_writes_the_new_columns_once_set_up`
 
 ## Decisions
 

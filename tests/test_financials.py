@@ -64,9 +64,11 @@ def derived(tmp_path, monkeypatch):
                    "fcf_per_copper_m": 0.0, "cost_base_m": 6000.0}]).to_csv(tmp_path / "stress_holdings.csv",
                                                                              index=False)
     pd.DataFrame([{"yahoo": "AEM.TO", "net_cash_m": 1000.0, "revenue_m": 9000.0, "fcf_m": 3000.0, "ocf_m": 5000.0,
-                   "avg_gold": 3500.0, "avg_silver": 40.0, "avg_copper": 4.5, "cash_m": 2000.0, "fcf_12m_m": 3000.0},
+                   "avg_gold": 3500.0, "avg_silver": 40.0, "avg_copper": 4.5, "cash_m": 2000.0, "fcf_12m_m": 3000.0,
+                   "minority_m": 120.456},
                   {"yahoo": "NOBASIS", "net_cash_m": 5.0, "revenue_m": 1.0, "fcf_m": 1.0, "ocf_m": 1.0,
-                   "avg_gold": 1.0, "avg_silver": 1.0, "avg_copper": 1.0}]).to_csv(tmp_path / "pnav.csv", index=False)
+                   "avg_gold": 1.0, "avg_silver": 1.0, "avg_copper": 1.0, "minority_m": 0.0}]).to_csv(
+        tmp_path / "pnav.csv", index=False)
     monkeypatch.setattr(financials, "DERIVED", tmp_path)
     return tmp_path
 
@@ -118,11 +120,16 @@ def test_financials_writes_the_new_columns_once_set_up(derived, tmp_path):
     sh.cells["PNAV inputs"]["AX11"] = PNAV_HEADERS["cash"]
     from minerval.layout import valuation_headers
     sh.cells["PNAV inputs"]["CC11"] = valuation_headers()["valuation_basis"]      # every new column set up
+    from minerval.layout import MINORITY_HEADER
+    sh.cells["PNAV inputs"]["CT11"] = MINORITY_HEADER
     rep = financials.run(sh, out_dir=tmp_path / "out")
     d, p = sh.cells["Holdings downside"], sh.cells["PNAV inputs"]
     assert d["R2"] == 6000.0
     assert (p["AX12"], p["AY12"]) == (2000.0, 3000.0)
     assert "AX13" not in p                                         # fixed-price trust row left alone
+    assert p["CT12"] == 120.46 and "CT13" not in p                 # minority interest, $M
+    assert p["CT14"] == ""                                         # none reported: blank, not 0
+    assert any(line.startswith("  Minority interest (CT): 1 rows with a figure") for line in rep)
     assert not any("not set up yet" in line for line in rep)
 
 
@@ -130,7 +137,8 @@ def test_financials_before_setup_leaves_new_columns_alone(derived, tmp_path):
     sh = sheet()
     rep = financials.run(sh, out_dir=tmp_path / "out")
     assert "R2" not in sh.cells["Holdings downside"] and "AX12" not in sh.cells["PNAV inputs"]
-    assert sum("not set up yet" in line for line in rep) == 3                  # cash, cost base, valuation
+    assert "CT12" not in sh.cells["PNAV inputs"]
+    assert sum("not set up yet" in line for line in rep) == 4       # cash, cost base, valuation, minority interest
 
 
 def test_financials_writes_table_addons(derived, tmp_path):

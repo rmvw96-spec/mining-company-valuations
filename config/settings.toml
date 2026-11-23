@@ -229,6 +229,7 @@ capex_to_mcap = "CP"
 buy_below_value = "CQ"
 fair_value_price = "CR"
 valuation_why = "CS"
+minority = "CT"                     # minority interest $M (written by financials), added to EV in AZ
 study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 

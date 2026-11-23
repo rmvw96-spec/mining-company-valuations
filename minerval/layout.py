@@ -33,7 +33,7 @@ PNAV_HEADERS = {
     "resource_source": "Resource source and date",
     "cash": "Cash $M (cash and short-term investments)",
     "fcf_12m": "Free cash flow $M, last 12 months",
-    "ev": "EV $M (market cap − net cash)",
+    "ev": "EV $M (market cap − net cash + minority interest in CT)",
     "ev_per_unit": "EV per unit in the ground US$",
     "ev_per_aueq_oz": "EV per gold-equivalent oz US$",
     "months_of_cash": "Months of funding (cash + committed funding in BF, at the last 12 months' burn)",
@@ -41,8 +41,9 @@ PNAV_HEADERS = {
     "developer_check": "Developer check (funding gap when remaining capex is filled in; else the runway)",
 }
 # Columns whose header and formula changed after the first install: `setup-sheet` replaces the old ones (below).
-UPGRADED = {"months_of_cash", "developer_check"}
+UPGRADED = {"months_of_cash", "developer_check", "ev"}
 PNAV_HEADERS_V1 = {"months_of_cash": "Months of cash (at the last 12 months' burn)",
+                   "ev": "EV $M (market cap − net cash)",
                    "developer_check": "Developer check (project loans aren't counted as cash: check undrawn "
                                       "facilities)"}
 FINANCING_HEADERS = {
@@ -80,6 +81,10 @@ VALUATION_FORMATS = {"npv_pessimistic": "#,##0", "npv_base": "#,##0", "npv_optim
                      "ev_npv_pessimistic": "0.00", "ev_npv_base": "0.00", "ev_npv_optimistic": "0.00",
                      "fcf_yield": "0.0%", "dilution_15": "0%", "dilution_30": "0%", "capex_to_mcap": "0.00",
                      "buy_below_value": "0.00", "fair_value_price": "0.00"}
+
+
+MINORITY_HEADER = ("Minority interest $M (partners' stakes in consolidated mines, balance-sheet value; blank "
+                   "where none is reported; written by `financials`, added to EV in AZ)")
 
 
 def valuation_headers() -> dict:
@@ -246,7 +251,8 @@ def pnav_formulas() -> dict:
                         f'IF({r("peer_group")}<>"Royalty/streaming","",IF({r("independent_pnav")}="",'
                         f'"no independent NAV",IF({r("independent_pnav")}<=buy_top,"Buy zone",'
                         f'IF({r("independent_pnav")}<=normal_top,"Normal range","Rich"))))))',
-        "ev": f'=ARRAYFORMULA(IF(ISNUMBER({r("mcap")})*ISNUMBER({r("net_cash")}),{r("mcap")}-{r("net_cash")},""))',
+        "ev": f'=ARRAYFORMULA(IF(ISNUMBER({r("mcap")})*ISNUMBER({r("net_cash")}),'
+              f'{r("mcap")}-{r("net_cash")}+{n(r("minority"))},""))',
         "ev_per_unit": f'=ARRAYFORMULA(IF(ISNUMBER({r("ev")})*ISNUMBER({r("resource_amount")}),'
                        f'IF({r("resource_amount")}>0,{r("ev")}/{r("resource_amount")},""),""))',
         "ev_per_aueq_oz": f'=ARRAYFORMULA(IFERROR(IF({r("ev_per_unit")}="","",'
@@ -290,6 +296,7 @@ def pnav_formulas_v1() -> dict:
     def r(name):
         return pnav_range(name)
     return {
+        "ev": f'=ARRAYFORMULA(IF(ISNUMBER({r("mcap")})*ISNUMBER({r("net_cash")}),{r("mcap")}-{r("net_cash")},""))',
         "months_of_cash": f'=ARRAYFORMULA(IF(ISNUMBER({r("fcf_12m")})*ISNUMBER({r("cash")}),'
                           f'IF({r("fcf_12m")}<0,{r("cash")}/-{r("fcf_12m")}*12,"Cash-generating"),""))',
         "developer_check": f'=ARRAYFORMULA(LET(short,{sig("runway_short_months")},ok,{sig("runway_ok_months")},'
@@ -735,6 +742,16 @@ def step_valuation() -> Step:
     return st
 
 
+def step_minority() -> Step:
+    """PNAV inputs CT: the header for minority interest, which `financials` writes and EV in AZ adds."""
+    S = _S()
+    tab, a, b, P = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs"]
+    st = Step(f"{tab}: column {P['minority']} (minority interest, added to EV in {P['ev']})")
+    st.add(tab, f"{P['minority']}{a - 1}", MINORITY_HEADER)
+    st.formats.append((tab, f"{P['minority']}{a}:{P['minority']}{b}", "#,##0.0"))
+    return st
+
+
 def step_downside() -> Step:
     S = _S()
     tab, D = S["downside_tab"], S["downside_cols"]
@@ -828,7 +845,7 @@ def _short(v, n=70):
 
 def steps(sheet) -> list[Step]:
     return [step_signals(sheet), step_pnav(sheet), step_financing(), step_cash_flow_change(), step_pnav_tab(),
-            step_sensitivity(), step_own_history(), step_valuation(), step_downside(), step_portfolio(),
+            step_sensitivity(), step_own_history(), step_valuation(), step_minority(), step_downside(), step_portfolio(),
             step_portfolio_after()]
 
 

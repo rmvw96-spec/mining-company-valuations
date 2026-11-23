@@ -34,10 +34,10 @@ and update the item's row in the status table at the top of `docs/roadmap.md` (a
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
 | After `refresh` | `valuation` (read `out/valuation/report.txt`: what was valued, what wasn't, and NAVs far from outside views) | data/derived/valuation.csv; out/valuation/ |
-| After `refresh` and `valuation` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, P for country-table rows, and CC:CG, CM:CO, CQ:CS (valuation; skipped while valuation.csv is older than pnav.csv) |
+| After `refresh` and `valuation` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, CT, P for country-table rows, and CC:CG, CM:CO, CQ:CS (valuation; skipped while valuation.csv is older than pnav.csv) |
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
-| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CB; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
+| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CT; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
 | After `financials`, before buying | `screen` (report only; show the user out/screen/report.txt), then `screen --write` (`--email` for a private summary) | Model portfolio A–F, S, U–V; private/portfolio.csv, private/screen_state.json |
 | After editing the Model portfolio by hand | `portfolio-file` | private/portfolio.csv (for `backtest` and `project`) |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
@@ -106,7 +106,8 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
 - PNAV inputs: C12 and D12 (to row 154), AL12:AO12 (to row 146 only), and AR12:AS12, AZ12:BE12, BJ12:BO12 and
   BT12:BX12, CB12, CH12:CL12 and CP12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146,
   AR13:AS154, AZ13:BE154, BJ13:BO154, BT13:BX154, CB13:CB154, CH13:CL154 or CP13:CP154. CC:CG, CM:CO and CQ:CS
-  (valuation by tier) are written by `financials` from data/derived/valuation.csv. BY:CA (royalty P/OCF and own-history percentiles) are written by `signals`
+  (valuation by tier) are written by `financials` from data/derived/valuation.csv, and CT (minority interest,
+  which EV in AZ adds) from pnav.csv. BY:CA (royalty P/OCF and own-history percentiles) are written by `signals`
   on every run, from `data/research/royalty_ocf.csv` (annual operating cash flow from SEC filings, the record,
   written by `royalty-ocf`) and the Company history tab. H7 is a formula (the Signals cost input). AT:AW (resources), BF:BI (developer financing) and
   BP:BS (resource split) are inputs, recorded in `data/research/pnav_companies.csv` with a source for every

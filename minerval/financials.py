@@ -69,8 +69,9 @@ def downside_rows(M: pd.DataFrame) -> dict:
 
 
 def pnav_rows(I: pd.DataFrame) -> dict:
-    """{yahoo symbol: ([E], [F, G, H], [M, N, O], [AX, AY], [P] or None)}. P (the jurisdiction add-on, as a fraction)
-    only for rows whose add-on comes from the country table or an override; manual rows keep the Sheet's value."""
+    """{yahoo symbol: ([E], [F, G, H], [M, N, O], [AX, AY], [P] or None, [CT])}. P (the jurisdiction add-on, as a
+    fraction) only for rows whose add-on comes from the country table or an override; manual rows keep the Sheet's
+    value. CT (minority interest, $M) is blank where none is reported."""
     out = {}
     for _, r in I.iterrows():
         if not isinstance(r.yahoo, str):
@@ -82,7 +83,9 @@ def pnav_rows(I: pd.DataFrame) -> dict:
         addon = None
         if str(r.get("addon_basis", "")) in ("table", "override") and pd.notna(r.get("addon_pct_points")):
             addon = [round(float(r.addon_pct_points) / 100, 6)]
-        out.setdefault(r.yahoo, (e, fgh, mno, cash, addon))
+        mi = r.get("minority_m")
+        minority = [_num(mi, 2) if isinstance(mi, (int, float)) and mi > 0 else CLEAR]
+        out.setdefault(r.yahoo, (e, fgh, mno, cash, addon, minority))
     return out
 
 
@@ -207,7 +210,7 @@ def run(sheet, dry_run=False, out_dir=None):
     basis = column(sheet.read(tab, f"I{a}:I{b}"), a)
     P = S["pnav_inputs"]
     has_cash = _has_header(sheet, tab, f"{P['cash']}{a - 1}", PNAV_HEADERS["cash"])
-    e, fgh, mno, cash, addon, unknown = {}, {}, {}, {}, {}, []
+    e, fgh, mno, cash, addon, minority, unknown = {}, {}, {}, {}, {}, {}, []
     for r, s in sym.items():
         s = str(s).strip()
         if not s or r in fixed:
@@ -217,6 +220,7 @@ def run(sheet, dry_run=False, out_dir=None):
             continue
         e[r] = want[s][0]
         cash[r] = want[s][3]
+        minority[r] = want[s][5]
         if str(basis.get(r, "")).strip():
             fgh[r], mno[r] = want[s][1], want[s][2]
         if want[s][4] is not None:              # a country-table or override add-on, developers' included
@@ -236,6 +240,15 @@ def run(sheet, dry_run=False, out_dir=None):
                    f"({n_add} change); the other rows keep the Sheet's hand-set figure.")
     else:
         rep.append(f"  {tab}!{P['addon']}{a - 1} isn't headed {ADDON_HEADER!r}: the add-on was not written.")
+    from .layout import MINORITY_HEADER
+    if _has_header(sheet, tab, f"{P['minority']}{a - 1}", MINORITY_HEADER):
+        n_mi = _changes(sheet, tab, P["minority"], minority)
+        ch += n_mi
+        blocks += blocks_by_row(tab, P["minority"], minority)
+        rep.append(f"  Minority interest ({P['minority']}): {sum(v[0] != CLEAR for v in minority.values())} rows "
+                   f"with a figure ({n_mi} cells change); EV in {P['ev']} adds it.")
+    else:
+        rep.append(f"  {tab}!{P['minority']} (minority interest) not set up yet: run `setup-sheet`.")
     # Valuation by tier: CC:CG, CM:CO, CQ:CS (CH:CL and CP are formulas over today's EV)
     from .layout import valuation_headers
     span = f"{P['valuation_basis']}:{P['valuation_why']}"
