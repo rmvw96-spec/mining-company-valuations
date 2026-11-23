@@ -164,3 +164,16 @@ def test_update_sheet_writes_royalty_rows_and_clears_the_rest(monkeypatch):
     sh2 = MemorySheet({tab: dict(cells)})
     RH.update_sheet(sh2, {"WPM": px}, date(2026, 11, 20), dry_run=True)
     assert sh2.read(tab, f"{P['pocf']}12:{P['pocf']}12") in ([], [[""]], [[]])
+
+
+def test_fx_average_drops_a_bad_month_end_print(monkeypatch):
+    """Yahoo's PHP=X has one bad month-end (16.2 on Apr 30, 2026, against ~61.5 either side): a month-end more than
+    25% from the period's median is left out of the average US$ per unit."""
+    idx = pd.to_datetime(["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30", "2026-05-31", "2026-06-30"])
+    s = pd.Series([58.8, 57.6, 61.7, 16.2, 61.0, 61.5], index=idx)
+    monkeypatch.setattr(RH.yahoo, "history", lambda sym, interval: {"ok": True})
+    monkeypatch.setattr(signals, "closes", lambda j: s)
+    rate = RH._fx_average()
+    want = float((1 / s.drop(pd.Timestamp("2026-04-30"))).mean())
+    assert rate("PHP", "2026-01-01", "2026-06-30") == pytest.approx(want)
+    assert rate("PHP", "2026-01-01", "2026-03-31") == pytest.approx(float((1 / s[:3]).mean()))   # nothing dropped

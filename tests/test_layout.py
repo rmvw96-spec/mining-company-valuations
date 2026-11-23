@@ -30,7 +30,7 @@ def test_fresh_install(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     text = "\n".join(rep)
     assert "conflict" not in text and "Created the Signals tab." in text
-    assert sh.sizes["PNAV inputs"][1] == col_to_num("CB")
+    assert sh.sizes["PNAV inputs"][1] == col_to_num("CT")                     # through minority interest
     sig, p = sh.cells["Signals"], sh.cells["PNAV inputs"]
     keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit() and int(k[1:]) >= 5}
     assert set(s.key for s in SIGNALS) <= set(keys)
@@ -221,6 +221,32 @@ def test_a_hand_edited_check_formula_is_left_alone(tmp_path):
     assert any("conflict" in line and ref in line for line in rep)
 
 
+def test_ev_adds_minority_interest(tmp_path):
+    """EV in AZ = market cap − net cash + minority interest (CT, written by `financials`; blank counts as zero)."""
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, P = sh.cells["PNAV inputs"], S["pnav_inputs"]
+    assert P["minority"] == "CT" and p["CT11"] == layout.MINORITY_HEADER and "CT12" not in p
+    ev = layout.pnav_formulas()["ev"]
+    assert p[f"{P['ev']}{A}"] == ev and p[f"{P['ev']}{A - 1}"] == layout.PNAV_HEADERS["ev"]
+    assert "-E12:E154+IF(ISNUMBER(CT12:CT154),CT12:CT154,0)" in ev
+
+
+def test_installed_ev_is_upgraded_to_add_minority_interest(tmp_path):
+    """A Sheet with the first EV formula and header gets the new ones; a hand-edited EV is a conflict, left alone."""
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, ref = sh.cells["PNAV inputs"], f"{S['pnav_inputs']['ev']}{A}"
+    p[ref], p[f"{S['pnav_inputs']['ev']}{A - 1}"] = layout.pnav_formulas_v1()["ev"], "EV $M (market cap − net cash)"
+    p.pop("CT11")
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert not any("conflict" in line for line in rep)
+    assert p[ref] == layout.pnav_formulas()["ev"] and p["CT11"] == layout.MINORITY_HEADER
+    p[ref] = "=MY_OWN()"
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert p[ref] == "=MY_OWN()" and any("conflict" in line and ref in line for line in rep)
+
+
 def test_financing_seeds_come_from_the_research_file():
     seeds = layout.financing_seeds()
     assert all(isinstance(v, (float, str)) for v in seeds.values())
@@ -239,3 +265,21 @@ def test_notes_in_the_sensitivity_column_skip_its_step(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     assert any("P/NAV with a higher add-on" in line and "conflict" in line for line in rep)
     assert "BX12" not in sh.cells["PNAV inputs"]
+
+
+def test_valuation_columns_after_cb(tmp_path):
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, P, f = sh.cells["PNAV inputs"], settings()["sheet"]["pnav_inputs"], layout.valuation_formulas()
+    assert p[f"{P['npv_base']}11"].startswith("NPV, Base deck") and p[f"{P['ev_npv_base']}12"] == f["ev_npv_base"]
+    assert f"{P['ev']}12:{P['ev']}154/{P['npv_base']}12:{P['npv_base']}154" in f["ev_npv_base"]
+    assert '"negative NPV"' in f["ev_npv_base"] and f"{P['financing_note']}12:{P['financing_note']}154" in f["downside"]
+    for name in ("valuation_basis", "npv_base", "cf_base", "financing_note", "buy_below_value", "valuation_why"):
+        assert f"{P[name]}12" not in p and p[f"{P[name]}11"]               # written by `financials`: header only
+    assert P["valuation_why"] == "CS"
+
+
+def test_valuation_headers_describe_each_tier():
+    h = layout.valuation_headers()
+    assert "producers: 10 years, no terminal value; royalties: a perpetuity; developers: risk-adjusted" in h["npv_base"]
+    assert "developers: value per share after a +30% overrun's financing" in h["buy_below_value"]

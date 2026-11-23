@@ -1,71 +1,57 @@
 # Alerts when a signal or Model portfolio status changes
 
-Instructions for Claude Code. Roadmap item 1b. Follow CLAUDE.md.
+Roadmap 1b · Status: Built Nov 18, 2026 · Depends on: 1a (Signal history)
 
-**Status: built** (branch `alerts`). Decided with the user: public issues are fine for market signals, and a
-change is alerted once the new status has held **3 recorded trading days** (a replay of the last year gave 107
-alert days for every raw change, 47 with the 3-day hold). Where the build differs from the plan below:
-- The hold is worked out from Signal history (statuses recomputed from its values with today's thresholds), so
-  it needs no state on GitHub. `changes.json` holds the confirmed changes only; the report still lists all.
-- One issue per day at most: the workflow skips a day that already has a `signals` issue (reruns).
-- The Model portfolio email fires on any change within a run (no hold: there's no private place to keep
-  past statuses). The log says only how many changed.
+Instructions for Claude Code. Follow CLAUDE.md.
 
 ## Goal
 
-The scheduled run reports "Changed since the last run" in `out/signals/report.txt` and the GitHub step summary,
-but nobody reads those daily. Send a notification when something changes:
+The scheduled run lists "Changed since the last run" in `out/signals/report.txt` and the step summary, but nobody
+reads those daily. Notify when a market signal's status (Signals I) or a Model portfolio row's status (T) changes.
 
-1. **Market signals** (Signals tab status, column I) — market data only, nothing personal.
-2. **Model portfolio** rows whose Status (T) changes, e.g. to "Review: above level".
+## Scope
 
-## Privacy constraint (decides the channels)
-
-The repo is public, so its issues are public. Signal statuses are market data and fine to publish. Model
-portfolio statuses name the holdings the user is tracking, which is closer to personal: **they never go into a
-GitHub issue, log or step summary.** They go only by private email, and only when the user has set it up.
+- **In:** a public GitHub issue for market-signal changes; a private email for Model portfolio changes.
+- **Out:** Model portfolio content in any issue, log or step summary (the repo is public).
 
 ## Design
 
-### 1. Market signals → one GitHub issue per change day
+- **Market signals: one GitHub issue per change day.**
+  - A change counts once the new status has held **3 recorded trading days**, worked out from Signal history
+    (statuses recomputed from its values with today's thresholds), so no state is kept on GitHub. A replay of the
+    year before gave 107 alert days for every raw change and 47 with the hold.
+  - `signals.run()` writes `out/signals/changes.json` (confirmed changes: `key`, `label`, `tier`, `old`, `new`,
+    `value`, `asof`); the report still lists every change. "Info" rows and the AISC margin are left out.
+  - `update-prices.yml` opens the issue with `gh issue create` and the workflow's token (`permissions: issues:
+    write, contents: read`), label `signals`, title `Signals changed: <date> (<n>)`, body built in Python
+    (`minerval/alerts.py`). A day that already has a `signals` issue is skipped (reruns). GitHub emails the owner.
+- **Model portfolio: private email.**
+  - `alerts.notify_portfolio` compares Model portfolio B and T before and after the price write, and emails the
+    changed rows when `ALERT_SMTP_URL` and `ALERT_EMAIL_TO` are set. No hold (there's no private place to keep past
+    statuses). The log says only how many changed; a failure never prints names.
+  - The workflow passes the two secrets when present; README explains a Gmail app password.
+- **Locally:** `prices` prints both sets of changes in its report; an issue or email only with `prices --notify`.
+  `test-email` sends a fixed message to check the secrets.
 
-- In `update-prices.yml`, after the update step: if `out/signals/changes.json` is non-empty, open an issue with
-  `gh issue create` using the workflow's `GITHUB_TOKEN` (add `permissions: issues: write, contents: read`).
-- Title: `Signals changed: 2026-11-18 (3)`. Body: one line per change (`label: old → new`, value and as-of date),
-  then the tier it applies to. Label `signals` (create it if missing).
-- `signals.run()` writes `out/signals/changes.json` (list of `{key, label, tier, old, new, value, asof}`) next to
-  report.txt. The workflow reads that file; the issue text is built in Python (`minerval/alerts.py`), not in YAML.
-- Leave out "Info" rows and the AISC margin (as the report already does).
-- GitHub emails the repo owner on new issues by default, so this needs no secrets.
+## Acceptance criteria
 
-### 2. Model portfolio → private email (optional)
+- [x] A1. Statuses come from Signal history, skipping Info and context signals. —
+  `tests/test_alerts.py::test_statuses_from_history_skip_info_and_context_signals`
+- [x] A2. A change is confirmed only after 3 trading days, and only when today's row exists. —
+  `tests/test_alerts.py::test_confirmed_changes_need_three_days`,
+  `tests/test_alerts.py::test_signal_changes_reads_signal_history_and_needs_todays_row`
+- [x] A3. The issue text is stable and holds market data only. —
+  `tests/test_alerts.py::test_issue_text_is_stable_and_market_data_only`, `tests/test_alerts.py::test_write_issue`
+- [x] A4. The portfolio email is sent only when set up, never logged, and a failure doesn't leak names. —
+  `tests/test_alerts.py::test_portfolio_email_only_when_set_up_and_never_logged`,
+  `tests/test_alerts.py::test_portfolio_alert_failure_doesnt_leak_names`
+- [x] A5. The workflow asks only for `issues: write` and `contents: read`. —
+  `tests/test_alerts.py::test_workflow_permissions_and_steps`
+- [x] A6. `test-email` sends a message with no portfolio content. — `tests/test_alerts.py::test_test_email`
+- [x] A7. README covers alerts, the email secrets and the privacy rule; CLAUDE.md the privacy rule.
 
-- `minerval/alerts.py` reads Model portfolio B and T (rows from `[sheet]` portfolio settings) before and after the
-  price write. Before: read at the start of `prices.run()`. After: read after the signals step.
-- If both `ALERT_SMTP_URL` (e.g. `smtps://user:app-password@smtp.gmail.com:465`) and `ALERT_EMAIL_TO` are set,
-  send one email listing the changed rows. Otherwise do nothing and **don't** print the rows to the log.
-- The workflow passes the two secrets when present. Document how to make a Gmail app password in README;
-  the user adds the secrets.
+## Decisions
 
-### 3. Locally
-
-`uv run python -m minerval prices` prints both sets of changes in the terminal report as today. No issue, no email
-unless `--notify` is passed (so local test runs don't spam).
-
-## Tests (offline)
-
-- `changes.json` contents for a run where one status flips; empty list when nothing changes.
-- Issue body builder: stable text, no Model portfolio content.
-- Email: with the env vars unset nothing is sent and nothing is logged; with them set, `smtplib` is called once
-  (monkeypatched) with the changed rows.
-- The workflow YAML parses and requests only `issues: write` and `contents: read`.
-
-## Docs
-
-- README: alerts, the optional email secrets, and the privacy rule.
-- CLAUDE.md: Model portfolio content never goes into issues, logs or step summaries.
-
-## Open question for the user
-
-Is a public GitHub issue for market-signal changes acceptable, or should those go by email too? The default
-above assumes yes (it's market data).
+- Public issues are fine for market signals; Model portfolio changes go by private email only (the user,
+  2026-11-18).
+- Alert a signal change once the new status has held 3 recorded trading days (the user, 2026-11-18).

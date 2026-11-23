@@ -179,3 +179,86 @@ def test_example_portfolio_is_neutral():
     """The committed example holds Sprott funds and a bullion trust only, never Model portfolio names."""
     E = pd.read_csv(CONFIG / "portfolio.example.csv")
     assert set(E.key) <= {"PHYS", "PSLV", "COP", "SGDM", "SGDJ", "COPP", "COPJ", "SLVR"}
+
+
+def test_sources_log():
+    """data/research/sources.csv: one row per document read, with where it is and what it held."""
+    S = pd.read_csv(DATA / "research" / "sources.csv", keep_default_na=False)
+    assert list(S.columns) == ["ticker", "company", "document", "period", "published", "url", "read", "found", "notes"]
+    assert set(S.read) <= {"yes", "partial", "via search", "no"}
+    assert S.url.str.startswith("https://").all()
+    assert (S.document != "").all() and (S.company != "").all()
+
+
+def test_docs_name_real_tests_and_links_resolve():
+    """Spec acceptance criteria name their tests (`tests/test_x.py::test_y`): each must exist, so a criterion can't
+    point at a renamed or deleted test. Relative links in README, CLAUDE.md and docs/ must resolve."""
+    import re
+    docs = [ROOT / "README.md", ROOT / "CLAUDE.md", *sorted((ROOT / "docs").rglob("*.md"))]
+    for d in sorted((ROOT / "docs" / "specs").glob("*.md")):                  # the template's sections
+        text = d.read_text()
+        for section in ("## Goal", "## Scope", "## Design", "## Acceptance criteria"):
+            assert f"\n{section}\n" in text, f"{d.name} has no '{section}' section (docs/specs/TEMPLATE.md)"
+        assert re.search(r"^Roadmap\b.*· Status: ", text, re.M), f"{d.name} has no status line"
+    for d in docs:
+        text = d.read_text()
+        for f, name in re.findall(r"(tests/test_\w+\.py)::(test_\w+)", text):
+            if (d.name, name) == ("TEMPLATE.md", "test_y"):
+                continue
+            assert (ROOT / f).exists() and re.search(rf"^def {name}\(", (ROOT / f).read_text(), re.M), \
+                f"{d.relative_to(ROOT)} names {f}::{name}, which doesn't exist"
+        for link in re.findall(r"\]\(([^)\s]+)\)", text):
+            if re.match(r"(https?:|mailto:|#)", link):
+                continue
+            assert (d.parent / link.split("#")[0]).exists(), f"{d.relative_to(ROOT)} links to missing {link}"
+
+
+def _criteria(spec_text: str) -> dict:
+    """{"A1": (ticked, text)} from a spec's acceptance criteria."""
+    import re
+    return {m[2]: (m[1] == "x", m[3]) for m in re.finditer(r"^- \[([ x])\] (A\d+)\. (.*)$", spec_text, re.M)}
+
+
+def _ids(cell: str) -> list[str]:
+    """"A1–A19" or "A2, A4" -> the criterion ids."""
+    import re
+    out = []
+    for part in cell.split(","):
+        m = re.fullmatch(r"\s*A(\d+)(?:\s*[–-]\s*A(\d+))?\s*", part)
+        assert m, f"criteria '{cell}' should read like 'A1–A19' or 'A2, A4'"
+        out += [f"A{i}" for i in range(int(m[1]), int(m[2] or m[1]) + 1)]
+    return out
+
+
+def test_roadmap_status_matches_the_specs():
+    """The roadmap's status table ties each item to its spec: the criteria it names exist, the counts match what's
+    ticked, the status follows from them ("(user)" and "(data)" follow-ups may stay open on a Built item), and the
+    spec's status line names the item and its status. Every spec is on the roadmap, and every phase row is in the
+    status table."""
+    import re
+    road = (ROOT / "docs" / "roadmap.md").read_text()
+    table = road.split("\n## Status\n", 1)[1].split("\n## ", 1)[0]
+    rows = [[c.strip() for c in line.strip().strip("|").split("|")] for line in table.split("\n")
+            if line.startswith("| ") and not line.startswith("| # ")]
+    assert rows, "no status table under '## Status' in docs/roadmap.md"
+    linked = set()
+    for item, _, spec_cell, status, crit_cell, checked, _ in rows:
+        name = re.search(r"\(specs/([\w-]+\.md)\)", spec_cell)[1]
+        linked.add(name)
+        text = (ROOT / "docs" / "specs" / name).read_text()
+        C, ids = _criteria(text), _ids(crit_cell)
+        assert set(ids) <= set(C), f"roadmap {item}: {name} has no {sorted(set(ids) - set(C))}"
+        n = sum(C[i][0] for i in ids)
+        assert checked == f"{n} of {len(ids)}", f"roadmap {item}: {name} has {n} of {len(ids)} ticked in {crit_cell}"
+        open_ = [i for i in ids if not C[i][0]]
+        work = [i for i in open_ if not C[i][1].startswith(("(user)", "(data)"))]
+        want = "Outstanding" if n == 0 else "In progress" if work else "Built"
+        assert status == want, f"roadmap {item} says {status}; from {name}'s criteria it is {want} (open: {work})"
+        line = next(x for x in text.split("\n") if x.startswith("Roadmap"))
+        assert re.search(rf"\b{re.escape(item)}\b", line) and status in line, \
+            f"{name}'s status line should name roadmap {item} and '{status}': {line}"
+    specs = {p.name for p in (ROOT / "docs" / "specs").glob("*.md")} - {"TEMPLATE.md"}
+    assert specs <= linked, f"specs not on the roadmap's status table: {sorted(specs - linked)}"
+    phase = {line.split("|")[1].strip() for line in road.split("\n## Status\n", 1)[1].split("\n")
+             if re.match(r"\| \d+[a-z]? \| \*\*", line)}
+    assert phase <= {r[0] for r in rows}, f"phase rows missing from the status table: {sorted(phase - {r[0] for r in rows})}"

@@ -33,7 +33,7 @@ PNAV_HEADERS = {
     "resource_source": "Resource source and date",
     "cash": "Cash $M (cash and short-term investments)",
     "fcf_12m": "Free cash flow $M, last 12 months",
-    "ev": "EV $M (market cap − net cash)",
+    "ev": "EV $M (market cap − net cash + minority interest in CT)",
     "ev_per_unit": "EV per unit in the ground US$",
     "ev_per_aueq_oz": "EV per gold-equivalent oz US$",
     "months_of_cash": "Months of funding (cash + committed funding in BF, at the last 12 months' burn)",
@@ -41,8 +41,9 @@ PNAV_HEADERS = {
     "developer_check": "Developer check (funding gap when remaining capex is filled in; else the runway)",
 }
 # Columns whose header and formula changed after the first install: `setup-sheet` replaces the old ones (below).
-UPGRADED = {"months_of_cash", "developer_check"}
+UPGRADED = {"months_of_cash", "developer_check", "ev"}
 PNAV_HEADERS_V1 = {"months_of_cash": "Months of cash (at the last 12 months' burn)",
+                   "ev": "EV $M (market cap − net cash)",
                    "developer_check": "Developer check (project loans aren't counted as cash: check undrawn "
                                       "facilities)"}
 FINANCING_HEADERS = {
@@ -74,6 +75,45 @@ FINANCING_FORMATS = {"committed_funding": "#,##0.0", "remaining_capex": "#,##0.0
                      "peer_ev_ratio": "0.00"}
 PNAV_TAB_HEADERS = {"royalty_band": "Royalty band (framework)", "buy_below": "Buy-below price US$"}
 OWN_FORMATS = {"pocf": "0.0", "pocf_pctile": "0", "pnav_pctile": "0"}
+
+
+VALUATION_FORMATS = {"npv_pessimistic": "#,##0", "npv_base": "#,##0", "npv_optimistic": "#,##0", "cf_base": "#,##0",
+                     "ev_npv_pessimistic": "0.00", "ev_npv_base": "0.00", "ev_npv_optimistic": "0.00",
+                     "fcf_yield": "0.0%", "dilution_15": "0%", "dilution_30": "0%", "capex_to_mcap": "0.00",
+                     "buy_below_value": "0.00", "fair_value_price": "0.00"}
+
+
+MINORITY_HEADER = ("Minority interest $M (partners' stakes in consolidated mines, balance-sheet value; blank "
+                   "where none is reported; written by `financials`, added to EV in AZ)")
+
+
+def valuation_headers() -> dict:
+    """PNAV inputs CC:CS headers (valuation by tier, roadmap 6)."""
+    V = settings()["valuation"]
+    o = V["capex_overrun"]
+    by = "written by `financials`"
+    h = {"valuation_basis": f"Valuation basis (OCF − sustaining; FCF basis: sustaining not recorded; OCF (royalty); "
+                            f"study (risk-adjusted)); {by}"}
+    for d in V["decks"]:
+        h[f"npv_{d.lower()}"] = (f"NPV, {d} deck US$M (producers: {V['horizon_years']} years, no terminal value; "
+                                 f"royalties: a perpetuity; developers: risk-adjusted study NPV); {by}")
+    h["cf_base"] = f"Cash flow a year at the {V['base_deck']} deck US$M (producers and royalties); {by}"
+    for d in V["decks"]:
+        h[f"ev_npv_{d.lower()}"] = f'EV / NPV, {d} deck ("negative NPV" when the NPV is zero or below)'
+    h["downside"] = (f"Downside test: EV ≤ the {V['pessimistic_deck']} NPV (producers with costs raised); developers: "
+                     f"the financing note (their downside is priced into the buy-below)")
+    h["fcf_yield"] = f"Sustaining FCF yield ({V['base_deck']}-deck cash flow ÷ EV)"
+    h["dilution_15"] = f"Dilution of a raise at a +{o[0]:.0%} capex overrun (developers); {by}"
+    h["dilution_30"] = f"Dilution of a raise at a +{o[-1]:.0%} capex overrun (developers); {by}"
+    h["financing_note"] = (f"Financing note (developers): a raise at +{max(o):.0%} that more than doubles the share "
+                           f"count; dilution is priced into the buy-below; {by}")
+    h["capex_to_mcap"] = "Remaining capex ÷ market cap (developers)"
+    h["buy_below_value"] = (f"Buy below US$/share (producers and royalties: the buy level × {V['base_deck']} NPV, no "
+                            f"higher than the downside test allows; developers: value per share after a "
+                            f"+{max(o):.0%} overrun's financing; levels in [valuation.buy]); {by}")
+    h["fair_value_price"] = f"Fair value US$/share (review above; [valuation.buy]); {by}"
+    h["valuation_why"] = f"Why there's no NPV or buy-below price; {by}"
+    return h
 
 
 def own_headers() -> dict:
@@ -211,7 +251,8 @@ def pnav_formulas() -> dict:
                         f'IF({r("peer_group")}<>"Royalty/streaming","",IF({r("independent_pnav")}="",'
                         f'"no independent NAV",IF({r("independent_pnav")}<=buy_top,"Buy zone",'
                         f'IF({r("independent_pnav")}<=normal_top,"Normal range","Rich"))))))',
-        "ev": f'=ARRAYFORMULA(IF(ISNUMBER({r("mcap")})*ISNUMBER({r("net_cash")}),{r("mcap")}-{r("net_cash")},""))',
+        "ev": f'=ARRAYFORMULA(IF(ISNUMBER({r("mcap")})*ISNUMBER({r("net_cash")}),'
+              f'{r("mcap")}-{r("net_cash")}+{n(r("minority"))},""))',
         "ev_per_unit": f'=ARRAYFORMULA(IF(ISNUMBER({r("ev")})*ISNUMBER({r("resource_amount")}),'
                        f'IF({r("resource_amount")}>0,{r("ev")}/{r("resource_amount")},""),""))',
         "ev_per_aueq_oz": f'=ARRAYFORMULA(IFERROR(IF({r("ev_per_unit")}="","",'
@@ -255,6 +296,7 @@ def pnav_formulas_v1() -> dict:
     def r(name):
         return pnav_range(name)
     return {
+        "ev": f'=ARRAYFORMULA(IF(ISNUMBER({r("mcap")})*ISNUMBER({r("net_cash")}),{r("mcap")}-{r("net_cash")},""))',
         "months_of_cash": f'=ARRAYFORMULA(IF(ISNUMBER({r("fcf_12m")})*ISNUMBER({r("cash")}),'
                           f'IF({r("fcf_12m")}<0,{r("cash")}/-{r("fcf_12m")}*12,"Cash-generating"),""))',
         "developer_check": f'=ARRAYFORMULA(LET(short,{sig("runway_short_months")},ok,{sig("runway_ok_months")},'
@@ -530,6 +572,26 @@ def step_signals(sheet) -> Step:
     return st
 
 
+def valuation_formulas() -> dict:
+    """{column name: formula for row pnav_first_row} for the valuation columns that move with today's EV."""
+    def r(name):
+        return pnav_range(name)
+    ev = r("ev")
+    out = {}
+    for d in settings()["valuation"]["decks"]:
+        npv = r(f"npv_{d.lower()}")
+        out[f"ev_npv_{d.lower()}"] = (f'=ARRAYFORMULA(IF(ISNUMBER({npv}),IF({npv}<=0,"negative NPV",'
+                                      f'IFERROR({ev}/{npv},"")),""))')
+    pess = r(f"npv_{settings()['valuation']['pessimistic_deck'].lower()}")
+    out["downside"] = (f'=ARRAYFORMULA(IF({r("basis")}="",{r("financing_note")},IF(ISNUMBER({pess})*ISNUMBER({ev}),'
+                       f'IF(({pess}>0)*({ev}<={pess}),"Passes","Fails"),"")))')
+    out["fcf_yield"] = (f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({r("cf_base")})*ISNUMBER({ev}),'
+                        f'IF({ev}>0,{r("cf_base")}/{ev},""),""),""))')
+    out["capex_to_mcap"] = (f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({r("remaining_capex")})*ISNUMBER({r("mcap")}),'
+                            f'IF({r("mcap")}>0,{r("remaining_capex")}/{r("mcap")},""),""),""))')
+    return out
+
+
 def _spill(st: Step, tab: str, col: str, a: int, b: int, formula: str):
     st.add(tab, f"{col}{a}", formula)
     for r in range(a + 1, b + 1):
@@ -665,6 +727,31 @@ def step_own_history() -> Step:
     return st
 
 
+def step_valuation() -> Step:
+    """PNAV inputs CC:CS (valuation by tier): headers for the columns `financials` writes, spill formulas for the
+    ones over today's EV."""
+    S = _S()
+    tab, a, b, P = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs"]
+    st = Step(f"{tab}: columns {P['valuation_basis']}:{P['valuation_why']} (valuation by tier)")
+    for name, h in valuation_headers().items():
+        st.add(tab, f"{P[name]}{a - 1}", h)
+    for name, f in valuation_formulas().items():
+        _spill(st, tab, P[name], a, b, f)
+    for name, fmt in VALUATION_FORMATS.items():
+        st.formats.append((tab, f"{P[name]}{a}:{P[name]}{b}", fmt))
+    return st
+
+
+def step_minority() -> Step:
+    """PNAV inputs CT: the header for minority interest, which `financials` writes and EV in AZ adds."""
+    S = _S()
+    tab, a, b, P = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs"]
+    st = Step(f"{tab}: column {P['minority']} (minority interest, added to EV in {P['ev']})")
+    st.add(tab, f"{P['minority']}{a - 1}", MINORITY_HEADER)
+    st.formats.append((tab, f"{P['minority']}{a}:{P['minority']}{b}", "#,##0.0"))
+    return st
+
+
 def step_downside() -> Step:
     S = _S()
     tab, D = S["downside_tab"], S["downside_cols"]
@@ -758,7 +845,8 @@ def _short(v, n=70):
 
 def steps(sheet) -> list[Step]:
     return [step_signals(sheet), step_pnav(sheet), step_financing(), step_cash_flow_change(), step_pnav_tab(),
-            step_sensitivity(), step_own_history(), step_downside(), step_portfolio(), step_portfolio_after()]
+            step_sensitivity(), step_own_history(), step_valuation(), step_minority(), step_downside(), step_portfolio(),
+            step_portfolio_after()]
 
 
 def run(sheet, dry_run=False, out_dir=None) -> list[str]:

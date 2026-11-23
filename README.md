@@ -320,7 +320,7 @@ Offline, `compute --cost-increase 0.1` does the same for `data/derived/`.
 
 PNAV inputs AT:AW hold each developer's resource (millions of the unit: oz Au, oz AuEq, oz AgEq, lb Cu
 or lb CuEq), its category and source, seeded from `data/research/pnav_companies.csv`. From those and
-AX:AY: EV (AZ), EV per unit (BA), EV per gold-equivalent ounce (BB; silver ounces converted at the live
+AX:AY: EV (AZ, adding the minority interest in CT: partners' stakes in consolidated mines), EV per unit (BA), EV per gold-equivalent ounce (BB; silver ounces converted at the live
 gold/silver ratio, copper shown per pound in BA only), months of cash (BC), cash as a share of market
 value (BD), and a check (BE): "Short of cash: financing likely" under 12 months, "Watch" under 18, plus
 "trading near cash" when cash is at least half the market value. Model portfolio X:Z show EV per ounce,
@@ -362,6 +362,36 @@ K2 to include the cost increase. It checks every cell first: a target that holds
 skips that step and is reported, inputs are only filled when blank, and a rewrite only replaces the
 exact old formula. It saves a snapshot of every cell it touches to `out/layout/backup-<time>.json`
 first, and running it again changes nothing. Cell addresses are in `config/settings.toml` `[sheet]`.
+
+## Valuation by tier
+
+Rick Rule's test, as the user summarised it: **enterprise value against the NPV of a company's assets at a
+pessimistic, a base and an optimistic price deck**, each tier valued as the business it is. Spot prices are only a
+cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `docs/specs/tier-valuation-spec.md`.)
+
+- **Decks** are yours, in `config/settings.toml` [scenarios] (Pessimistic, Base, Optimistic), with each metal set on
+  its own and its source beside it. Nothing in the code depends on their values.
+- **Producers**: operating cash flow (trailing 12 months) minus sustaining capital spending, including capitalized
+  stripping and sustaining lease payments (`data/research/capex_periods.csv`, built by `research sustaining`), or
+  free cash flow where a company doesn't split sustaining from growth (labelled "FCF basis: sustaining not
+  recorded"). Re-priced to each deck by revenue mix, for the shorter of the reserve life and 10 years, with no
+  terminal value. The pessimistic deck also raises costs by `[valuation] pessimistic_cost_increase`. A committed
+  growth project (a construction decision and a published study) adds its risk-adjusted study NPV.
+- **Royalties**: operating cash flow at each deck as a perpetuity at the discount rate, with no growth (no
+  sustaining spending; new deals and discoveries are the upside).
+- **Developers**: each study's own cash-flow table rebuilt at our discount rate and the deck
+  (`data/research/projects.csv`, `project_cashflows.csv`; `research studies` checks each rebuild against the
+  published NPV), then discounted for the years to construction and the probability of reaching production by stage
+  (`[valuation.stage_probability]`, `[valuation.years_to_start]`), at the company's share. The build is financed as Rick Rule models it: 35% equity at a 15% discount, the
+  rest debt, and the buy-below price is the value per share after a +30% capex overrun and the shares it takes.
+- **Discount rate**: the 10-year Treasury yield + 3% + the jurisdiction add-on (the only place country risk counts).
+- **Buy level and fair value** (`[valuation.buy]`): buy below the tier's multiple of the base NPV (producers and
+  developers 0.6, royalties 1.0), and no higher than the pessimistic NPV allows (developers: per share after the
+  +30% overrun's financing); review above fair value (1.0, or 1.5 for royalties). Prices are per share, with net cash added.
+- **Run it**: `python -m minerval valuation` writes `data/derived/valuation.csv` and a validation report
+  (`out/valuation/report.txt`): what was valued on which basis, what wasn't and why, and every NAV more than 2× away
+  from the independent or consensus NAV, so a bad input shows before it reaches a buy signal. On the Sheet, PNAV
+  inputs CC:CS hold the results (`setup-sheet` adds them).
 
 ## Model portfolio from a screen
 

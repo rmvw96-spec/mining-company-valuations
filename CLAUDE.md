@@ -1,7 +1,10 @@
 # Notes for Claude: maintaining the miner ETF valuations
 
 README.md explains the project for people; this file is how Claude should run and change it.
-Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`.
+Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`. Specs follow
+`docs/specs/TEMPLATE.md`: the end state only (no build history or research write-ups; a setting's evidence goes in
+its settings comment), and acceptance criteria that each name their proof. Tick a criterion when its test passes,
+and update the item's row in the status table at the top of `docs/roadmap.md` (a test checks they agree).
 
 ## Ground rules
 
@@ -30,14 +33,16 @@ Planned work is in `docs/roadmap.md`, with a spec for each item in `docs/specs/`
 | Once, or after adding a signal | `history --backfill 2022-01-01` (`--dry-run` first) | Signal history (past dates) |
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
-| After `refresh` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, and P for country-table rows |
+| After `refresh` | `valuation` (read `out/valuation/report.txt`: what was valued, what wasn't, and NAVs far from outside views) | data/derived/valuation.csv; out/valuation/ |
+| After `refresh` and `valuation` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, CT, P for country-table rows, and CC:CG, CM:CO, CQ:CS (valuation; skipped while valuation.csv is older than pnav.csv) |
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
-| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CB; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
+| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CT; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
 | After `financials`, before buying | `screen` (report only; show the user out/screen/report.txt), then `screen --write` (`--email` for a private summary) | Model portfolio A–F, S, U–V; private/portfolio.csv, private/screen_state.json |
 | After editing the Model portfolio by hand | `portfolio-file` | private/portfolio.csv (for `backtest` and `project`) |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
+| After each quarter's MD&As (roadmap 6) | add the new year-to-date rows to `data/research/capex_periods.csv` (`research fetch` / `research find` to locate them), then `research sustaining --write` | `pnav_companies.csv` sustaining columns; cache/research/ |
 | After the royalty companies' annual filings (10-K in February, 40-F in March) | `royalty-ocf`, then review the diff of `data/research/royalty_ocf.csv` with the user and commit it | data/research/royalty_ocf.csv |
 | When the WGC publishes a quarter's AISC (Gold Demand Trends, ~a month after quarter end) | add a row to `data/research/industry_aisc.csv` with its source and publication date | the next run writes it to Signals |
 
@@ -99,8 +104,10 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
 
 - Holdings: D2:H2 and V2 (open-ended ranges to row 1000). Never write into D3:H1000 or V3:V1000.
 - PNAV inputs: C12 and D12 (to row 154), AL12:AO12 (to row 146 only), and AR12:AS12, AZ12:BE12, BJ12:BO12 and
-  BT12:BX12 and CB12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146, AR13:AS154, AZ13:BE154,
-  BJ13:BO154, BT13:BX154 or CB13:CB154. BY:CA (royalty P/OCF and own-history percentiles) are written by `signals`
+  BT12:BX12, CB12, CH12:CL12 and CP12 (to row 154; BW12 is a MAP). Never write into C13:D154, AL13:AO146,
+  AR13:AS154, AZ13:BE154, BJ13:BO154, BT13:BX154, CB13:CB154, CH13:CL154 or CP13:CP154. CC:CG, CM:CO and CQ:CS
+  (valuation by tier) are written by `financials` from data/derived/valuation.csv, and CT (minority interest,
+  which EV in AZ adds) from pnav.csv. BY:CA (royalty P/OCF and own-history percentiles) are written by `signals`
   on every run, from `data/research/royalty_ocf.csv` (annual operating cash flow from SEC filings, the record,
   written by `royalty-ocf`) and the Company history tab. H7 is a formula (the Signals cost input). AT:AW (resources), BF:BI (developer financing) and
   BP:BS (resource split) are inputs, recorded in `data/research/pnav_companies.csv` with a source for every
@@ -191,6 +198,79 @@ as RSG AU and BVN already did.
 change `[signals.thresholds]` in settings.toml and Signals G:H together, then run `signals` and check it says
 "Sheet and Python statuses agree". Don't suggest a threshold because it scored best in the sweep: on one 25-year
 period that is fitted noise. Point to plateaus, and to statuses marked "too few to judge".
+
+## Research (company filings)
+
+Lessons from the Step 0 pilot (Nov 21, 2026, `docs/specs/tier-valuation-spec.md`). Each document read and what it
+held is logged in `data/research/sources.csv`: check it before searching again, and add a row for every new one.
+
+- **The record is the filing, not a summary.** Use the MD&A, 10-K/40-F/20-F, annual information form, reserve
+  statement or NI 43-101 / S-K 1300 technical report. Results press releases often give only next year's guidance
+  (Capstone's gave 2026 sustaining capital, not 2025 actuals), and web-search summaries and call transcripts can be
+  wrong (one put Alamos's 2025 sustaining capital at $50M; its MD&A says $144.6M). Never record a figure from a
+  search summary without opening the document.
+- **Where things are:** sustaining vs growth capital in the MD&A's capital expenditures section (Newmont's 10-K
+  splits it by mine for three years; Capstone's MD&A by mine for two). Production in the MD&A highlights table
+  (often three years). Reserves in the year-end reserve release or the AIF; the MD&A may give only a total without
+  saying attributable or 100%. Study cash flows in the technical report's economic analysis (Section 22 in NI
+  43-101 reports: an annual production and cash-flow table, and usually NPV across prices and discount rates).
+- **Bases and units to check every time:** attributable vs 100% (Mantoverde is 70% Capstone's); reporting currency
+  (Teck reports in C$; OR Royalties in C$ before 2024); gold-equivalent ratios are each company's own (Andean uses
+  90:1); capitalized stripping is reported separately from sustaining capital by some open-pit miners (Teck,
+  Capstone) and counts as sustaining spending (the user, Nov 21, 2026).
+- **Sustaining spending** (roadmap 6) is recorded per filing period in `data/research/capex_periods.csv`, never as a
+  trailing figure: each row is what one filing reports for its own period (FY, 9M, 6M or a quarter), in its currency,
+  on the **consolidated** basis (the basis of Yahoo's operating cash flow; Mantoverde at 100%). `research sustaining`
+  builds the trailing 12 months to each company's financials date (FY + year to date − the prior year to date, or
+  the quarters where a company reports only quarters, as Amerigo does), converting at period-average rates. Take the
+  prior-year comparative from the current filing, not last year's (restatements, discontinued operations).
+  Sustaining lease payments are added (`sustaining_leases`; the user, Nov 21, 2026). EDGAR filers' quarterly exhibits can be listed from
+  `data.sec.gov/submissions/CIK##########.json` and each filing's `index.json`; Canadian-only juniors post MD&As on
+  their own sites (Orezone, Andean and Amerigo do).
+- **Recording sustaining spending (lessons from 31 producers, Nov 2026):**
+  - Use the basis of the cash flow it is subtracted from: consolidated. A joint venture that is equity-accounted
+    (Kibali for AngloGold, Red Chris for Imperial) is out; one proportionately consolidated (Côté for IAMGOLD,
+    Tropicana for AngloGold, NGM for Newmont) is in at the company's share. AngloGold's "managed operations" is its
+    consolidated figure; its "Group total" includes the equity-accounted joint ventures.
+  - Record figures as published. Where a company publishes one combined figure (OceanaGold "sustaining capital and
+    leases"; First Quantum "sustaining capital expenditure and deferred stripping"; Torex sustaining including lease
+    payments; Lundin sustaining including waste stripping), record it in `sustaining` and say so in `notes`
+    (`stripping_in_sustaining` = yes where stripping is inside), rather than splitting it by arithmetic.
+  - Prefer the consolidated highlights or free cash flow table to the AISC reconciliation for capital (AISC tables are
+    often gold-only or attributable); take leases from the AISC reconciliation when that is the only place they appear.
+  - Check a period total against its parts when you can (First Quantum: nine months 363 + Q4 133 = FY 496).
+  - Some companies split sustaining only in some periods (Imperial: FY2025 yes, 2026 year to date no). Record what
+    exists; the blank figure leaves the trailing 12 months unbuilt and the company on the free-cash-flow fallback.
+  - A company that newly listed in the US files its earlier MD&As inside a 40FR12B registration (OceanaGold March
+    2026, Torex November 2026); `research filings` includes that form.
+  - Some filings are page images with a scrambled text layer (Gold Fields' 6-Ks: `rr.htm` plus `rr001.jpg`...): find
+    the page from the text (line n of the converted text is about image n-1), download the `.jpg` from the filing
+    folder, crop it with PIL if needed, and read it as an image. Say so in `notes`.
+  - Some companies publish sustaining spending only per quarter (Buenaventura's AISC appendix): record the four
+    quarters to the financials date as 3M rows; `research sustaining` adds them.
+  - EDGAR rate-limits at about 10 requests a second: run scans one company at a time (the downloader pauses and
+    retries on 429).
+  - Add rows to `capex_periods.csv` by column name (a CSV writer), never by hand-counted commas: one missing comma
+    shifts every later field, which the record-file test catches.
+  - Where a company's consolidated figure includes an equity-accounted share, take it out and say so in `notes`
+    (Pan American's 44% of Juanicipio).
+  - Where a release's text and its tables disagree, record the tables and note the gap (Coeur Q3 2026: text
+    ~$122M, mine tables $104M).
+  - AISC "exploration costs" can be expensed, so they're already in operating cash flow: check the income
+    statement and take them out of a combined figure (Americas Gold & Silver).
+  - A company whose only mine was under construction has zero sustaining spending for those periods: record 0
+    with the reason (Rio2, 2025).
+- **A press release that supersedes a study** (new economics, no new technical report) is not used for an NPV
+  (Perpetua, March 2026).
+- **Juniors** split sustaining from growth less often and publish reserves less often; their MD&As may be on
+  SEDAR+ only. Where a figure isn't published, leave it blank: never estimate.
+- **Fetching:** SEC EDGAR HTML reads directly. PDFs (MD&As, 10-K PDFs, technical reports) come back as raw bytes:
+  download with `curl` into a new folder in the scratchpad and run `pdftotext -layout`, then grep. Technical reports
+  are often over the fetch tool's 10 MB limit, so download them. Some investor-site links serve HTML instead of the
+  PDF. SEDAR+ answers scripts with a Radware bot challenge (tested Nov 22, 2026): ask the user to save SEDAR+
+  documents to `private/`, giving the profile, document type and filing date, or the document links. London Stock Exchange pages refuse automated requests: read the announcements on
+  investegate.co.uk. ASX PDFs download from `announcements.asx.com.au/asxpdf/<date>/pdf/<id>.pdf`; Lundin-group
+  releases from `mb.cision.com`. Australian producers report a June year in A$.
 
 ## Data source notes
 

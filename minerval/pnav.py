@@ -56,6 +56,8 @@ def inputs(X: pd.DataFrame, metals: Metals) -> pd.DataFrame:
         if has and m.kind == "company":
             d["mcap_m"], d["net_cash_m"] = m.mcap / 1e6, (m.cash - m.debt) / 1e6
             d["cash_m"] = m.cash / 1e6
+            mi = m.get("minority")
+            d["minority_m"] = mi / 1e6 if mi is not None and pd.notna(mi) else 0.0
             d["fcf_12m_m"] = m.fcf / 1e6 if pd.notna(m.fcf) else np.nan
         if isinstance(r.basis, str) and r.basis:
             rev = float(m.revenue) if has and pd.notna(m.revenue) and m.revenue > 0 else 0.0

@@ -5,9 +5,13 @@ Rows are matched by key, not by position, so added or re-sorted rows are fine:
   Holdings downside   columns D:J and M:Q, matched on fund (A) + Sprott ticker (L); K is a formula
   PNAV inputs         columns E:H and M:O, matched on the Yahoo symbol (AP). Rows with a fixed price
                       (AQ, the physical trusts) are skipped, and F:H and M:O are written only where
-                      column I names a cash-flow basis, since I:L and P:S are research inputs.
+                      column I names a cash-flow basis, since I:L and P:S are research inputs; P (the
+                      jurisdiction add-on) is written on every row whose add-on comes from the country table
+                      or an override, developers' included, and hand-set rows are left alone.
                       Once `setup-sheet` has added them: AX:AY (cash, 12-month free cash flow) on every
-                      row, and Holdings downside R (cost base, revenue - FCF).
+                      row, and Holdings downside R (cost base, revenue - FCF); CC:CG, CM:CO and CQ:CS
+                      (valuation by tier) from data/derived/valuation.csv, written by `valuation`, which must
+                      be newer than pnav.csv. The formula columns CH:CL and CP are never written.
 Cells whose new value is missing are cleared, so stale figures don't linger.
 """
 import math
@@ -65,8 +69,9 @@ def downside_rows(M: pd.DataFrame) -> dict:
 
 
 def pnav_rows(I: pd.DataFrame) -> dict:
-    """{yahoo symbol: ([E], [F, G, H], [M, N, O], [AX, AY], [P] or None)}. P (the jurisdiction add-on, as a fraction)
-    only for rows whose add-on comes from the country table or an override; manual rows keep the Sheet's value."""
+    """{yahoo symbol: ([E], [F, G, H], [M, N, O], [AX, AY], [P] or None, [CT])}. P (the jurisdiction add-on, as a
+    fraction) only for rows whose add-on comes from the country table or an override; manual rows keep the Sheet's
+    value. CT (minority interest, $M) is blank where none is reported."""
     out = {}
     for _, r in I.iterrows():
         if not isinstance(r.yahoo, str):
@@ -78,7 +83,30 @@ def pnav_rows(I: pd.DataFrame) -> dict:
         addon = None
         if str(r.get("addon_basis", "")) in ("table", "override") and pd.notna(r.get("addon_pct_points")):
             addon = [round(float(r.addon_pct_points) / 100, 6)]
-        out.setdefault(r.yahoo, (e, fgh, mno, cash, addon))
+        mi = r.get("minority_m")
+        minority = [_num(mi, 2) if isinstance(mi, (int, float)) and mi > 0 else CLEAR]
+        out.setdefault(r.yahoo, (e, fgh, mno, cash, addon, minority))
+    return out
+
+
+def _text(v):
+    return CLEAR if v is None or (isinstance(v, float) and math.isnan(v)) or str(v).strip() == "" else str(v)
+
+
+def valuation_rows(V: pd.DataFrame) -> dict:
+    """{yahoo symbol: ([CC:CG], [CM:CO], [CQ:CS])} from data/derived/valuation.csv: the basis, NPV at each deck and
+    base-deck cash flow; dilution at each overrun and the financing note; buy-below, fair value and why."""
+    c = settings()["valuation"]
+    out = {}
+    for _, r in V.iterrows():
+        y = r.get("yahoo")
+        if not isinstance(y, str) or not y.strip():
+            continue
+        left = [_text(r.get("valuation_basis"))] + [_num(r.get(f"npv {d}"), 1) for d in c["decks"]] \
+            + [_num(r.get("cf_base"), 1)]
+        mid = [_num(r.get(f"dilution +{o:.0%}"), 4) for o in c["capex_overrun"]] + [_text(r.get("financing_note"))]
+        right = [_num(r.get("buy_below"), 2), _num(r.get("fair_value"), 2), _text(r.get("why"))]
+        out.setdefault(y.strip(), (left, mid, right))
     return out
 
 
@@ -182,7 +210,7 @@ def run(sheet, dry_run=False, out_dir=None):
     basis = column(sheet.read(tab, f"I{a}:I{b}"), a)
     P = S["pnav_inputs"]
     has_cash = _has_header(sheet, tab, f"{P['cash']}{a - 1}", PNAV_HEADERS["cash"])
-    e, fgh, mno, cash, addon, unknown = {}, {}, {}, {}, {}, []
+    e, fgh, mno, cash, addon, minority, unknown = {}, {}, {}, {}, {}, {}, []
     for r, s in sym.items():
         s = str(s).strip()
         if not s or r in fixed:
@@ -192,10 +220,11 @@ def run(sheet, dry_run=False, out_dir=None):
             continue
         e[r] = want[s][0]
         cash[r] = want[s][3]
+        minority[r] = want[s][5]
         if str(basis.get(r, "")).strip():
             fgh[r], mno[r] = want[s][1], want[s][2]
-            if want[s][4] is not None:
-                addon[r] = want[s][4]
+        if want[s][4] is not None:              # a country-table or override add-on, developers' included
+            addon[r] = want[s][4]
     ch = _changes(sheet, tab, "E", e) + _changes(sheet, tab, "F", fgh) + _changes(sheet, tab, "M", mno)
     blocks += blocks_by_row(tab, "E", e) + blocks_by_row(tab, "F", fgh) + blocks_by_row(tab, "M", mno)
     if has_cash:
@@ -211,6 +240,38 @@ def run(sheet, dry_run=False, out_dir=None):
                    f"({n_add} change); the other rows keep the Sheet's hand-set figure.")
     else:
         rep.append(f"  {tab}!{P['addon']}{a - 1} isn't headed {ADDON_HEADER!r}: the add-on was not written.")
+    from .layout import MINORITY_HEADER
+    if _has_header(sheet, tab, f"{P['minority']}{a - 1}", MINORITY_HEADER):
+        n_mi = _changes(sheet, tab, P["minority"], minority)
+        ch += n_mi
+        blocks += blocks_by_row(tab, P["minority"], minority)
+        rep.append(f"  Minority interest ({P['minority']}): {sum(v[0] != CLEAR for v in minority.values())} rows "
+                   f"with a figure ({n_mi} cells change); EV in {P['ev']} adds it.")
+    else:
+        rep.append(f"  {tab}!{P['minority']} (minority interest) not set up yet: run `setup-sheet`.")
+    # Valuation by tier: CC:CG, CM:CO, CQ:CS (CH:CL and CP are formulas over today's EV)
+    from .layout import valuation_headers
+    span = f"{P['valuation_basis']}:{P['valuation_why']}"
+    vpath = DERIVED / "valuation.csv"
+    if not _has_header(sheet, tab, f"{P['valuation_basis']}{a - 1}", valuation_headers()["valuation_basis"]):
+        rep.append(f"  {tab}!{span} (valuation) not set up yet: run `setup-sheet`.")
+    elif not vpath.exists():
+        rep.append(f"  Valuation ({span}): no {vpath.name}: run `valuation` first.")
+    elif vpath.stat().st_mtime < (DERIVED / "pnav.csv").stat().st_mtime:
+        rep.append(f"  Valuation ({span}): {vpath.name} is older than pnav.csv: run `valuation` first.")
+    else:
+        want_v = valuation_rows(pd.read_csv(vpath))
+        vl, vm, vr = {}, {}, {}
+        for r, s in sym.items():
+            s = str(s).strip()
+            if s and r not in fixed and s in want_v:
+                vl[r], vm[r], vr[r] = want_v[s]
+        n_v = (_changes(sheet, tab, P["valuation_basis"], vl) + _changes(sheet, tab, P["dilution_15"], vm)
+               + _changes(sheet, tab, P["buy_below_value"], vr))
+        ch += n_v
+        blocks += (blocks_by_row(tab, P["valuation_basis"], vl) + blocks_by_row(tab, P["dilution_15"], vm)
+                   + blocks_by_row(tab, P["buy_below_value"], vr))
+        rep.append(f"  Valuation ({span}): {len(vl)} rows ({n_v} cells change).")
     rep.append(f"{tab}: {len(e)} rows matched, {ch} cells change.")
     if unknown:
         rep.append(f"  Yahoo symbols in {tab}!AP with no data (left as they were): " + ", ".join(unknown))
