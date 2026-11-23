@@ -392,6 +392,13 @@ cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `
   (`out/valuation/report.txt`): what was valued on which basis, what wasn't and why, and every NAV more than 2× away
   from the independent or consensus NAV, so a bad input shows before it reaches a buy signal. On the Sheet, PNAV
   inputs CC:CS hold the results (`setup-sheet` adds them).
+- **Coverage** (`data/research/coverage.csv`; spec: `docs/specs/valuation-coverage-spec.md`): one row for each
+  company the valuation doesn't fully cover, by gap (`sustaining` for a producer on the free-cash-flow fallback,
+  `study` for a developer without a study's cash flows, `growth_project` for a committed project not valued,
+  `out_of_scope` for explorers, physical metal and the like), with its status (to research, not published, waiting
+  with a due month, out of scope), the next step and the source. A test keeps it complete against the research
+  files, and the report's Coverage section counts it, names `waiting` rows past due and any flagged NAV no row
+  explains.
 
 ## Model portfolio from a screen
 

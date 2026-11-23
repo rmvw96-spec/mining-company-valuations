@@ -264,6 +264,38 @@ def test_roadmap_status_matches_the_specs():
     assert phase <= {r[0] for r in rows}, f"phase rows missing from the status table: {sorted(phase - {r[0] for r in rows})}"
 
 
+def test_coverage_record_is_well_formed():
+    """data/research/coverage.csv (valuation-coverage A1): the fixed columns, a gap and status from the allowed sets
+    (an out_of_scope gap is "out of scope" and nothing else is), one row per company and gap, a next step on every
+    open row, `due` as YYYY-MM on `waiting` rows only, and an https source on `not published` and `waiting` rows."""
+    from minerval import coverage
+    K = coverage.load()
+    R = pd.read_csv(DATA / "research" / "pnav_companies.csv")
+    assert list(K.columns) == coverage.COLS
+    assert set(K.gap) <= set(coverage.GAPS) and set(K.status) <= set(coverage.STATUSES)
+    assert (K.gap.eq("out_of_scope") == K.status.eq("out of scope")).all()
+    assert set(K.ticker) <= set(R.ticker), sorted(set(K.ticker) - set(R.ticker))
+    assert not K.duplicated(["ticker", "gap"]).any(), K[K.duplicated(["ticker", "gap"])].ticker.tolist()
+    open_ = K[K.status.ne("out of scope")]
+    assert open_.next_step.ne("").all(), open_[open_.next_step.eq("")].ticker.tolist()
+    waiting = K.status.eq("waiting")
+    assert K.loc[waiting, "due"].str.fullmatch(r"20\d\d-(0[1-9]|1[0-2])").all()
+    assert K.loc[~waiting, "due"].eq("").all()
+    cited = K[K.status.isin(["not published", "waiting"])]
+    assert cited.source.str.startswith("https://").all(), cited[~cited.source.str.startswith("https://")].ticker.tolist()
+
+
+def test_every_valuation_gap_has_a_coverage_row():
+    """valuation-coverage A2: every company in pnav_companies.csv is valued from its research (a royalty, a producer
+    with sustaining built, a developer with a study's cash flows) or has a coverage row (a producer on the fallback a
+    `sustaining` one, a developer without a study's cash flows a `study` one), and no row stays after its gap
+    closes."""
+    from minerval import coverage
+    from minerval import studies as S
+    P, C = S.load()
+    assert coverage.problems(pd.read_csv(DATA / "research" / "pnav_companies.csv"), P, C, coverage.load()) == []
+
+
 STUDY_STAGES = {"PEA", "PFS", "FS", "permitted", "construction", "none"}
 
 

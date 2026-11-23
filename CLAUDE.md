@@ -33,7 +33,7 @@ and update the item's row in the status table at the top of `docs/roadmap.md` (a
 | Once, or after adding a signal | `history --backfill 2022-01-01` (`--dry-run` first) | Signal history (past dates) |
 | After earnings season | `prices --shares` | Holdings U (review >10% changes in the report) |
 | After earnings season | `refresh` = `fetch` + `compute` | cache/, data/derived/ |
-| After `refresh` | `valuation` (read `out/valuation/report.txt`: what was valued, what wasn't, and NAVs far from outside views) | data/derived/valuation.csv; out/valuation/ |
+| After `refresh` | `valuation` (read `out/valuation/report.txt`: what was valued, what wasn't, NAVs far from outside views, and the Coverage section: `waiting` rows past due and flags no `data/research/coverage.csv` row explains) | data/derived/valuation.csv; out/valuation/ |
 | After `refresh` and `valuation` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, CT, P for country-table rows, and CC:CG, CM:CO, CQ:CS (valuation; skipped while valuation.csv is older than pnav.csv) |
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
@@ -96,6 +96,10 @@ Reports go to `out/<command>/report.txt`.
    `jurisdiction --build private/fraser-<year>-scores.csv --source "..." --as-of YYYY-MM`. Review the changes
    with the user before `financials` writes them. Never commit the scores or the PDF: the survey is copyright,
    and only the rounded add-ons go in the repo.
+9. Coverage: recheck every `not published` and `waiting` row in `data/research/coverage.csv` against the new
+   filings (and its `source`). Record what is now published and remove the row; otherwise update its source,
+   next step or `due`. Then `valuation`, and read its Coverage section: `waiting` rows past due and flags no row
+   explains.
 
 ## The Sheet: what not to touch
 
@@ -204,6 +208,13 @@ period that is fitted noise. Point to plateaus, and to statuses marked "too few 
 Lessons from the Step 0 pilot (Nov 21, 2026, `docs/specs/tier-valuation-spec.md`). Each document read and what it
 held is logged in `data/research/sources.csv`: check it before searching again, and add a row for every new one.
 
+- **Coverage record** (`data/research/coverage.csv`, roadmap 6b): what the valuation doesn't cover yet, and what
+  closes each gap. Check it before choosing what to research. When research closes a gap (sustaining built, a study's
+  cash flows recorded, a growth project valued), remove its row in the same commit; when research finds a new gap
+  (a committed project with no study, a split not published), add a row with its status, next step and source
+  (https, required for `not published` and `waiting`; `due` as YYYY-MM on `waiting` rows). Write it with a CSV writer,
+  by column name. `test_every_valuation_gap_has_a_coverage_row` fails when a company is neither valued nor explained,
+  or a closed gap keeps its row. `not published` and `waiting` rows are rechecked each earnings season (step 9 above).
 - **The record is the filing, not a summary.** Use the MD&A, 10-K/40-F/20-F, annual information form, reserve
   statement or NI 43-101 / S-K 1300 technical report. Results press releases often give only next year's guidance
   (Capstone's gave 2026 sustaining capital, not 2025 actuals), and web-search summaries and call transcripts can be
