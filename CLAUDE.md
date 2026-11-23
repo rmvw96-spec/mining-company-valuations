@@ -251,6 +251,10 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
     retries on 429).
   - Add rows to `capex_periods.csv` by column name (a CSV writer), never by hand-counted commas: one missing comma
     shifts every later field, which the record-file test catches.
+  - Where a company's consolidated figure includes an equity-accounted share, take it out and say so in `notes`
+    (Pan American's 44% of Juanicipio).
+  - Where a release's text and its tables disagree, record the tables and note the gap (Coeur Q3 2026: text
+    ~$122M, mine tables $104M).
 - **A press release that supersedes a study** (new economics, no new technical report) is not used for an NPV
   (Perpetua, March 2026).
 - **Juniors** split sustaining from growth less often and publish reserves less often; their MD&As may be on
@@ -258,7 +262,9 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
 - **Fetching:** SEC EDGAR HTML reads directly. PDFs (MD&As, 10-K PDFs, technical reports) come back as raw bytes:
   download with `curl` into a new folder in the scratchpad and run `pdftotext -layout`, then grep. Technical reports
   are often over the fetch tool's 10 MB limit, so download them. Some investor-site links serve HTML instead of the
-  PDF. SEDAR+ hasn't been tested.
+  PDF. SEDAR+ hasn't been tested. London Stock Exchange pages refuse automated requests: read the announcements on
+  investegate.co.uk. ASX PDFs download from `announcements.asx.com.au/asxpdf/<date>/pdf/<id>.pdf`; Lundin-group
+  releases from `mb.cision.com`. Australian producers report a June year in A$.
 
 ## Data source notes
 
