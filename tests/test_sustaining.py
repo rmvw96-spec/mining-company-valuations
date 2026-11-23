@@ -114,6 +114,29 @@ def test_edgar_filings_lists_large_documents():
                   "docs": ["https://www.sec.gov/Archives/edgar/data/42/000126000001/ex991.htm"]}]
 
 
+def test_edgar_filings_skips_a_filing_whose_index_is_missing():
+    """Some filings' index.json returns 404 (Alamos and Vizsla, Nov 2026): skip that filing, keep the rest."""
+    import json
+
+    import requests
+    pages = {
+        "https://data.sec.gov/submissions/CIK0000000042.json": {"filings": {"recent": {
+            "form": ["6-K", "6-K"], "filingDate": ["2026-10-29", "2026-11-05"],
+            "accessionNumber": ["0001-26-000001", "0001-26-000003"]}}},
+        "https://www.sec.gov/Archives/edgar/data/42/000126000001/index.json": {"directory": {"item": [
+            {"name": "ex991.htm", "size": "500000"}]}},
+    }
+
+    def get(u):
+        if u not in pages:
+            r = requests.Response()
+            r.status_code, r.url = 404, u
+            raise requests.HTTPError("404 Client Error: Not Found", response=r)
+        return json.dumps(pages[u]).encode()
+    F = SU.edgar_filings(42, "2026-01-01", get=get)
+    assert [f["date"] for f in F] == ["2026-10-29"]
+
+
 def test_ttm_from_four_quarters_without_a_fiscal_year():
     q = [("2025-10-01", "2025-12-31", 40.0), ("2026-01-01", "2026-03-31", 20.0), ("2026-04-01", "2026-06-30", 30.0),
          ("2026-07-01", "2026-09-30", 10.0)]
