@@ -263,7 +263,8 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
 - **Fetching:** SEC EDGAR HTML reads directly. PDFs (MD&As, 10-K PDFs, technical reports) come back as raw bytes:
   download with `curl` into a new folder in the scratchpad and run `pdftotext -layout`, then grep. Technical reports
   are often over the fetch tool's 10 MB limit, so download them. Some investor-site links serve HTML instead of the
-  PDF. SEDAR+ hasn't been tested. London Stock Exchange pages refuse automated requests: read the announcements on
+  PDF. SEDAR+ answers scripts with a Radware bot challenge (tested Nov 22, 2026): ask the user to save SEDAR+
+  documents to `private/`, giving the profile, document type and filing date, or the document links. London Stock Exchange pages refuse automated requests: read the announcements on
   investegate.co.uk. ASX PDFs download from `announcements.asx.com.au/asxpdf/<date>/pdf/<id>.pdf`; Lundin-group
   releases from `mb.cision.com`. Australian producers report a June year in A$.
 
