@@ -270,6 +270,8 @@ All by the user, Nov 21, 2026:
 - A committed project already under construction (Skouries, Oko West) is valued from first production, at the
   guided date, less the remaining capex the company states, rather than re-pricing the whole study from today or
   leaving it out until production (the user, 2026-11-22).
+- Oko West stays unvalued until the combined Oko West / Oko-Ghanie FS (mid-2027): its gold price grid can't come
+  from its own cash-flow table, so the re-pricing check fails (the user, 2026-11-22).
 
 ## Open questions
 
