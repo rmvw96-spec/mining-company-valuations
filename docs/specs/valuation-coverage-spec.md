@@ -78,8 +78,9 @@ tier" section names the record.
   passes and `valuation` names no unexplained flag (Nov 23, 2026: 100 rows; no `waiting` row past due)
 - [x] A5. CLAUDE.md and the README describe the record and when to update it. — `grep -n coverage.csv CLAUDE.md
   README.md` shows both
-- [ ] A6. (data) No `sustaining` row is still `to research`: each producer's split is recorded or marked `not
-  published` with its source. — the report's Coverage counts
+- [x] A6. (data) No `sustaining` row is still `to research`: each producer's split is recorded or marked `not
+  published` with its source. — the report's Coverage counts (Nov 23, 2026: 19 `sustaining` rows, 17 `not
+  published`, 2 `waiting`, none `to research`)
 - [ ] A7. (data) No `study` or `growth_project` row is still `to research`: each is recorded, `waiting` with a
   date, or `not published` with its source. — the report's Coverage counts
 
