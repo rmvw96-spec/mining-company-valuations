@@ -69,7 +69,14 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
   screen and the buy signal.
 - **Pipeline:** a growth project counts only when it is committed (`projects.csv` `committed` = yes: construction
   decision taken) and has a published study. Its risk-adjusted NPV (Part 3), at the company's share, is added;
-  one whose construction is under way is valued from first production (Part 3, step 4).
+  one whose construction is under way is valued from first production (Part 3, step 4). An expansion of an
+  operating mine whose study covers the whole operation counts only as its increment over the published base case
+  of the same operation, which trailing cash flow already holds: the expansion's row names that study in `baseline`
+  (the base case is marked superseded, so it isn't valued on its own); each is rebuilt and checked on its own, the
+  base case is subtracted by calendar year (`first_year`, the calendar year of study year 1), from today (past
+  years out, the current year in proportion to what is left of it), discounted from today in the expansion study's
+  convention, × the construction probability × the company's share. Without a published base case the expansion
+  isn't valued, and its `growth_project` row says so.
 - **Cost inflation:** the pessimistic deck runs with costs raised by `[valuation] pessimistic_cost_increase`
   (the existing cost-change function; roadmap 4a's company AISC improves it). Base and optimistic use reported costs.
 - **Measures:** EV / NPV at each deck; sustaining FCF yield = base-deck cash flow ÷ EV; downside test: EV ≤
@@ -82,10 +89,12 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
   `sensitivity`, initial capex, remaining capex to completion (as the company states it, once construction is
   under way), `construction_start`, `first_production`, `permits`, `committed`, `superseded`, sources), and
   `data/research/project_cashflows.csv`, one row per study and year (`studies.CASHFLOW_COLS`: pre- and after-tax
-  free cash flow, payable metal by metal; year 1 = first construction year).
+  free cash flow, payable metal by metal, and the year's own study prices where the study's deck changes by year,
+  `study_prices`, blank meaning the row's `study_price`; year 1 = first construction year, or the study's first
+  year for an operating mine). `projects.csv` also has `baseline` and `first_year` for expansions (Part 2).
 - **Method** (`minerval/studies.py`, `research studies`):
-  1. **Re-price each year:** after-tax cash flow + tax share × net revenue share × Σ payable × (deck − study
-     price). Tax share = 1 − the study's marginal tax rate (stated, or derived from its stated terms and noted);
+  1. **Re-price each year:** after-tax cash flow + tax share × net revenue share × Σ payable × (deck − that year's
+     study price). Tax share = 1 − the study's marginal tax rate (stated, or derived from its stated terms and noted);
      the average after-tax ÷ pre-tax ratio only when there is none, flagged.
   2. **Discount** at our rate, mid-year, end-year or from the start of year 1 (`start-year`) as the study does,
      over the whole mine life.
@@ -249,6 +258,13 @@ Valuation (to build):
 - [ ] A31. (data) Every Model portfolio candidate has an NPV at the three decks with its basis shown: 43 of 46 on
   Nov 23, 2026; open: Koryx (PFS due early Jan 2027), KSM (its table aggregates years), Diablillos (DFS on SEDAR+
   only). — the `screen` report's Valuation line
+- [x] A32. An expansion with a published base case is valued as its increment over it (by calendar year, from
+  today), the base case isn't valued on its own, and a study whose deck changes by year is re-priced year by year. —
+  `tests/test_studies.py::test_an_expansion_is_valued_as_its_increment_over_the_base_case`,
+  `tests/test_studies.py::test_an_expansion_needs_its_base_case_and_calendar_years`,
+  `tests/test_studies.py::test_baseline_lookup_finds_the_base_case_row`,
+  `tests/test_studies.py::test_study_prices_can_vary_by_year`,
+  `tests/test_valuation.py::test_an_expansion_gets_its_base_case_and_the_base_case_isnt_added_on_its_own`
 
 ## Decisions
 
@@ -280,6 +296,9 @@ All by the user, Nov 21, 2026:
   permit and investment decision pending); A25 split into the report check and a data follow-up (A31).
 - Oko West stays unvalued until the combined Oko West / Oko-Ghanie FS (mid-2027): its gold price grid can't come
   from its own cash-flow table, so the re-pricing check fails (the user, 2026-11-22).
+- An expansion whose study covers the whole operation (Island Gold District, Valentine Phase 2, the Fekola complex)
+  counts only as its increment over a published base case of the same operation; without one it isn't valued
+  (the user, 2026-11-23).
 
 ## Open questions
 

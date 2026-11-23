@@ -44,11 +44,11 @@ UNIT = {"gold": 1e3, "silver": 1e3, "copper": 1e6, "lead": 1e6, "zinc": 1e6}   #
 PROJECT_COLS = ["ticker", "project", "attributable_pct", "study_type", "study_date", "study_price",
                 "study_npv_usd_m", "study_discount_rate", "discounting", "marginal_tax_rate", "net_revenue_share", "sensitivity",
                 "initial_capex_usd_m", "remaining_capex_usd_m", "construction_start", "first_production", "permits",
-                "committed", "superseded",
+                "committed", "superseded", "baseline", "first_year",
                 "source", "as_of", "notes"]
 CASHFLOW_COLS = ["ticker", "project", "study_date", "year", "pre_tax_fcf_usd_m", "post_tax_fcf_usd_m",
                  "payable_gold_koz", "payable_silver_koz", "payable_copper_mlb", "payable_lead_mlb",
-                 "payable_zinc_mlb", "source"]
+                 "payable_zinc_mlb", "study_prices", "source"]
 STUDY_TYPES = ["PEA", "PFS", "FS", "construction"]
 STAGES = ["PEA", "PFS", "FS", "permitted", "construction"]       # [valuation.stage_probability] keys, least to most advanced
 
@@ -123,19 +123,33 @@ def tax_share(F: pd.DataFrame) -> float | None:
     return float(post / pre)
 
 
-def npv(F: pd.DataFrame, rate: float, prices: dict, study_prices: dict, tshare: float, rev_share: float,
-        discounting: str = "mid-year") -> float:
-    """The study's after-tax cash flows re-priced to `prices` and discounted at `rate` (US$M)."""
-    shift = {"end-year": 1.0, "start-year": 0.0}.get(discounting, 0.5)     # mid-year unless the study says otherwise
-    tot = 0.0
+def repriced(F: pd.DataFrame, prices: dict, study_prices: dict, tshare: float, rev_share: float,
+             rel: float | None = None) -> pd.Series:
+    """Each study year's after-tax cash flow re-priced to `prices` (US$M, by study year). A year's study prices are
+    its `study_prices` where the study's deck varies by year, else `study_prices`; a metal not in `prices` stays at
+    the study's price. `rel` re-prices every metal to that multiple of the year's study price (the "all -10%"
+    sensitivity rows) instead."""
+    out = {}
     for _, r in F.iterrows():
+        own = str(r.get("study_prices", "") or "").strip()
+        sp = {**study_prices, **parse_prices(own)} if own and own.lower() != "nan" else study_prices
+        px = {m: v * rel for m, v in sp.items()} if rel is not None else prices
         cf = r.post_tax_fcf_usd_m
         for m, col in METALS.items():
             q = r[col]
-            if q == q and m in prices and m in study_prices:
-                cf += tshare * rev_share * q * UNIT[m] * (prices[m] - study_prices[m]) / 1e6
-        tot += cf / (1 + rate) ** (r.year - 1 + shift)
-    return tot
+            if q == q and m in px and m in sp:
+                cf += tshare * rev_share * q * UNIT[m] * (px[m] - sp[m]) / 1e6
+        out[int(r.year)] = cf
+    return pd.Series(out, dtype=float)
+
+
+def npv(F: pd.DataFrame, rate: float, prices: dict, study_prices: dict, tshare: float, rev_share: float,
+        discounting: str = "mid-year", rel: float | None = None) -> float:
+    """The study's after-tax cash flows re-priced to `prices` (or `rel` x each year's study price) and discounted at
+    `rate` (US$M)."""
+    shift = {"end-year": 1.0, "start-year": 0.0}.get(discounting, 0.5)     # mid-year unless the study says otherwise
+    cf = repriced(F, prices, study_prices, tshare, rev_share, rel)
+    return float(sum(v / (1 + rate) ** (y - 1 + shift) for y, v in cf.items()))
 
 
 def rebuild(p, F: pd.DataFrame) -> dict:
@@ -161,7 +175,7 @@ def rebuild(p, F: pd.DataFrame) -> dict:
     pub = float(p.study_npv_usd_m) if str(p.study_npv_usd_m).strip() else None
     rate = float(p.study_discount_rate) / 100 if str(p.study_discount_rate).strip() else None
     if pub is not None and rate is not None:
-        rb = npv(F, rate, sp, sp, ts, rs, p.discounting)
+        rb = npv(F, rate, {}, sp, ts, rs, p.discounting, rel=1.0)          # each year at its own study prices
         out["rebuilt_at_study"] = rb
         diff = rb / pub - 1 if pub else np.nan
         out["npv_diff"] = diff
@@ -169,8 +183,10 @@ def rebuild(p, F: pd.DataFrame) -> dict:
             out["flags"].append(f"rebuilt NPV {rb:,.0f} vs published {pub:,.0f} ({diff:+.0%})")
     worst = 0.0
     for metal, price, v, r in parse_sensitivity(p.sensitivity):
-        px = {m: q * (1 + price) for m, q in sp.items()} if metal == "all" else {**sp, metal: price}
-        rb = npv(F, r, px, sp, ts, rs, p.discounting)
+        if metal == "all":
+            rb = npv(F, r, {}, sp, ts, rs, p.discounting, rel=1 + price)
+        else:
+            rb = npv(F, r, {metal: price}, sp, ts, rs, p.discounting)
         base = pub if pub else abs(v)                    # measured against the base NPV: a row near zero (a low price
         worst = max(worst, abs(rb - v) / base) if base else worst   # at a high rate) would otherwise blow up
     out["sensitivity_worst"] = worst if p.sensitivity else None
@@ -224,8 +240,47 @@ def years_to_start(p, today: date) -> tuple[float | None, str]:
     return float(y), f"assumed {y:g} years for {stage(p)} ([valuation.years_to_start])"
 
 
-def risk_adjusted(p, F: pd.DataFrame, prices: dict, rate: float, today: date) -> dict:
-    """NPV at our rate and `prices`, then time, probability and share. Missing pieces leave it None, with why."""
+def baseline(P: pd.DataFrame, C: pd.DataFrame, p) -> tuple | None:
+    """(row, cash flows) of the base-case study an expansion study names in `baseline` (the same ticker and project,
+    that study date), or None when it names none or the row isn't recorded."""
+    d = str(p.get("baseline", "") or "").strip()
+    if not d:
+        return None
+    rows = P[(P.ticker == p.ticker) & (P.project == p.project) & (P.study_date == d)]
+    if rows.empty:
+        return None
+    b = rows.iloc[0]
+    return b, flows(C, b)
+
+
+def _calendar(F: pd.DataFrame, p, prices: dict, chk: dict) -> pd.Series:
+    cf = repriced(F, prices, chk["study_prices"], chk["tax_share"], chk["rev_share"])
+    cf.index = cf.index + int(str(p.first_year).strip()) - 1
+    return cf
+
+
+def increment(p, F: pd.DataFrame, b, Fb: pd.DataFrame, prices: dict, rate: float, today: date,
+              chk: dict, chkb: dict) -> float:
+    """Expansion - base case, by calendar year (`first_year`), from today: past years left out, the current year in
+    proportion to what's left of it, each year discounted from today in the expansion study's convention (US$M)."""
+    d = _calendar(F, p, prices, chk).sub(_calendar(Fb, b, prices, chkb), fill_value=0.0)
+    shift = {"end-year": 1.0, "start-year": 0.0}.get(p.discounting, 0.5)
+    y0 = date(today.year, 1, 1)
+    now = today.year + (today - y0).days / (date(today.year + 1, 1, 1) - y0).days
+    tot = 0.0
+    for y, v in d.items():
+        start, end = date(int(y), 1, 1), date(int(y) + 1, 1, 1)
+        if end <= today:
+            continue
+        w = min(1.0, (end - today).days / (end - start).days)
+        tot += v * w / (1 + rate) ** max(y + shift - now, 0.0)
+    return tot
+
+
+def risk_adjusted(p, F: pd.DataFrame, prices: dict, rate: float, today: date, base: tuple | None = None) -> dict:
+    """NPV at our rate and `prices`, then time, probability and share. Missing pieces leave it None, with why.
+    An expansion study that names a `baseline` (the published base case of the same operation, already in trailing
+    cash flow) is valued as its increment over that study: `base` = (its row, its cash flows), from baseline()."""
     chk = rebuild(p, F)
     out = {"check": chk, "npv": None, "risk_adjusted": None, "why": ""}
     if str(p.superseded).strip():
@@ -234,6 +289,8 @@ def risk_adjusted(p, F: pd.DataFrame, prices: dict, rate: float, today: date) ->
     if not chk.get("ok"):
         out["why"] = "; ".join(chk["flags"]) or "rebuild failed"
         return out
+    if str(p.get("baseline", "") or "").strip():
+        return _increment_value(p, F, prices, rate, today, base, chk, out)
     building = under_construction(p, today)
     G = production_years(F) if building else F
     v = npv(G, rate, {**chk["study_prices"], **prices}, chk["study_prices"], chk["tax_share"], chk["rev_share"],
@@ -267,6 +324,30 @@ def risk_adjusted(p, F: pd.DataFrame, prices: dict, rate: float, today: date) ->
     return out
 
 
+def _increment_value(p, F, prices, rate, today, base, chk, out) -> dict:
+    if base is None:
+        out["why"] = f"base-case study {p.baseline} not recorded"
+        return out
+    b, Fb = base
+    chkb = rebuild(b, Fb)
+    if not chkb.get("ok"):
+        out["why"] = "base case: " + ("; ".join(chkb["flags"]) or "rebuild failed")
+        return out
+    if not (str(p.get("first_year", "")).strip() and str(b.get("first_year", "")).strip()):
+        out["why"] = "an expansion and its base case need first_year (the calendar year of study year 1)"
+        return out
+    v = increment(p, F, b, Fb, prices, rate, today, chk, chkb)
+    st = stage(p)
+    prob = cfg().get("stage_probability", {}).get(st)
+    share = float(p.attributable_pct) / 100 if str(p.attributable_pct).strip() else 1.0
+    out.update(npv=v, time_factor=1.0, years=0.0, stage=st, probability=prob, share=share)
+    if prob is None:
+        out["why"] = f"no probability of success set for {st} ([valuation.stage_probability])"
+    else:
+        out["risk_adjusted"] = v * prob * share
+    return out
+
+
 def report(today: date | None = None, prices: dict | None = None) -> list[str]:
     """The rebuild check and NPVs for every recorded study (offline: uses [scenarios] and the cached spot)."""
     from .price_model import Metals
@@ -293,8 +374,9 @@ def report(today: date | None = None, prices: dict | None = None) -> list[str]:
             L.append(f"  sensitivity rows: worst difference {chk['sensitivity_worst']:.1%}")
         for f in chk["flags"]:
             L.append(f"  flag: {f}")
+        base = baseline(P, C, p)
         for name, px in decks.items():
-            x = risk_adjusted(p, F, px, rate, today)
+            x = risk_adjusted(p, F, px, rate, today, base)
             if x["npv"] is None:
                 L.append(f"  {name}: no NPV ({x['why']})")
                 break

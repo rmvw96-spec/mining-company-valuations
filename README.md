@@ -376,7 +376,8 @@ cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `
   free cash flow where a company doesn't split sustaining from growth (labelled "FCF basis: sustaining not
   recorded"). Re-priced to each deck by revenue mix, for the shorter of the reserve life and 10 years, with no
   terminal value. The pessimistic deck also raises costs by `[valuation] pessimistic_cost_increase`. A committed
-  growth project (a construction decision and a published study) adds its risk-adjusted study NPV.
+  growth project (a construction decision and a published study) adds its risk-adjusted study NPV; an expansion
+  whose study covers the whole operation adds only its increment over the published base case.
 - **Royalties**: operating cash flow at each deck as a perpetuity at the discount rate, with no growth (no
   sustaining spending; new deals and discoveries are the upside).
 - **Developers**: each study's own cash-flow table rebuilt at our discount rate and the deck

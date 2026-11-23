@@ -124,7 +124,7 @@ def test_a_committed_projects_risk_adjusted_npv_is_added_and_an_uncommitted_one_
     value = {"Pessimistic": 50.0, "Base": 80.0, "Optimistic": 120.0}
     by_deck = {tuple(v.items()): d for d, v in DECKS.items()}
     monkeypatch.setattr(S, "flows", lambda C, p: None)
-    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today: {
+    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today, base=None: {
         "risk_adjusted": value[by_deck[tuple(px.items())]] * (2 if p.project == "Big" else 1), "why": ""})
     P, C = projects({"project": "Mill", "committed": "yes"}, {"project": "Big", "committed": ""},
                     {"project": "Old", "committed": "yes", "superseded": "a later study"},
@@ -141,11 +141,27 @@ def test_a_committed_project_that_cant_be_valued_is_left_out_and_named(monkeypat
 
     from minerval import studies as S
     monkeypatch.setattr(S, "flows", lambda C, p: None)
-    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today: {"risk_adjusted": None,
+    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today, base=None: {"risk_adjusted": None,
                                                                           "why": "no cash-flow table recorded"})
     P, C = projects({"project": "Mill", "committed": "yes"})
     pipe, why = V.pipeline("PRD", DECKS, 0.09, date(2026, 11, 22), P, C)
     assert pipe == {d: 0.0 for d in DECKS} and why == ["Mill: no cash-flow table recorded"]
+
+
+def test_an_expansion_gets_its_base_case_and_the_base_case_isnt_added_on_its_own(monkeypatch):
+    from datetime import date
+
+    from minerval import studies as S
+    seen = []
+    monkeypatch.setattr(S, "flows", lambda C, p: p.study_date)
+    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today, base=None: (
+        seen.append((p.study_date, None if base is None else base[0].study_date)), {"risk_adjusted": 10.0, "why": ""})[1])
+    P, C = projects({"project": "District", "study_date": "2026-03-20", "committed": "yes", "baseline": "2025-08-06"},
+                    {"project": "District", "study_date": "2025-08-06", "committed": "yes",
+                     "superseded": "by the 2026 Expansion Study (its baseline)"})
+    pipe, why = V.pipeline("PRD", DECKS, 0.09, date(2026, 11, 22), P, C)
+    assert pipe == {d: 10.0 for d in DECKS} and why == []
+    assert set(seen) == {("2026-03-20", "2025-08-06")}          # valued once per deck, with its base case
 
 
 def test_overrun_financing_uses_rules_equity_share_and_notes_a_doubling():
@@ -291,7 +307,7 @@ def inputs_frame():
 def study_stub(monkeypatch, value=400.0):
     from minerval import studies as S
     monkeypatch.setattr(S, "flows", lambda C, p: None)
-    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today: {
+    monkeypatch.setattr(S, "risk_adjusted", lambda p, F, px, rate, today, base=None: {
         "risk_adjusted": value * px["gold"] / 2200.0, "why": ""})
     P, C = projects({"ticker": "DEV", "project": "Big Pit"})
     return P, C

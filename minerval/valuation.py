@@ -222,7 +222,8 @@ def _projects_value(ticker: str, deck_prices: dict, rate: float, today, P, C, co
         sel &= P.committed.astype(str).str.strip().str.lower().eq("yes")
     for _, p in P[sel].iterrows():
         F = S.flows(C, p)
-        got = {d: S.risk_adjusted(p, F, px, rate, today) for d, px in deck_prices.items()}
+        base = S.baseline(P, C, p)
+        got = {d: S.risk_adjusted(p, F, px, rate, today, base) for d, px in deck_prices.items()}
         bad = next((x["why"] for x in got.values() if x["risk_adjusted"] is None), None)
         if bad is not None:
             why.append(f"{p.project}: {bad}")

@@ -1,279 +1,279 @@
-ticker,project,study_date,year,pre_tax_fcf_usd_m,post_tax_fcf_usd_m,payable_gold_koz,payable_silver_koz,payable_copper_mlb,payable_lead_mlb,payable_zinc_mlb,source
-NEWP,Carangas,2026-07-16,1,-259.2,-259.2,0.0,0.0,,0.0,0.0,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,2,-385.2,-385.2,0.0,0.0,,0.0,0.0,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,3,306.8,217.6,0.0,9465.0,,48.5,63.93,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,4,453.9,310.3,0.0,12506.0,,55.12,79.37,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,5,433.2,297.7,0.0,12289.0,,46.3,70.55,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,6,275.3,126.0,0.0,12798.0,,41.89,68.34,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,7,334.1,163.0,0.0,13777.0,,55.12,85.98,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,8,577.0,394.7,0.0,19961.0,,79.37,132.28,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,9,669.9,453.3,0.0,22448.0,,79.37,110.23,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,10,543.2,361.4,0.0,20610.0,,59.52,74.96,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,11,434.0,278.9,52.755,14074.0,,41.89,50.71,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,12,377.3,261.3,106.927,7300.0,,39.68,57.32,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,13,511.4,345.0,145.622,7362.0,,35.27,55.12,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,14,425.5,289.4,138.235,5690.0,,33.07,57.32,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,15,667.4,451.0,173.861,6794.0,,30.86,52.91,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,16,847.3,566.9,228.664,6313.0,,30.86,52.91,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,17,885.5,592.7,243.099,5557.0,,30.86,52.91,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,18,431.6,281.6,52.831,7870.0,,59.52,101.41,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,19,145.7,97.6,0.0,4539.0,,72.75,119.05,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,20,145.7,97.9,0.0,4539.0,,72.75,119.05,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-NEWP,Carangas,2026-07-16,21,-129.3,-129.3,0.0,1231.0,,30.86,52.91,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
-PPTA CN,Stibnite,2025-12-31,1,-447.0,-447.0,0.0,0.0,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,2,-738.0,-738.0,0.0,0.0,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,3,-685.0,-685.0,0.0,0.0,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,4,-654.0,-659.0,16.0,0.3,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,5,763.0,713.0,335.0,8.8,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,6,1292.0,1173.0,441.0,11.7,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,7,1495.0,1300.0,505.0,12.3,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,8,1498.0,1255.0,552.0,24.1,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,9,1095.0,933.0,392.0,77.8,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,10,919.0,796.0,319.0,8.0,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,11,408.0,371.0,239.0,30.3,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,12,383.0,338.0,220.0,50.1,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,13,363.0,306.0,184.0,67.4,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,14,401.0,332.0,210.0,82.6,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,15,602.0,471.0,287.0,52.7,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,16,611.0,493.0,258.0,27.2,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,17,180.0,157.0,118.0,65.9,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,18,57.0,53.0,94.0,36.3,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,19,62.0,50.0,24.0,34.5,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-PPTA CN,Stibnite,2025-12-31,20,-98.0,-98.0,0.0,0.0,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
-HYMC,Hycroft,2026-05-14,1,-672.0,-672.0,0.0,0.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,2,-1760.0,-1760.0,6.0,39.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,3,199.0,190.0,211.0,2455.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,4,338.0,311.0,236.0,5639.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,5,905.0,867.0,324.0,8474.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,6,788.0,719.0,280.0,8801.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,7,585.0,518.0,268.0,7041.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,8,646.0,576.0,272.0,7209.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,9,525.0,447.0,230.0,8556.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,10,506.0,430.0,252.0,4040.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,11,333.0,252.0,211.0,3725.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,12,330.0,277.0,197.0,5450.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,13,280.0,226.0,170.0,6154.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,14,236.0,191.0,188.0,6071.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,15,512.0,464.0,211.0,8425.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,16,355.0,270.0,193.0,5601.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,17,375.0,318.0,212.0,5092.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,18,316.0,256.0,182.0,5843.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,19,194.0,144.0,162.0,5129.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,20,259.0,228.0,184.0,5209.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,21,238.0,198.0,181.0,4221.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,22,67.0,31.0,169.0,3947.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,23,268.0,243.0,204.0,5503.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,24,862.0,798.0,312.0,8235.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,25,879.0,723.0,264.0,11546.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,26,1043.0,885.0,246.0,16806.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,27,692.0,508.0,238.0,13600.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,28,788.0,664.0,256.0,9426.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,29,780.0,644.0,184.0,14557.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,30,859.0,723.0,159.0,18152.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,31,327.0,183.0,177.0,5132.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,32,-8.0,-58.0,180.0,3251.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,33,288.0,268.0,199.0,2974.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,34,238.0,195.0,187.0,2576.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,35,222.0,182.0,183.0,2508.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,36,268.0,230.0,191.0,3042.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,37,122.0,76.0,193.0,3015.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,38,295.0,265.0,176.0,4861.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,39,518.0,465.0,209.0,7568.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,40,498.0,406.0,189.0,8511.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,41,526.0,439.0,199.0,7636.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,42,452.0,360.0,171.0,11133.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,43,752.0,666.0,193.0,13706.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,44,154.0,24.0,179.0,4522.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,45,205.0,168.0,184.0,2646.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,46,189.0,152.0,182.0,2617.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,47,-12.0,-46.0,176.0,2327.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,48,194.0,179.0,174.0,2242.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,49,362.0,333.0,190.0,4711.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,50,505.0,441.0,204.0,6600.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,51,502.0,414.0,197.0,6790.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,52,825.0,736.0,188.0,14329.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,53,542.0,401.0,102.0,9819.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,54,0.0,-76.0,0.0,0.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-HYMC,Hycroft,2026-05-14,55,-243.0,-243.0,0.0,0.0,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
-SLS CN,Warintza,2025-11-01,1,-933.0,-933.0,0.0,0.0,0.0,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,2,-1475.0,-1475.0,0.0,0.0,0.0,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,3,-1322.0,-1322.0,0.0,0.0,0.0,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,4,1485.0,1066.0,46.0,1285.0,440.9,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,5,2451.0,1785.0,55.0,2892.0,593.0,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,6,1984.0,1454.0,65.0,1794.0,518.1,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,7,1935.0,1417.0,56.0,1091.0,504.9,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,8,1289.0,984.0,52.0,1191.0,388.0,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,9,1384.0,1027.0,53.0,927.0,407.9,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,10,1494.0,1103.0,45.0,838.0,418.9,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,11,1109.0,831.0,33.0,1112.0,359.4,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,12,1211.0,917.0,42.0,1439.0,357.1,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,13,984.0,770.0,38.0,1675.0,306.4,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,14,599.0,429.0,33.0,594.0,238.1,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,15,739.0,522.0,35.0,610.0,262.3,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,16,1167.0,813.0,37.0,728.0,341.7,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,17,1216.0,843.0,40.0,668.0,357.1,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,18,1176.0,820.0,31.0,829.0,346.1,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,19,805.0,569.0,28.0,1002.0,266.8,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,20,901.0,636.0,32.0,1031.0,282.2,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,21,1166.0,813.0,31.0,1233.0,337.3,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,22,429.0,312.0,23.0,1052.0,202.8,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,23,230.0,179.0,24.0,884.0,154.3,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,24,163.0,122.0,24.0,960.0,130.1,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,25,19.0,19.0,13.0,345.0,79.4,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-SLS CN,Warintza,2025-11-01,26,-200.0,-200.0,0.0,0.0,0.0,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
-OMG CN,Omai,2026-10-02,1,-810.415,-810.415,0.0,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,2,-754.146,-754.146,0.0,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,3,175.452,175.452,192.009,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,4,313.953,280.265,250.762,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,5,639.434,533.654,339.684,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,6,632.299,511.473,358.212,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,7,705.893,563.986,370.571,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,8,695.015,549.221,365.823,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,9,653.816,508.327,361.713,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,10,636.024,485.46,367.522,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,11,705.225,538.588,383.109,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,12,717.91,552.335,375.336,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,13,722.563,552.849,373.905,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,14,690.397,529.46,354.192,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,15,764.985,582.222,373.508,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,16,846.709,638.582,392.673,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,17,868.342,655.148,384.465,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,18,1050.038,793.332,430.271,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,19,1096.096,827.037,435.231,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-OMG CN,Omai,2026-10-02,20,513.51,381.159,211.46,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
-ALDE CN,Altar,2025-09-30,1,-501.797,-501.797,0.0,0.0,0.0,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,2,-522.661,-522.661,0.0,0.0,0.0,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,3,-198.14,-198.14,9.45,83.516,97.674,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,4,447.776,355.055,18.684,148.399,267.632,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,5,506.951,390.527,18.603,95.483,255.807,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,6,447.065,345.416,13.669,96.403,228.337,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,7,208.082,136.487,22.005,0.0,184.651,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,8,143.174,108.139,16.723,84.659,200.591,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,9,409.244,388.419,36.629,16.734,224.914,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,10,199.072,140.211,35.692,119.365,185.837,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,11,226.644,222.398,38.751,215.764,187.964,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,12,452.868,449.502,43.334,215.951,209.317,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,13,451.672,363.319,44.381,218.32,227.689,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,14,584.768,475.578,41.777,197.045,241.913,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,15,634.448,489.264,40.195,172.87,235.822,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,16,634.32,496.621,37.025,188.47,254.206,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,17,623.949,466.303,36.818,201.067,253.989,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,18,702.002,541.144,35.661,226.197,250.849,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,19,652.342,495.053,31.404,230.966,246.9,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,20,561.173,407.549,28.078,224.003,244.605,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,21,497.929,348.328,26.047,224.565,234.991,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,22,497.165,360.623,18.937,241.82,231.846,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,23,492.649,376.772,11.038,247.393,235.496,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,24,435.47,319.021,3.546,254.322,248.475,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,25,423.469,298.864,0.0,225.219,248.833,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,26,566.669,445.676,0.0,190.769,256.202,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,27,528.822,392.207,0.0,171.906,244.544,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,28,340.663,214.785,0.001,118.029,227.492,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,29,295.926,207.35,2.667,77.28,214.864,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,30,252.357,172.872,4.411,80.417,189.035,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,31,192.501,149.089,7.683,121.478,172.371,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,32,157.672,126.632,7.988,143.423,163.968,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,33,168.586,124.774,7.718,200.505,165.338,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,34,299.469,252.31,7.355,262.221,171.192,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,35,305.961,238.873,7.295,263.353,168.009,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,36,211.085,145.159,4.637,283.23,167.932,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,37,177.958,115.528,3.988,292.055,165.438,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,38,286.693,226.922,4.085,273.492,165.197,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,39,230.975,169.381,4.113,258.31,161.299,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,40,167.243,117.23,1.964,274.833,163.216,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,41,156.477,107.13,1.365,284.343,157.337,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,42,222.148,179.712,0.995,233.271,159.198,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,43,250.988,207.135,0.638,200.279,157.064,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,44,182.281,132.134,0.414,160.278,153.67,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,45,153.544,102.576,6.018,103.77,140.66,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,46,204.176,158.623,9.515,115.358,128.263,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,47,157.986,117.137,15.225,151.763,100.064,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-ALDE CN,Altar,2025-09-30,48,-199.442,-223.604,14.334,135.428,67.308,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
-IE,Santa Cruz,2026-09-23,1,-485.0,-485.0,,,0.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,2,-649.0,-649.0,,,0.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,3,-352.0,-352.0,,,23.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,4,143.0,137.0,,,133.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,5,448.0,432.0,,,175.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,6,404.0,390.0,,,162.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,7,439.0,423.0,,,172.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,8,428.0,409.0,,,171.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,9,443.0,415.0,,,169.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,10,454.0,419.0,,,175.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,11,326.0,269.0,,,160.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,12,460.0,372.0,,,167.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,13,501.0,405.0,,,170.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,14,487.0,395.0,,,164.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,15,486.0,393.0,,,165.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,16,491.0,396.0,,,170.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,17,491.0,396.0,,,166.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,18,456.0,367.0,,,151.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,19,144.0,120.0,,,63.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,20,193.0,156.0,,,72.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,21,223.5,180.333,,,76.5,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,22,223.5,180.333,,,76.5,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,23,223.5,180.333,,,76.5,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,24,223.5,180.333,,,76.5,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,25,223.5,180.333,,,76.5,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,26,223.5,180.333,,,76.5,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-IE,Santa Cruz,2026-09-23,27,113.0,85.0,,,0.0,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
-EGO,Skouries,2022-01-22,1,-179.0,-179.0,0.0,,0.0,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,2,-443.8,-443.8,0.0,,0.0,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,3,-202.8,-202.8,15.7,,3.0,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,4,179.5,134.2,172.8,,65.1,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,5,208.8,159.7,178.3,,78.1,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,6,401.5,336.4,219.0,,87.5,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,7,344.2,287.2,201.2,,82.7,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,8,171.9,149.6,136.3,,65.2,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,9,125.6,107.6,122.3,,63.7,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,10,117.1,101.6,121.8,,62.2,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,11,273.8,224.7,182.1,,82.1,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,12,350.5,291.7,207.2,,91.0,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,13,225.4,199.9,160.8,,73.1,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,14,211.8,194.0,145.5,,72.9,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,15,237.8,216.6,154.1,,74.3,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,16,234.3,214.8,146.6,,74.7,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,17,208.9,192.5,142.4,,70.7,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,18,223.9,162.9,142.1,,71.9,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,19,215.2,173.8,133.1,,71.0,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,20,220.0,177.0,133.3,,71.7,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,21,153.8,127.1,105.9,,64.4,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,22,98.7,84.5,81.0,,53.9,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,23,26.6,26.0,47.3,,31.3,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-EGO,Skouries,2022-01-22,24,-10.7,-10.7,0.0,,0.0,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
-GMIN CN,Oko West,2025-04-28,1,-188.5,-188.52,0.0,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,2,-538.7,-538.65,0.0,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,3,-268.1,-268.07,30.1,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,4,397.2,397.23,311.4,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,5,417.8,354.53,316.5,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,6,330.3,278.33,303.1,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,7,375.8,313.84,324.8,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,8,454.0,356.62,354.2,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,9,421.2,320.93,352.8,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,10,464.5,361.65,351.4,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,11,512.4,397.85,367.8,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,12,546.5,418.04,380.0,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,13,718.1,548.68,432.8,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,14,627.0,478.31,385.5,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,15,563.1,431.57,334.2,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,16,116.8,94.41,92.9,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,17,37.2,37.18,0.0,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,18,-12.9,-12.9,0.0,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-GMIN CN,Oko West,2025-04-28,19,-12.9,-12.9,0.0,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
-RIO CN,Fenix Gold,2023-10-16,1,-86.6,-86.6,0.0,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,2,9.6,9.6,62.2,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,3,14.700000000000001,2.9,109.4,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,4,71.60000000000001,60.2,106.4,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,5,49.199999999999996,43.4,95.1,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,6,38.5,34.9,90.0,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,7,15.0,12.2,90.2,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,8,43.3,35.1,93.1,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,9,27.7,23.0,81.9,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,10,35.7,25.7,91.4,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,11,25.2,14.7,93.6,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,12,51.3,38.8,90.4,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,13,61.699999999999996,45.3,89.1,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,14,46.0,37.4,62.8,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,15,31.0,23.8,57.4,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,16,20.2,16.4,49.6,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,17,15.1,11.2,48.3,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
-RIO CN,Fenix Gold,2023-10-16,18,1.1,-0.5,10.8,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+ticker,project,study_date,year,pre_tax_fcf_usd_m,post_tax_fcf_usd_m,payable_gold_koz,payable_silver_koz,payable_copper_mlb,payable_lead_mlb,payable_zinc_mlb,study_prices,source
+NEWP,Carangas,2026-07-16,1,-259.2,-259.2,0.0,0.0,,0.0,0.0,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,2,-385.2,-385.2,0.0,0.0,,0.0,0.0,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,3,306.8,217.6,0.0,9465.0,,48.5,63.93,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,4,453.9,310.3,0.0,12506.0,,55.12,79.37,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,5,433.2,297.7,0.0,12289.0,,46.3,70.55,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,6,275.3,126.0,0.0,12798.0,,41.89,68.34,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,7,334.1,163.0,0.0,13777.0,,55.12,85.98,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,8,577.0,394.7,0.0,19961.0,,79.37,132.28,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,9,669.9,453.3,0.0,22448.0,,79.37,110.23,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,10,543.2,361.4,0.0,20610.0,,59.52,74.96,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,11,434.0,278.9,52.755,14074.0,,41.89,50.71,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,12,377.3,261.3,106.927,7300.0,,39.68,57.32,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,13,511.4,345.0,145.622,7362.0,,35.27,55.12,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,14,425.5,289.4,138.235,5690.0,,33.07,57.32,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,15,667.4,451.0,173.861,6794.0,,30.86,52.91,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,16,847.3,566.9,228.664,6313.0,,30.86,52.91,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,17,885.5,592.7,243.099,5557.0,,30.86,52.91,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,18,431.6,281.6,52.831,7870.0,,59.52,101.41,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,19,145.7,97.6,0.0,4539.0,,72.75,119.05,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,20,145.7,97.9,0.0,4539.0,,72.75,119.05,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+NEWP,Carangas,2026-07-16,21,-129.3,-129.3,0.0,1231.0,,30.86,52.91,,Table 22-4 Cashflow Statement on an Annualized Basis (pages 285-286); year 1 = construction year -2; Pb and Zn kt x 2.20462
+PPTA CN,Stibnite,2025-12-31,1,-447.0,-447.0,0.0,0.0,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,2,-738.0,-738.0,0.0,0.0,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,3,-685.0,-685.0,0.0,0.0,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,4,-654.0,-659.0,16.0,0.3,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,5,763.0,713.0,335.0,8.8,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,6,1292.0,1173.0,441.0,11.7,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,7,1495.0,1300.0,505.0,12.3,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,8,1498.0,1255.0,552.0,24.1,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,9,1095.0,933.0,392.0,77.8,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,10,919.0,796.0,319.0,8.0,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,11,408.0,371.0,239.0,30.3,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,12,383.0,338.0,220.0,50.1,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,13,363.0,306.0,184.0,67.4,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,14,401.0,332.0,210.0,82.6,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,15,602.0,471.0,287.0,52.7,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,16,611.0,493.0,258.0,27.2,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,17,180.0,157.0,118.0,65.9,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,18,57.0,53.0,94.0,36.3,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,19,62.0,50.0,24.0,34.5,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+PPTA CN,Stibnite,2025-12-31,20,-98.0,-98.0,0.0,0.0,,,,,Table 19-11 Cash Flow Forecast on an Annual Basis (Case A); year 1 = year -4
+HYMC,Hycroft,2026-05-14,1,-672.0,-672.0,0.0,0.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,2,-1760.0,-1760.0,6.0,39.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,3,199.0,190.0,211.0,2455.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,4,338.0,311.0,236.0,5639.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,5,905.0,867.0,324.0,8474.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,6,788.0,719.0,280.0,8801.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,7,585.0,518.0,268.0,7041.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,8,646.0,576.0,272.0,7209.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,9,525.0,447.0,230.0,8556.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,10,506.0,430.0,252.0,4040.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,11,333.0,252.0,211.0,3725.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,12,330.0,277.0,197.0,5450.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,13,280.0,226.0,170.0,6154.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,14,236.0,191.0,188.0,6071.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,15,512.0,464.0,211.0,8425.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,16,355.0,270.0,193.0,5601.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,17,375.0,318.0,212.0,5092.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,18,316.0,256.0,182.0,5843.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,19,194.0,144.0,162.0,5129.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,20,259.0,228.0,184.0,5209.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,21,238.0,198.0,181.0,4221.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,22,67.0,31.0,169.0,3947.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,23,268.0,243.0,204.0,5503.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,24,862.0,798.0,312.0,8235.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,25,879.0,723.0,264.0,11546.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,26,1043.0,885.0,246.0,16806.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,27,692.0,508.0,238.0,13600.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,28,788.0,664.0,256.0,9426.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,29,780.0,644.0,184.0,14557.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,30,859.0,723.0,159.0,18152.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,31,327.0,183.0,177.0,5132.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,32,-8.0,-58.0,180.0,3251.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,33,288.0,268.0,199.0,2974.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,34,238.0,195.0,187.0,2576.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,35,222.0,182.0,183.0,2508.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,36,268.0,230.0,191.0,3042.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,37,122.0,76.0,193.0,3015.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,38,295.0,265.0,176.0,4861.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,39,518.0,465.0,209.0,7568.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,40,498.0,406.0,189.0,8511.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,41,526.0,439.0,199.0,7636.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,42,452.0,360.0,171.0,11133.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,43,752.0,666.0,193.0,13706.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,44,154.0,24.0,179.0,4522.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,45,205.0,168.0,184.0,2646.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,46,189.0,152.0,182.0,2617.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,47,-12.0,-46.0,176.0,2327.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,48,194.0,179.0,174.0,2242.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,49,362.0,333.0,190.0,4711.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,50,505.0,441.0,204.0,6600.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,51,502.0,414.0,197.0,6790.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,52,825.0,736.0,188.0,14329.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,53,542.0,401.0,102.0,9819.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,54,0.0,-76.0,0.0,0.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+HYMC,Hycroft,2026-05-14,55,-243.0,-243.0,0.0,0.0,,,,,"Table 19-2 Life of Mine Economics (two page segments, years -2 to 53); year 1 = year -2"
+SLS CN,Warintza,2025-11-01,1,-933.0,-933.0,0.0,0.0,0.0,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,2,-1475.0,-1475.0,0.0,0.0,0.0,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,3,-1322.0,-1322.0,0.0,0.0,0.0,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,4,1485.0,1066.0,46.0,1285.0,440.9,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,5,2451.0,1785.0,55.0,2892.0,593.0,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,6,1984.0,1454.0,65.0,1794.0,518.1,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,7,1935.0,1417.0,56.0,1091.0,504.9,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,8,1289.0,984.0,52.0,1191.0,388.0,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,9,1384.0,1027.0,53.0,927.0,407.9,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,10,1494.0,1103.0,45.0,838.0,418.9,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,11,1109.0,831.0,33.0,1112.0,359.4,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,12,1211.0,917.0,42.0,1439.0,357.1,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,13,984.0,770.0,38.0,1675.0,306.4,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,14,599.0,429.0,33.0,594.0,238.1,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,15,739.0,522.0,35.0,610.0,262.3,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,16,1167.0,813.0,37.0,728.0,341.7,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,17,1216.0,843.0,40.0,668.0,357.1,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,18,1176.0,820.0,31.0,829.0,346.1,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,19,805.0,569.0,28.0,1002.0,266.8,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,20,901.0,636.0,32.0,1031.0,282.2,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,21,1166.0,813.0,31.0,1233.0,337.3,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,22,429.0,312.0,23.0,1052.0,202.8,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,23,230.0,179.0,24.0,884.0,154.3,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,24,163.0,122.0,24.0,960.0,130.1,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,25,19.0,19.0,13.0,345.0,79.4,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+SLS CN,Warintza,2025-11-01,26,-200.0,-200.0,0.0,0.0,0.0,,,,Table 22.8 Annual production and projected cash flow; year 1 = Yr-3; Cu kt x 2.20462
+OMG CN,Omai,2026-10-02,1,-810.415,-810.415,0.0,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,2,-754.146,-754.146,0.0,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,3,175.452,175.452,192.009,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,4,313.953,280.265,250.762,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,5,639.434,533.654,339.684,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,6,632.299,511.473,358.212,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,7,705.893,563.986,370.571,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,8,695.015,549.221,365.823,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,9,653.816,508.327,361.713,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,10,636.024,485.46,367.522,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,11,705.225,538.588,383.109,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,12,717.91,552.335,375.336,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,13,722.563,552.849,373.905,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,14,690.397,529.46,354.192,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,15,764.985,582.222,373.508,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,16,846.709,638.582,392.673,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,17,868.342,655.148,384.465,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,18,1050.038,793.332,430.271,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,19,1096.096,827.037,435.231,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+OMG CN,Omai,2026-10-02,20,513.51,381.159,211.46,,,,,,"Table 22-1 After-Tax Cash Flow Summary (US$000); payable gold = Au gross revenue / US$3,600; year 1 = YR -2"
+ALDE CN,Altar,2025-09-30,1,-501.797,-501.797,0.0,0.0,0.0,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,2,-522.661,-522.661,0.0,0.0,0.0,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,3,-198.14,-198.14,9.45,83.516,97.674,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,4,447.776,355.055,18.684,148.399,267.632,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,5,506.951,390.527,18.603,95.483,255.807,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,6,447.065,345.416,13.669,96.403,228.337,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,7,208.082,136.487,22.005,0.0,184.651,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,8,143.174,108.139,16.723,84.659,200.591,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,9,409.244,388.419,36.629,16.734,224.914,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,10,199.072,140.211,35.692,119.365,185.837,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,11,226.644,222.398,38.751,215.764,187.964,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,12,452.868,449.502,43.334,215.951,209.317,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,13,451.672,363.319,44.381,218.32,227.689,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,14,584.768,475.578,41.777,197.045,241.913,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,15,634.448,489.264,40.195,172.87,235.822,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,16,634.32,496.621,37.025,188.47,254.206,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,17,623.949,466.303,36.818,201.067,253.989,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,18,702.002,541.144,35.661,226.197,250.849,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,19,652.342,495.053,31.404,230.966,246.9,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,20,561.173,407.549,28.078,224.003,244.605,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,21,497.929,348.328,26.047,224.565,234.991,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,22,497.165,360.623,18.937,241.82,231.846,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,23,492.649,376.772,11.038,247.393,235.496,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,24,435.47,319.021,3.546,254.322,248.475,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,25,423.469,298.864,0.0,225.219,248.833,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,26,566.669,445.676,0.0,190.769,256.202,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,27,528.822,392.207,0.0,171.906,244.544,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,28,340.663,214.785,0.001,118.029,227.492,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,29,295.926,207.35,2.667,77.28,214.864,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,30,252.357,172.872,4.411,80.417,189.035,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,31,192.501,149.089,7.683,121.478,172.371,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,32,157.672,126.632,7.988,143.423,163.968,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,33,168.586,124.774,7.718,200.505,165.338,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,34,299.469,252.31,7.355,262.221,171.192,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,35,305.961,238.873,7.295,263.353,168.009,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,36,211.085,145.159,4.637,283.23,167.932,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,37,177.958,115.528,3.988,292.055,165.438,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,38,286.693,226.922,4.085,273.492,165.197,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,39,230.975,169.381,4.113,258.31,161.299,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,40,167.243,117.23,1.964,274.833,163.216,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,41,156.477,107.13,1.365,284.343,157.337,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,42,222.148,179.712,0.995,233.271,159.198,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,43,250.988,207.135,0.638,200.279,157.064,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,44,182.281,132.134,0.414,160.278,153.67,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,45,153.544,102.576,6.018,103.77,140.66,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,46,204.176,158.623,9.515,115.358,128.263,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,47,157.986,117.137,15.225,151.763,100.064,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+ALDE CN,Altar,2025-09-30,48,-199.442,-223.604,14.334,135.428,67.308,,,,Table 22-12 Altar PEA Annual Cashflow Summary (three blocks of years); pre-tax = Net Cashflow - Tax Paid; year 1 = model year (3)
+IE,Santa Cruz,2026-09-23,1,-485.0,-485.0,,,0.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,2,-649.0,-649.0,,,0.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,3,-352.0,-352.0,,,23.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,4,143.0,137.0,,,133.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,5,448.0,432.0,,,175.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,6,404.0,390.0,,,162.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,7,439.0,423.0,,,172.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,8,428.0,409.0,,,171.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,9,443.0,415.0,,,169.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,10,454.0,419.0,,,175.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,11,326.0,269.0,,,160.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,12,460.0,372.0,,,167.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,13,501.0,405.0,,,170.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,14,487.0,395.0,,,164.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,15,486.0,393.0,,,165.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,16,491.0,396.0,,,170.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,17,491.0,396.0,,,166.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,18,456.0,367.0,,,151.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,19,144.0,120.0,,,63.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,20,193.0,156.0,,,72.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,21,223.5,180.333,,,76.5,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,22,223.5,180.333,,,76.5,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,23,223.5,180.333,,,76.5,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,24,223.5,180.333,,,76.5,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,25,223.5,180.333,,,76.5,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,26,223.5,180.333,,,76.5,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+IE,Santa Cruz,2026-09-23,27,113.0,85.0,,,0.0,,,,"Table 19-3 Cash Flow Model; YR19-24 spread evenly over six years (the user's decision, Nov 21, 2026); year 1 = YR-2"
+EGO,Skouries,2022-01-22,1,-179.0,-179.0,0.0,,0.0,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,2,-443.8,-443.8,0.0,,0.0,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,3,-202.8,-202.8,15.7,,3.0,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,4,179.5,134.2,172.8,,65.1,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,5,208.8,159.7,178.3,,78.1,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,6,401.5,336.4,219.0,,87.5,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,7,344.2,287.2,201.2,,82.7,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,8,171.9,149.6,136.3,,65.2,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,9,125.6,107.6,122.3,,63.7,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,10,117.1,101.6,121.8,,62.2,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,11,273.8,224.7,182.1,,82.1,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,12,350.5,291.7,207.2,,91.0,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,13,225.4,199.9,160.8,,73.1,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,14,211.8,194.0,145.5,,72.9,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,15,237.8,216.6,154.1,,74.3,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,16,234.3,214.8,146.6,,74.7,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,17,208.9,192.5,142.4,,70.7,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,18,223.9,162.9,142.1,,71.9,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,19,215.2,173.8,133.1,,71.0,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,20,220.0,177.0,133.3,,71.7,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,21,153.8,127.1,105.9,,64.4,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,22,98.7,84.5,81.0,,53.9,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,23,26.6,26.0,47.3,,31.3,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+EGO,Skouries,2022-01-22,24,-10.7,-10.7,0.0,,0.0,,,,https://www.sec.gov/Archives/edgar/data/918608/000165495422004271/eld_ex991.htm (Table 22.2)
+GMIN CN,Oko West,2025-04-28,1,-188.5,-188.52,0.0,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,2,-538.7,-538.65,0.0,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,3,-268.1,-268.07,30.1,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,4,397.2,397.23,311.4,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,5,417.8,354.53,316.5,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,6,330.3,278.33,303.1,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,7,375.8,313.84,324.8,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,8,454.0,356.62,354.2,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,9,421.2,320.93,352.8,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,10,464.5,361.65,351.4,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,11,512.4,397.85,367.8,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,12,546.5,418.04,380.0,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,13,718.1,548.68,432.8,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,14,627.0,478.31,385.5,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,15,563.1,431.57,334.2,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,16,116.8,94.41,92.9,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,17,37.2,37.18,0.0,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,18,-12.9,-12.9,0.0,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+GMIN CN,Oko West,2025-04-28,19,-12.9,-12.9,0.0,,,,,,https://gmin.gold/wp-content/uploads/2026/05/gmin_2025_oko_west_fs_technical_report_43-101-_final_website.pdf (Table 22.6)
+RIO CN,Fenix Gold,2023-10-16,1,-86.6,-86.6,0.0,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,2,9.6,9.6,62.2,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,3,14.700000000000001,2.9,109.4,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,4,71.60000000000001,60.2,106.4,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,5,49.199999999999996,43.4,95.1,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,6,38.5,34.9,90.0,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,7,15.0,12.2,90.2,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,8,43.3,35.1,93.1,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,9,27.7,23.0,81.9,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,10,35.7,25.7,91.4,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,11,25.2,14.7,93.6,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,12,51.3,38.8,90.4,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,13,61.699999999999996,45.3,89.1,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,14,46.0,37.4,62.8,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,15,31.0,23.8,57.4,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,16,20.2,16.4,49.6,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,17,15.1,11.2,48.3,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
+RIO CN,Fenix Gold,2023-10-16,18,1.1,-0.5,10.8,,,,,,https://minedocs.com/25/Fenix-FS-10162023.pdf (Table 22-5)
