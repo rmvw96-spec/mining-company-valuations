@@ -212,3 +212,5 @@ GSVR CN,Guanajuato Silver,2025 annual MD&A (company site),FY2025,2026-04,https:/
 GSVR CN,Guanajuato Silver,Q1 2026 MD&A (company site),Q1 2026,2026-05,https://gsilver.com/images/investor/2026/GSilver_Q1_2026_MDA.pdf,yes,sustaining capital Q1 2026 3.4 / Q1 2025 0.9 USDM (not recorded: the financials date needs H1),
 IPT CN,IMPACT Silver,2025 annual MD&A (company site),FY2025,2026-04-15,https://impactsilver.com/site/assets/files/6199/ipt-2026-04-15-annual-mda-english-83bd_pdf.pdf,yes,no sustaining split,
 IPT CN,IMPACT Silver,Q2 2026 MD&A (company site),H1 2026,2026-08,https://impactsilver.com/site/assets/files/6220/ipt-q2-2026-mda-sedardoc6286646.pdf,yes,no sustaining split,
+DSV CN,Discovery Mining,"2025 annual MD&A (SEDAR+, Discovery Silver Corp. profile, saved by the user)",FY2025,2026-02-18,https://www.sedarplus.ca/landingpage/,yes,"sustaining capital 70.8, sustaining leases 1.9, growth 141.5 USDM (recorded in capex_periods.csv)",
+GSVR CN,Guanajuato Silver,"Q2 2026 interim MD&A (SEDAR+, saved by the user)",H1 2026,2026-08-25,https://www.sedarplus.ca/landingpage/,yes,sustaining capital H1 12.9 / 1.7 USDM (recorded in capex_periods.csv),
