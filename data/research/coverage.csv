@@ -1,8 +1,6 @@
 ticker,gap,status,next_step,due,source,notes
 FCX,sustaining,not published,the user decides whether total capital less major projects (rounded to US$0.1 billion) counts as sustaining,,https://www.sec.gov/Archives/edgar/data/831259/000083125926000051/fcx-20260930.htm,only total capital less major projects is published
-HBM,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 KGH PW,sustaining,to research,find the consolidated group's split (the H1 presentation covers the parent company only),,https://kghm.com/sites/default/files/2026-08/KGHM_H1_2026_presentation.pdf,"parent company only: not recorded, to avoid mixing bases"
-SFR AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 WAF AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 EMR AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 WDO CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
@@ -18,13 +16,11 @@ AYA CN,sustaining,to research,"record the latest annual and year-to-date sustain
 EXK,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 SVM,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 GGD CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-DRD SJ,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 DSV CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 ALK AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 RMS AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 CYL AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 340 HK,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-GMD AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 WGX AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 HMY,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 KNT CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
@@ -33,10 +29,8 @@ AMMN IJ,sustaining,to research,check the IDX filings (9M 2026 financial statemen
 AAZ LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 AIS AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 III CN,sustaining,not published,record FY2026 sustaining from the Q4 2026 MD&A (FY2025 was split),,https://wp-imperialmetals-2024.s3.ca-central-1.amazonaws.com/media/2026/11/05155204/2026-Q3-MDA.pdf,"the 2026 year to date isn't split, so the trailing 12 months can't be built"
-HL,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 VALT LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 CAML LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-SSRM,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 BGL AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 RSG AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 ARIS CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
@@ -46,8 +40,6 @@ PEOLES*,sustaining,to research,"record the latest annual and year-to-date sustai
 29M AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 KAN AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 GSVR CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-BTO CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-AUGO,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 SOSI1 FH,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 HOC LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 IPT CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
