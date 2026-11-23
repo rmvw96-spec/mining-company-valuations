@@ -207,6 +207,11 @@ study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 
 [sheet.pnav_tab_cols]
+holding = "B"                       # read by `screen`
+stage = "D"
+pnav_today = "L"                    # My P/NAV: medium (today's) prices
+pnav_peer = "N"                     # My P/NAV today ÷ its peer group's typical P/NAV (Model portfolio K)
+pnav_low = "O"                      # My P/NAV: Low prices
 royalty_band = "U"
 buy_below = "V"
 pnav_addon_up = "W"
@@ -215,6 +220,10 @@ pnav_addon_up = "W"
 low_fcf = "K"                       # the one ARRAYFORMULA on Holdings downside
 ticker = "L"
 cost_base = "R"                     # new helper: revenue - FCF, $M
+net_cash_pct = "D"                  # read by `screen` (percent: 4 = 4%)
+share_change_3y = "H"               # percent
+breakeven = "I"                     # free-cash-flow breakeven price
+breakeven_metal = "J"               # "gold $/oz", ...
 
 [sheet.portfolio_cols]
 bucket = "A"
@@ -225,6 +234,15 @@ ev_per_aueq_oz = "X"
 months_of_cash = "Y"
 pnav_after = "Z"                    # P/NAV after an equity raise for the funding gap, or "Fully funded"
 status = "T"                        # Status (Review: above level, ...): emailed when it changes (alerts)
+where = "C"                         # inputs written by `screen --write` (A-F, S, U-V)
+ticker = "D"
+weight = "F"
+peer_norm = "K"                     # formula: valuation vs peer norm (1.0 = in line)
+review_level = "S"
+why = "U"
+what_would_change = "V"
+new_money_cell = "B3"
+silver_held_value_cell = "C4"       # value of the silver already held (B4 × silver price)
 
 [signals]
 # Market signals for the Signals tab (`python -m minerval signals`, also run at the end of `prices`).
@@ -297,6 +315,104 @@ resource_weight_inferred = 0.2
 "Silver and polymetallic producers" = ["silver_vs_diesel_12m", "sil_silver_pctile10y"]
 "Growth: developers" = ["junior_timing", "breadth_sgdj", "@developer_check"]
 "Growth: developers|Copper" = ["junior_timing", "breadth_copj", "@developer_check"]
+
+[portfolio_screen]
+# `python -m minerval screen` (roadmap 5): proposes the Model portfolio's holdings and weights (A-F), review levels
+# (S) and notes (U-V) from the framework's numbers. These are the rules, and public. Each bucket's total weight and
+# number of names are private: private/screen.toml (see config/screen.example.toml). The output never goes into
+# the repo, a log or the step summary: out/screen/ (local), the Sheet and, with --email, a private email.
+# A name on the tab stays while it ranks within names + buffer, so the list doesn't churn on small rank changes once
+# shares are bought. 0 while the portfolio is still being built (Nov 2026: nothing bought yet), so every name is
+# picked on rank alone; raise it (2 was the spec's default) once the holdings are bought.
+buffer = 0
+tilt = 0.0                          # 0 = equal weights in a bucket; 0.5 = up to ±50% by score
+bucket_order = ["Physical metal", "Royalty", "Gold producers", "Growth: expanding producers", "Copper producers",
+                "Silver and polymetallic producers", "Growth: developers"]
+speculation = ["Growth: expanding producers", "Growth: developers"]
+physical_symbols = { PHYS = "PHYS", PSLV = "PSLV", COP = "COP-U.TO", "COP/U" = "COP-U.TO" }
+
+# Which bucket a company falls in: by peer group (PNAV inputs AL) and main metal (largest revenue share in J:L for
+# producers; the resource unit in AU for developers). `bucket` in pnav_companies.csv overrides it, with a reason.
+[portfolio_screen.buckets]
+"Royalty/streaming" = "Royalty"
+"Developer" = "Growth: developers"
+"Junior producer|gold" = "Growth: expanding producers"
+"producer|gold" = "Gold producers"
+"producer|copper" = "Copper producers"
+"producer|silver" = "Silver and polymetallic producers"
+
+# Markets. The user buys small amounts in an IRA at Fidelity, where (Brokerage Commission and Fee Schedule, file
+# dated Sep 2026; check yearly): US-listed stocks and ADRs, including ADRs on OTC, $0 online; foreign ordinaries on
+# OTC (symbols ending in F) $0 plus $50 if not DTC eligible; Dollarized International Trading rep-assisted only,
+# $32.95, plus $50 for every country but Canada, plus ~1% FX; local-currency International Trading is closed to
+# retirement accounts. So by default only companies with a US listing (exchange or ADR) or a Canadian listing are
+# proposed (pnav_companies.csv us_listing / canada_listing). `screen --all-markets` adds the rest, marked.
+[portfolio_screen.markets]
+canada_rep_assisted = true          # keep Canadian names with no US OTC symbol recorded (rep-assisted, $32.95 a trade)
+foreign_fee_note = "Foreign-only: about $50 a trade in an IRA"
+canada_rep_note = "Canada, no US OTC symbol recorded: rep-assisted, $32.95 a trade"
+# OTC ADRs (us_listing "OTC ADR: X") trade from none to millions of dollars a day. An ADR with no Canadian listing is
+# proposed only if its median daily dollar volume over the last 3 months (days with no trade count as $0) reaches
+# this floor; `screen` downloads it from Yahoo. Nov 2026: EVMNY $0.7M and ANGPY $1.4M a day pass; ANFTY $85k (11 of 40
+# days without a trade), BVGLY (one trade in 3 months), KOZAY and HCHDY ($0) fail. Anywhere from $0.1M to $0.6M
+# splits them the same way.
+otc_adr_min_dollar_volume = 250000
+
+# Hard filters: a company failing one isn't proposed (the report says which).
+[portfolio_screen.filters]
+financials_max_days = 275           # Holdings N within ~9 months: a company that stopped reporting is stale
+price_max_days = 6                  # Holdings T: as the price report's "older than 6 days"
+min_mcap_m = 300.0                  # producers and royalty companies, US$M: a liquidity floor
+min_mcap_developer_m = 100.0
+max_share_change_3y_pct = 30.0      # producers: more than 30% dilution in 3 years is a red flag
+# Expanding producers fund construction and mergers with shares, so 30% would exclude most of them (Nov 2026: 5 of 8
+# US/Canadian names); 100% still drops serial diluters.
+max_share_change_3y_pct_by_bucket = { "Growth: expanding producers" = 100.0 }
+# No filter on the jurisdiction add-on (removed Nov 2026, the user's call): a high-risk country shouldn't exclude a
+# company whose financials are sound. The risk still counts through the discount rate in P/NAV and the score's
+# `addon` and `addon_reliance` measures. Set max_addon_points (points) to bring a filter back.
+max_peer_ev_ratio = 1.5             # developers: EV per weighted unit at most 1.5× the peer median (BW)
+# Royalty companies: valued by the framework's own measures, not the peer norm (the Sheet's typical royalty multiple,
+# 1.5× × 0.94 on Metal prices reference, sits below where the whole group has traded, so every royalty company reads
+# 1.5-1.9× its norm in Nov 2026). Excluded when the framework band (PNAV inputs AS) is one of these, or the company
+# is at or above the own-history "expensive" threshold (Signals royalty_own_pctile_median H, 75).
+royalty_excluded_bands = ["Rich", "no independent NAV"]
+
+# Score: rank percentiles within the bucket (1 = best), averaged with these weights. Equal by default; don't tune
+# them to the backtest (most measures have no history, and one period's best fit is noise).
+[portfolio_screen.score]
+peer_norm = 1.0                     # valuation vs peer norm (lower)
+pnav_low = 1.0                      # P/NAV at Low prices (lower)
+breakeven_gap = 1.0                 # FCF breakeven ÷ today's metal price − 1 (lower)
+net_cash_pct = 1.0                  # net cash, % of market value (higher)
+share_change_3y = 1.0               # (lower)
+addon = 1.0                         # jurisdiction add-on (lower)
+addon_reliance = 1.0                # P/NAV with the add-on raised ÷ P/NAV today, PNAV inputs BX (lower)
+pnav_after = 1.0                    # developers: P/NAV after a raise (lower; funded counts as best)
+peer_ev_ratio = 1.0                 # developers: EV per weighted unit ÷ peer median (lower)
+months_of_cash = 1.0                # developers (higher; cash-generating counts as best)
+independent_pnav = 1.0              # royalty: independent P/NAV (lower)
+own_pctile = 1.0                    # royalty: own-history percentile, P/NAV when recorded else P/OCF (lower)
+
+# Review level S = review_multiple × peer norm (T flags K above S). A level typed by hand is kept.
+[portfolio_screen.review]
+review_multiple = 1.3
+by_bucket = { "Growth: developers" = 1.5, "Royalty" = 2.0 }   # developers: study NPVs are rougher. Royalty: see
+                                    # [portfolio_screen.filters] royalty_excluded_bands; their K runs 1.5-1.9 today
+
+# Limits from the sizing research (warnings in the report, not hard stops; the user sets the sizes):
+#   Rick Rule: royalties are the best business in mining (margins ~80% vs 15-20% for operators); "70% of resource
+#   juniors are never cheap because they're worth nothing"; a junior sleeve of 5-10% of total assets, at most 12-15
+#   names, 3-10% of the sleeve each (secondary summary). Doug Casey: ~10% in speculation for cautious investors.
+#   Newsletter models: juniors 15-30% of a mining-stock portfolio; 20-40% streaming/royalty in a growth mix.
+#   This tab is a mining sleeve next to bullion, so the 15-30%-of-mining-stocks range is the comparable one.
+[portfolio_screen.limits]
+max_name_weight = 0.06              # royalty and producers
+max_name_weight_speculation = 0.03  # developers and expanding producers
+max_speculation = 0.25              # developers + expanding producers, share of the whole portfolio
+min_developers = 6                  # when the bucket holds any: fewer is a concentrated bet on juniors
+max_developers = 15                 # Rule's cap
+royalty_names = [2, 4]              # the universe is about six companies
 
 [signal_backtest]
 # `python -m minerval backtest-signals`: each signal at every month-end since first_month_end, against the tier

@@ -24,15 +24,18 @@ config/
   metal_mix.csv          revenue split by metal for multi-metal producers
   backtest.toml          backtest windows, episodes and benchmarks
   projection.toml        projection assumptions: rate regimes, outcome odds, valuations
-  portfolio.example.csv  example portfolio for the backtest (yours goes in private/portfolio.csv)
+  portfolio.example.csv  example portfolio for the backtest (yours, written by `screen`, goes in private/portfolio.csv)
+  screen.example.toml    template for the screen's bucket sizes (yours goes in private/screen.toml)
   local.example.toml     template for your own settings (private/local.toml)
 data/
   holdings.csv           the six funds' holdings (Sprott, Nov 13, 2026)
   research/pnav_companies.csv   P/NAV research inputs: stage, countries and their weights, risk add-on, reserve
                                 life, outside NAV estimates and study values, and developers' resource
-                                estimates (amount, unit, category, source, date), with notes
+                                estimates (amount, unit, category, source, date), US and Canadian listings,
+                                with notes
   research/country_risk.csv     jurisdiction add-on by country (or province/state), from the Fraser Institute
                                 mining survey's policy scores, with sources
+  research/royalty_ocf.csv      royalty companies' annual operating cash flow from SEC filings (`royalty-ocf`)
 docs/specs/              specifications for larger changes
 tests/                   offline tests (pytest); run on every push and pull request by .github/workflows/tests.yml
 ```
@@ -359,6 +362,41 @@ K2 to include the cost increase. It checks every cell first: a target that holds
 skips that step and is reported, inputs are only filled when blank, and a rewrite only replaces the
 exact old formula. It saves a snapshot of every cell it touches to `out/layout/backup-<time>.json`
 first, and running it again changes nothing. Cell addresses are in `config/settings.toml` `[sheet]`.
+
+## Model portfolio from a screen
+
+`python -m minerval screen` proposes the Model portfolio's holdings, target weights, review levels and notes
+(A–F, S, U–V) from the framework's own numbers. Physical metal rows are yours and are kept as typed. Run it after
+`refresh` and `financials`: `screen` writes a ranked, explained proposal to `out/screen/report.txt`; read it, then
+`screen --write` (add `--email` for a private summary of the changes).
+
+- **Buckets**: Royalty (royalty and streaming companies), Gold producers, Growth: expanding producers, Copper
+  producers, Silver and polymetallic producers, Growth: developers, by peer group and main metal. A wrong call can be
+  overridden with `bucket` (and `bucket_note`) in `data/research/pnav_companies.csv`.
+- **Markets**: by default only companies listed in the US (an exchange or an ADR) or in Canada, from the listing
+  columns in `pnav_companies.csv`. In a Fidelity IRA those trade for $0 online; anything else costs about $50 a
+  trade (foreign ordinaries that aren't DTC eligible, or a rep-assisted foreign trade), which defeats buying small
+  amounts when names are cheap. `--all-markets` adds them, marked with the fee. The fee table, with its source, is in
+  `[portfolio_screen.markets]`.
+- **Filters**: fresh financials and price; a market-cap floor; at most 30% dilution in 3 years for producers (100%
+  for expanding producers, which build with equity); jurisdiction add-on at most 2.5 points; developers not short of
+  cash, with a P/NAV after a raise and EV per unit at most 1.5× their peers; valuation below the review level.
+  Royalty companies are judged by the framework's measures instead: not "Rich", and not expensive for themselves.
+- **Score**: rank percentiles within the bucket on valuation against peers, P/NAV at Low prices, breakeven margin,
+  net cash, dilution, the add-on and how much the valuation leans on it (producers); P/NAV after a raise, EV per unit
+  against peers, months of funding and the add-on (developers); independent P/NAV, the own-history percentile,
+  valuation against peers and the add-on (royalty). Equal weights; they aren't tuned to the backtest.
+- **Sizes**: each bucket's weight and number of names are private (`private/screen.toml`; `screen --init` writes it
+  from the tab). Names are equal-weighted, at most 6% each (3% for developers and expanding producers). A holding on
+  the tab stays while it ranks within the names + 2. The report warns when speculation (developers and expanding
+  producers) is above 25%, developers are fewer than 6 or more than 15, or royalty names are outside 2–4: limits from
+  Rick Rule's, Doug Casey's and newsletter sizing, noted in `[portfolio_screen.limits]`.
+- **Review levels**: S is 1.3× the peer norm (1.5 for developers, 2.0 for royalty). A level you type is kept:
+  `private/screen_state.json` records the ones the screen wrote. `--rule-review-levels` resets them all to the rule.
+- **Backtest file**: `--write` ends by writing `private/portfolio.csv` from the tab (`portfolio-file` does it on
+  its own), so `backtest` and `project` test what the Sheet shows. The old file is kept with a date.
+
+The rules are public (`[portfolio_screen]`); the sizes, the proposal and the tab stay private.
 
 ## When Sprott's holdings change
 

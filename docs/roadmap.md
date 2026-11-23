@@ -78,6 +78,16 @@ splits for Collective Mining and Viscaria, are open (small items below).
 | 4b | **Built Nov 2026.** **Jurisdiction risk from a country table** instead of a hand-set add-on per company | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | M | — (can move earlier) |
 | 4c | **Built Nov 2026.** **Royalties against their own history** as well as the peer median | [royalty-history-spec.md](specs/royalty-history-spec.md) | S–M | 1a (needs months of recorded P/NAVs); the Yahoo-based fallback works from day one |
 
+## Phase 5: Model portfolio from a screen (any time; before the first purchase)
+
+| # | Item | Spec | Size | Depends on |
+|---|---|---|---|---|
+| 5 | **Built Nov 2026.** **Model portfolio from a screen**: rank PNAV inputs companies within each bucket (a new Royalty bucket included) and propose the holdings and target weights (Model portfolio A–F), only names buyable on US or Canadian markets by default (`--all-markets` for the rest: about $50 a trade in a Fidelity IRA), set the review levels (S) from a rule while keeping levels typed by hand, and write `private/portfolio.csv` from the tab so the backtest tests what the Sheet shows | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | M | — (4a later improves the breakeven measure) |
+
+Why: the user holds no miners yet, so the holdings needn't be a fixed hand-picked list. The rules are committed;
+bucket sizes, names and weights stay private (Sheet and email only). Decisions taken Nov 20, 2026 are in the spec;
+two things to ask at build time are at its end.
+
 ## Done in November 2026 (not in the original plan)
 
 - A "Send a test email" checkbox on the manual price-update run (`test-email` command), to check the email
@@ -125,6 +135,7 @@ splits for Collective Mining and Viscaria, are open (small items below).
 | Q1 2027 | Perpetua's EXIM loan expected to close: update its committed funding (BF) |
 | Mid-February to March 2027 | Q4 / full-year reports: earnings-season refresh (CLAUDE.md), then 4a |
 | End of March 2027 | Royalty companies' 10-K and 40-F filed: `royalty-ocf`, review and commit the new year (4c) |
+| Every November | Check Fidelity's Brokerage Commission and Fee Schedule against `[portfolio_screen.markets]` (the IRA fees behind the US/Canada default) |
 | Late 2027 | 250 days of recorded royalty P/NAVs: PNAV inputs CA fills in and replaces P/OCF in the own-history band |
 | May, August, November | Quarterly earnings-season refreshes |
 | November 1 to December 31 | Tax-loss window: junior timing signal is live |
