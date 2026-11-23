@@ -27,7 +27,8 @@ built. **Outstanding**: not started. `tests/test_data_files.py` checks this tabl
 | 4c | Royalty history | [royalty-history-spec.md](specs/royalty-history-spec.md) | Built | A1–A10 | 10 of 10 | — |
 | 5 | Model portfolio screen, revision 1 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Built | A1–A19 | 18 of 19 | the first `screen --write` (user) |
 | 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Outstanding | A20–A28 | 0 of 9 | all |
-| 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | Built | A1–A31 | 28 of 31 | the validation report walkthrough and the decks with `pessimistic_cost_increase` (user); NPVs for the last three candidates (data) |
+| 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | Built | A1–A31 | 29 of 31 | the decks with `pessimistic_cost_increase` (user); NPVs for the last three candidates (data) |
+| 6b | Valuation coverage | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | Outstanding | A1–A7 | 0 of 7 | all |
 
 ## Principles
 
@@ -93,6 +94,7 @@ bucket sizes, names and weights stay private (Sheet and email only). The decisio
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
 | 6 | **Valuation by tier** (Rick Rule's method): EV against a 10-year NPV at pessimistic, base and optimistic decks; producers on operating cash flow − sustaining spending, with committed pipeline projects; developers from rebuilt study cash flows, discounted for time and probability by stage, with a capex-overrun test; royalties on operating cash flow. A buy-below price and a fair-value level per company | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | L | Step 0 data pilot (done Nov 21, 2026); 4a improves the pessimistic cost case |
+| 6b | **Valuation coverage**: a committed record of every company the valuation doesn't fully cover (producers on the fallback, developers without a recorded study, unrecorded growth projects, out of scope by design), kept complete by a test and summarised in the `valuation` report | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | S | 6 |
 | 5b | **Model portfolio revision 2**: select each bucket's best business performers per share at constant metal prices (not on price), and a buy signal per row when the price reaches its tier's buy level; review above fair value | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) (revision 2) | M–L | 6; research of production, reserves and sustaining spending for 2022–2025 |
 
 Why: on Nov 21, 2026, P/NAV at spot over 25 years with all capital spending made 36 of 97 producers' NAV negative,

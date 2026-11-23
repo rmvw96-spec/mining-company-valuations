@@ -227,7 +227,8 @@ Valuation (to build):
   the dry run (23 cells, no conflicts) approved and installed Nov 22, 2026; read back with no error values
 - [x] A25. The screen's report counts the candidates with an NPV at all three decks and a basis, and names the
   rest. — `tests/test_screen.py::test_report_names_candidates_without_an_npv_at_every_deck`
-- [ ] A26. (user) The validation report has been read with the user.
+- [x] A26. (user) The validation report has been read with the user. — read Nov 23, 2026: coverage by tier, the
+  9 flags (10-year horizon, growth not recorded, the fallback); the gaps are now tracked by roadmap 6b
 - [x] A27. README describes the valuation by tier and the decks (its "Valuation by tier" section); the roadmap's
   status table tracks item 6.
 - [ ] A28. (user) `[scenarios]` holds the user's Pessimistic, Base and Optimistic decks, each with a source and date,
