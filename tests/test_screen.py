@@ -336,3 +336,22 @@ def test_ranking_table_shows_each_measures_rank():
     assert T.loc["A", "picked"] and T.loc["A", "rank"] == 1 and T.loc["A", "p_peer_norm"] == 1.0
     assert T.loc["B", "p_peer_norm"] == 0.0 and not T.loc["B", "picked"]
     assert T.loc["C", "excluded"].startswith("valuation") and np.isnan(T.loc["C", "score"])
+
+
+def test_report_names_candidates_without_an_npv_at_every_deck():
+    """tier-valuation A25: the screen's report says how many eligible candidates have an NPV at all three decks
+    with a basis, and names the rest (the report stays private)."""
+    ranked = {"Gold producers": pd.DataFrame({"holding": ["Alpha Gold", "Beta Gold", "Gamma Gold", "Delta Gold"],
+                                              "ticker": ["ALP", "BET", "GAM", "DEL"], "sheet_row": [12, 13, 14, 15],
+                                              "fail": ["", "", "", "too small"], "score": [0.9, 0.8, 0.7, np.nan],
+                                              "measures_used": [5, 5, 5, 0]})}
+    V = pd.DataFrame({"sheet_row": [12, 13], "valuation_basis": ["OCF − sustaining", "OCF − sustaining"],
+                      "npv Pessimistic": [100.0, -20.0], "npv Base": [200.0, 10.0], "npv Optimistic": [300.0, np.nan],
+                      "why": ["", "negative NPV at the base deck"]})
+    gaps = SC.valuation_gaps(ranked, V)
+    assert gaps == [("Gold producers", "Beta Gold", "no NPV at Optimistic"),
+                    ("Gold producers", "Gamma Gold", "not valued")]                  # Delta failed a filter
+    P = {"notes": [], "warnings": [], "physical": [], "rows": [], "drops": [], "ranked": ranked}
+    text = "\n".join(SC.report(P, False, V))
+    assert "Valuation: 1 of 3 candidates have an NPV at all three decks" in text
+    assert "Beta Gold: no NPV at Optimistic" in text and "Gamma Gold: not valued" in text

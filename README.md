@@ -398,7 +398,8 @@ cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `
 `python -m minerval screen` proposes the Model portfolio's holdings, target weights, review levels and notes
 (A–F, S, U–V) from the framework's own numbers. Physical metal rows are yours and are kept as typed. Run it after
 `refresh` and `financials`: `screen` writes a ranked, explained proposal to `out/screen/report.txt`; read it, then
-`screen --write` (add `--email` for a private summary of the changes).
+`screen --write` (add `--email` for a private summary of the changes). After `valuation`, the report also says how
+many candidates have an NPV at all three decks and names the rest, with the reason.
 
 - **Buckets**: Royalty (royalty and streaming companies), Gold producers, Growth: expanding producers, Copper
   producers, Silver and polymetallic producers, Growth: developers, by peer group and main metal. A wrong call can be

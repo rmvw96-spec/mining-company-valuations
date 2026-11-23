@@ -23,7 +23,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from .config import OUT, PRIVATE, RESEARCH, ensure, settings
+from .config import DERIVED, OUT, PRIVATE, RESEARCH, ensure, settings
 from .sheets import CLEAR, col_to_num, num_to_col, split_cell
 
 DEST = OUT / "screen"
@@ -529,11 +529,39 @@ def why_text(r, k: str, rank: int, of: int) -> str:
 
 # ---------- report and write ----------
 
-def report(P: dict, all_markets: bool) -> list[str]:
+def valuation_gaps(ranked: dict, V: pd.DataFrame | None) -> list[tuple[str, str, str]]:
+    """[(bucket, holding, why)] for the eligible candidates (no failed filter) without an NPV at every deck and a
+    valuation basis in data/derived/valuation.csv (tier-valuation A25), matched by Sheet row."""
+    decks = settings()["valuation"]["decks"]
+    by_row = {} if V is None else {int(r.sheet_row): r for _, r in V.iterrows()}
+    out = []
+    for b, B in ranked.items():
+        for _, r in B[B.fail == ""].iterrows():
+            v = by_row.get(int(r.sheet_row))
+            if v is None:
+                out.append((b, r.holding, "not valued"))
+                continue
+            missing = [d for d in decks if num(v.get(f"npv {d}")) != num(v.get(f"npv {d}"))]
+            if len(missing) == len(decks):
+                out.append((b, r.holding, _text(v.get("why")) or "no NPV"))
+            elif missing:
+                out.append((b, r.holding, "no NPV at " + ", ".join(missing)))
+            elif not _text(v.get("valuation_basis")):
+                out.append((b, r.holding, "no valuation basis"))
+    return out
+
+
+def report(P: dict, all_markets: bool, V: pd.DataFrame | None = None) -> list[str]:
     L = [f"Model portfolio screen ({'all markets' if all_markets else 'US and Canadian listings only'})", ""]
     L += P["notes"]
     if P["warnings"]:
         L += ["Warnings:"] + [f"  {w}" for w in P["warnings"]]
+    if V is not None:
+        gaps = valuation_gaps(P["ranked"], V)
+        n = sum(int((B.fail == "").sum()) for B in P["ranked"].values())
+        k = len(settings()["valuation"]["decks"])
+        L += ["", f"Valuation: {n - len(gaps)} of {n} candidates have an NPV at all "
+                  f"{ {3: 'three'}.get(k, str(k)) } decks (roadmap 6)"] + [f"  {b}: {h}: {w}" for b, h, w in gaps]
     L.append("")
     L.append("Proposal (bucket, holding, where, weight, review level, rank):")
     for r in P["physical"]:
@@ -649,7 +677,8 @@ def run(sheet, write: bool = False, all_markets: bool = False, email: bool = Fal
     state = load_state()
     P = plan(U, tab, sizes, today, state, all_markets, rule_levels)
     P["warnings"] = liq_warn + P["warnings"]
-    rep = report(P, all_markets)
+    vpath = DERIVED / "valuation.csv"
+    rep = report(P, all_markets, pd.read_csv(vpath) if vpath.exists() else None)
     pd.DataFrame(P["rows"]).to_csv(out_dir / "proposal.csv", index=False)
     ranking_table(P).round(4).to_csv(out_dir / "ranking.csv", index=False)
     lines = [f"Screen: {len(P['rows'])} screened rows proposed, {len(P['drops'])} dropped, "
