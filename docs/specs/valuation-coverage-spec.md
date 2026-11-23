@@ -60,7 +60,8 @@ research and from the validation check; there is no rule that derives them.
   (a flag nobody has explained).
 
 **Docs:** CLAUDE.md's Research section says to remove a row when its gap closes and to add one when research finds
-a new gap. The README's "Valuation by tier" section names the record.
+a new gap, and its earnings-season steps recheck the `not published` and `waiting` rows. The README's "Valuation by
+tier" section names the record.
 
 ## Acceptance criteria
 
@@ -87,13 +88,10 @@ a new gap. The README's "Valuation by tier" section names the record.
 - Coverage gaps are tracked in a committed record that a test keeps complete, not only in the untracked report
   (the user, 2026-11-23).
 - Out-of-scope companies get a row, so every tracked company is accounted for as valued or explained.
+- `not published` and `waiting` rows are rechecked each earnings season, as a step of CLAUDE.md's
+  earnings-season refresh (the user, 2026-11-23).
 - A company with no `basis` and no `study_stage` that isn't out of scope by design gets the row its gap needs:
   Montage Gold (first gold Sept 2026, no trailing cash flow yet) has a `study` row.
 - Rows found in research count as well as the flagged producers': committed projects with no study (AIC Mines,
   Avino, Sierra Madre, Silangan), McIlvenna Bay (remaining capex not published), Oko West (waiting for the
   combined study) and the Khoemacau expansion each have a `growth_project` row.
-
-## Open questions
-
-1. How often a `not published` row is rechecked (proposed: with each earnings season, when CLAUDE.md's
-   earnings-season steps run).

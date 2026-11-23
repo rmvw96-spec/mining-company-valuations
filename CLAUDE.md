@@ -96,6 +96,10 @@ Reports go to `out/<command>/report.txt`.
    `jurisdiction --build private/fraser-<year>-scores.csv --source "..." --as-of YYYY-MM`. Review the changes
    with the user before `financials` writes them. Never commit the scores or the PDF: the survey is copyright,
    and only the rounded add-ons go in the repo.
+9. Coverage: recheck every `not published` and `waiting` row in `data/research/coverage.csv` against the new
+   filings (and its `source`). Record what is now published and remove the row; otherwise update its source,
+   next step or `due`. Then `valuation`, and read its Coverage section: `waiting` rows past due and flags no row
+   explains.
 
 ## The Sheet: what not to touch
 
@@ -210,7 +214,7 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
   (a committed project with no study, a split not published), add a row with its status, next step and source
   (https, required for `not published` and `waiting`; `due` as YYYY-MM on `waiting` rows). Write it with a CSV writer,
   by column name. `test_every_valuation_gap_has_a_coverage_row` fails when a company is neither valued nor explained,
-  or a closed gap keeps its row.
+  or a closed gap keeps its row. `not published` and `waiting` rows are rechecked each earnings season (step 9 above).
 - **The record is the filing, not a summary.** Use the MD&A, 10-K/40-F/20-F, annual information form, reserve
   statement or NI 43-101 / S-K 1300 technical report. Results press releases often give only next year's guidance
   (Capstone's gave 2026 sustaining capital, not 2025 actuals), and web-search summaries and call transcripts can be
