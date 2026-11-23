@@ -341,6 +341,34 @@ def test_report_states_the_decks_the_cost_note_and_the_flags(monkeypatch):
     assert "Not valued: 1 (physical metal: 1)" in text
 
 
+def test_report_summarises_coverage(monkeypatch):
+    """valuation-coverage A3: the Coverage section counts data/research/coverage.csv by gap and status, names `waiting`
+    rows past their due month, and names companies flagged against outside views with no growth_project or
+    sustaining row (a flag nobody has explained)."""
+    from datetime import date
+
+    import pandas as pd
+
+    from minerval import coverage
+    P, C = study_stub(monkeypatch)
+    T = V.compute(inputs_frame(), DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04)
+    rows = [("XYZ", "study", "waiting", "wait for the PFS technical report", "2026-10", "https://example.com/a"),
+            ("ABC", "study", "waiting", "wait for the FS", "2027-01", "https://example.com/b"),
+            ("DEF", "study", "to research", "record the PEA's cash flows"),
+            ("PHYS", "out_of_scope", "out of scope")]
+    K = pd.DataFrame([dict(zip(coverage.COLS, r + ("",) * (7 - len(r)))) for r in rows], columns=coverage.COLS)
+    text = "\n".join(V.report(T, DECKS, K, date(2026, 11, 22)))
+    assert "Coverage (data/research/coverage.csv): 4 rows" in text
+    assert "  study: 3 (to research 1, waiting 2)" in text and "  out_of_scope: 1 (out of scope 1)" in text
+    assert "  Waiting past due: XYZ (study, due 2026-10): wait for the PFS technical report" in text
+    assert "ABC (study" not in text                                          # due next year
+    assert "  Flagged with no growth_project or sustaining row: Producer Co (PRD)" in text
+    K2 = pd.concat([K, pd.DataFrame([dict(zip(coverage.COLS, ("PRD", "growth_project", "to research", "record it",
+                                                                "", "", "")))])])
+    text = "\n".join(V.report(T, DECKS, K2, date(2026, 11, 22)))
+    assert "  Flagged with no growth_project or sustaining row: none" in text
+
+
 def test_compute_says_why_a_row_has_no_valuation(monkeypatch):
     from datetime import date
 

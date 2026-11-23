@@ -1,6 +1,6 @@
 # Valuation coverage: a tracked record of every company the valuation doesn't fully cover
 
-Roadmap 6b · Status: Outstanding · Depends on: 6 (valuation by tier)
+Roadmap 6b · Status: Built Nov 23, 2026 · Depends on: 6 (valuation by tier)
 
 Instructions for Claude Code. Follow CLAUDE.md; don't restate it here.
 
@@ -45,10 +45,13 @@ column name) like the other research records.
 | `growth_project` | a producer with a committed growth project not recorded in `projects.csv` | the project is recorded as committed |
 | `out_of_scope` | no `basis` and no `study_stage`: explorers, physical metal, holding companies, smelters, carried interests, companies without data | by design; the row stays |
 
-**Completeness rule** (checked from committed files only): every company in `pnav_companies.csv` is valued from
-its research or has a row. Valued means a royalty (`basis` OCF), a producer with sustaining built, or a developer
-with a study row that has cash flows. A `sustaining` or `study` row whose gap is closed must be removed.
-`growth_project` rows are added from research and from the validation check; there is no rule that derives them.
+**Completeness rule** (`minerval/coverage.py` `problems`, checked from committed files only): every company in
+`pnav_companies.csv` is valued from its research or has a row. Valued means a royalty (`basis` OCF), a producer with
+sustaining built, or a developer with an unsuperseded study row that has cash flows. A producer on the fallback
+needs a `sustaining` row, and a company with a `study_stage` but no study's cash flows a `study` row; any other
+company not valued needs a row of any gap. A `sustaining` or `study` row whose gap is closed must be removed, and an
+`out_of_scope` row needs a company with no `basis` and no `study_stage`. `growth_project` rows are added from
+research and from the validation check; there is no rule that derives them.
 
 **Report:** `valuation`'s report gains a Coverage section with the following:
 - counts by gap and status;
@@ -61,16 +64,18 @@ a new gap. The README's "Valuation by tier" section names the record.
 
 ## Acceptance criteria
 
-- [ ] A1. `coverage.csv` has the fixed columns, values from the allowed sets, `due` as `YYYY-MM` on `waiting` rows,
-  and an https `source` on `not published` and `waiting` rows. — new data-file test `test_coverage_record_is_well_formed`
-- [ ] A2. Every company is valued from its research or has a coverage row, and no `sustaining` or `study` row stays
-  after its gap closes. — new data-file test `test_every_valuation_gap_has_a_coverage_row`
-- [ ] A3. The `valuation` report's Coverage section counts rows by gap and status, names `waiting` rows past due,
-  and names flagged companies with no row. — new test in `tests/test_valuation.py`, `test_report_summarises_coverage`
-- [ ] A4. The record is filled for Nov 23, 2026: the 52 fallback producers, the developers without a recorded
+- [x] A1. `coverage.csv` has the fixed columns, values from the allowed sets, `due` as `YYYY-MM` on `waiting` rows,
+  and an https `source` on `not published` and `waiting` rows. —
+  `tests/test_data_files.py::test_coverage_record_is_well_formed`
+- [x] A2. Every company is valued from its research or has a coverage row, and no `sustaining` or `study` row stays
+  after its gap closes. — `tests/test_data_files.py::test_every_valuation_gap_has_a_coverage_row`, with the rule on
+  fixture companies in `tests/test_coverage.py::test_every_company_is_valued_or_explained_and_closed_gaps_are_removed`
+- [x] A3. The `valuation` report's Coverage section counts rows by gap and status, names `waiting` rows past due,
+  and names flagged companies with no row. — `tests/test_valuation.py::test_report_summarises_coverage`
+- [x] A4. The record is filled for Nov 23, 2026: the 52 fallback producers, the developers without a recorded
   study, a `growth_project` row for each of the 9 flagged producers, and the out-of-scope companies. — the A2 test
-  passes and `valuation` names no unexplained flag
-- [ ] A5. CLAUDE.md and the README describe the record and when to update it. — `grep -n coverage.csv CLAUDE.md
+  passes and `valuation` names no unexplained flag (Nov 23, 2026: 100 rows; no `waiting` row past due)
+- [x] A5. CLAUDE.md and the README describe the record and when to update it. — `grep -n coverage.csv CLAUDE.md
   README.md` shows both
 - [ ] A6. (data) No `sustaining` row is still `to research`: each producer's split is recorded or marked `not
   published` with its source. — the report's Coverage counts
@@ -82,6 +87,11 @@ a new gap. The README's "Valuation by tier" section names the record.
 - Coverage gaps are tracked in a committed record that a test keeps complete, not only in the untracked report
   (the user, 2026-11-23).
 - Out-of-scope companies get a row, so every tracked company is accounted for as valued or explained.
+- A company with no `basis` and no `study_stage` that isn't out of scope by design gets the row its gap needs:
+  Montage Gold (first gold Sept 2026, no trailing cash flow yet) has a `study` row.
+- Rows found in research count as well as the flagged producers': committed projects with no study (AIC Mines,
+  Avino, Sierra Madre, Silangan), McIlvenna Bay (remaining capex not published), Oko West (waiting for the
+  combined study) and the Khoemacau expansion each have a `growth_project` row.
 
 ## Open questions
 

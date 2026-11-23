@@ -360,9 +360,10 @@ def _ratio(v) -> str:
     return "" if v is None or pd.isna(v) else f"{v:.2f}"
 
 
-def report(T: pd.DataFrame, deck_prices: dict) -> list[str]:
+def report(T: pd.DataFrame, deck_prices: dict, K: pd.DataFrame | None = None, today=None) -> list[str]:
     """The validation report: decks, what was valued and on what basis, what wasn't and why, NAVs far from the
-    outside views, and each company's NPV, EV / NPV and buy-below price at the base deck."""
+    outside views, the Coverage section from `K` (data/research/coverage.csv; roadmap 6b), and each company's NPV,
+    EV / NPV and buy-below price at the base deck."""
     c = cfg()
     base = c["base_deck"]
     out = ["Valuation by tier at the decks in [scenarios] (spot is not used):"]
@@ -381,6 +382,11 @@ def report(T: pd.DataFrame, deck_prices: dict) -> list[str]:
     flagged = T[T["flags"].astype(str).str.len() > 0]
     out += ["", f"Check against outside views (more than {c['check_factor']:g}x away): {len(flagged)}"]
     out += [f"  {r.holding}: {r.flags}" for r in flagged.itertuples()]
+    if K is not None:
+        from datetime import date
+
+        from .coverage import summary
+        out += [""] + summary(K, T, today or date.today())
     for tier in ("producer", "royalty", "developer"):
         X = val[(val.tier == tier) & has]
         if X.empty:
@@ -400,15 +406,17 @@ def run(today=None) -> list[str]:
     out/valuation/report.txt."""
     from datetime import date
 
+    from . import coverage
     from .pnav import inputs
     from .price_model import Metals
     D = decks()
     m = Metals()
-    T = compute(inputs(pd.read_csv(DERIVED / "holdings_detail.csv"), m), D, today or date.today())
+    today = today or date.today()
+    T = compute(inputs(pd.read_csv(DERIVED / "holdings_detail.csv"), m), D, today)
     ensure(DERIVED)
     T.to_csv(DERIVED / "valuation.csv", index=False)
     dest = OUT / "valuation"
     ensure(dest)
-    rep = report(T, D)
+    rep = report(T, D, coverage.load() if coverage.PATH.exists() else None, today)
     (dest / "report.txt").write_text("\n".join(rep) + "\n")
     return rep[:12] + ["", f"Full report: {dest / 'report.txt'}; data: {DERIVED / 'valuation.csv'}"]
