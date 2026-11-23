@@ -94,7 +94,8 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
      says why. Years a table aggregates are spread evenly only with the user's approval.
   4. **Time:** discount from today to the construction start: the company's guided `construction_start`, else
      `[valuation.years_to_start]` by stage. Once a committed project's construction start has passed, the study's
-     years from its first year of payable metal are used instead, discounted from today to the guided
+     years from its first production year (payable metal and a positive after-tax cash flow: a commissioning year
+     still carrying construction capex counts as construction) are used instead, discounted from today to the guided
      `first_production`, and the remaining capex to completion is subtracted: the capex already spent is out of the
      company's cash and isn't counted again. Without a guided first production date or a stated remaining capex the
      project isn't valued, and the report says which is missing.
@@ -238,6 +239,7 @@ Valuation (to build):
 - [x] A30. A committed project whose construction is under way is valued from its first production year, at the
   guided first production date, less the stated remaining capex; without either it isn't valued, and says why. —
   `tests/test_studies.py::test_production_years_start_at_the_first_year_with_payable_metal`,
+  `tests/test_studies.py::test_a_commissioning_year_still_carrying_construction_capex_isnt_a_production_year`,
   `tests/test_studies.py::test_a_project_under_construction_is_valued_from_first_production`,
   `tests/test_studies.py::test_under_construction_needs_first_production_and_remaining_capex`
 

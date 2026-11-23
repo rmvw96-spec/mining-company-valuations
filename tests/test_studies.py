@@ -84,6 +84,15 @@ def test_production_years_start_at_the_first_year_with_payable_metal():
     assert list(P.year) == list(range(1, len(POST) - 1)) and list(P.post_tax_fcf_usd_m) == POST[2:]
 
 
+def test_a_commissioning_year_still_carrying_construction_capex_isnt_a_production_year():
+    """Skouries' study year -1 has first concentrate (15.7 koz) but -202.8 of construction capex: production starts
+    at the first year with payable metal and a positive after-tax cash flow."""
+    _, F = silver_sand()
+    F.loc[F.year == 2, "payable_silver_koz"] = 500.0                  # commissioning metal in a construction year
+    P = S.production_years(F)
+    assert P.post_tax_fcf_usd_m.iloc[0] == POST[2] and list(P.year)[:2] == [1, 2]
+
+
 def test_a_project_under_construction_is_valued_from_first_production(monkeypatch):
     """Construction under way: the study's years from first production, placed at the guided date, less the
     remaining capex the company states (the capex already spent isn't counted again)."""

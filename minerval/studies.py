@@ -95,9 +95,10 @@ def flows(C: pd.DataFrame, p) -> pd.DataFrame:
 
 
 def production_years(F: pd.DataFrame) -> pd.DataFrame:
-    """The study's table from its first year with any payable metal, renumbered from year 1 (for a project whose
-    construction is under way: the capex before first production is mostly spent)."""
-    has = F[list(METALS.values())].fillna(0).sum(axis=1) > 0
+    """The study's table from its first production year, renumbered from year 1 (for a project whose construction is
+    under way: the capex before first production is mostly spent). A production year has payable metal and a
+    positive after-tax cash flow: a commissioning year still carrying construction capex counts as construction."""
+    has = (F[list(METALS.values())].fillna(0).sum(axis=1) > 0) & (F.post_tax_fcf_usd_m > 0)
     if not has.any():
         return F.iloc[0:0]
     first = F.loc[has, "year"].min()
