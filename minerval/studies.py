@@ -43,7 +43,8 @@ METALS = {"gold": "payable_gold_koz", "silver": "payable_silver_koz", "copper": 
 UNIT = {"gold": 1e3, "silver": 1e3, "copper": 1e6, "lead": 1e6, "zinc": 1e6}   # payable units -> ounces or pounds
 PROJECT_COLS = ["ticker", "project", "attributable_pct", "study_type", "study_date", "study_price",
                 "study_npv_usd_m", "study_discount_rate", "discounting", "marginal_tax_rate", "net_revenue_share", "sensitivity",
-                "initial_capex_usd_m", "construction_start", "first_production", "permits", "committed", "superseded",
+                "initial_capex_usd_m", "remaining_capex_usd_m", "construction_start", "first_production", "permits",
+                "committed", "superseded",
                 "source", "as_of", "notes"]
 CASHFLOW_COLS = ["ticker", "project", "study_date", "year", "pre_tax_fcf_usd_m", "post_tax_fcf_usd_m",
                  "payable_gold_koz", "payable_silver_koz", "payable_copper_mlb", "payable_lead_mlb",
@@ -91,6 +92,25 @@ def load(path_p=None, path_c=None) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def flows(C: pd.DataFrame, p) -> pd.DataFrame:
     return C[(C.ticker == p.ticker) & (C.project == p.project) & (C.study_date == p.study_date)].sort_values("year")
+
+
+def production_years(F: pd.DataFrame) -> pd.DataFrame:
+    """The study's table from its first year with any payable metal, renumbered from year 1 (for a project whose
+    construction is under way: the capex before first production is mostly spent)."""
+    has = F[list(METALS.values())].fillna(0).sum(axis=1) > 0
+    if not has.any():
+        return F.iloc[0:0]
+    first = F.loc[has, "year"].min()
+    P = F[F.year >= first].copy()
+    P["year"] = P.year - first + 1
+    return P
+
+
+def under_construction(p, today: date) -> bool:
+    """A committed project whose guided construction start has passed."""
+    s = str(p.get("construction_start", "")).strip()
+    return (str(p.get("committed", "")).strip().lower() == "yes" and bool(s)
+            and pd.Timestamp(s).date() <= today)
 
 
 def tax_share(F: pd.DataFrame) -> float | None:
@@ -213,10 +233,24 @@ def risk_adjusted(p, F: pd.DataFrame, prices: dict, rate: float, today: date) ->
     if not chk.get("ok"):
         out["why"] = "; ".join(chk["flags"]) or "rebuild failed"
         return out
-    v = npv(F, rate, {**chk["study_prices"], **prices}, chk["study_prices"], chk["tax_share"], chk["rev_share"],
+    building = under_construction(p, today)
+    G = production_years(F) if building else F
+    v = npv(G, rate, {**chk["study_prices"], **prices}, chk["study_prices"], chk["tax_share"], chk["rev_share"],
             p.discounting)
     out["npv"] = v
-    t, basis = years_to_start(p, today)
+    remaining = 0.0
+    if building:
+        # Construction under way: the study's years from first production, placed at the guided first production
+        # date, less the remaining capex to completion the company states (what's spent is out of its cash already)
+        fp, rc = str(p.get("first_production", "")).strip(), str(p.get("remaining_capex_usd_m", "")).strip()
+        if not fp:
+            t, basis = None, "construction under way: no guided first production date"
+        elif not rc:
+            t, basis = None, "construction under way: no remaining capex to completion recorded"
+        else:
+            t, basis, remaining = max((pd.Timestamp(fp).date() - today).days / 365.25, 0.0), "guided", float(rc)
+    else:
+        t, basis = years_to_start(p, today)
     tf = None if t is None else 1 / (1 + rate) ** t
     st = stage(p)
     prob = cfg().get("stage_probability", {}).get(st)
@@ -226,7 +260,7 @@ def risk_adjusted(p, F: pd.DataFrame, prices: dict, rate: float, today: date) ->
     elif prob is None:
         out["why"] = f"no probability of success set for {st} ([valuation.stage_probability])"
     else:
-        out["risk_adjusted"] = v * tf * prob * share
+        out["risk_adjusted"] = (v * tf * prob - remaining) * share
         out["why"] = "" if basis == "guided" else basis
     out.update(time_factor=tf, years=t, stage=st, probability=prob, share=share)
     return out

@@ -68,7 +68,8 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
 - **Fallback when blank:** free cash flow after all spending, labelled "FCF basis: sustaining not recorded" in the
   screen and the buy signal.
 - **Pipeline:** a growth project counts only when it is committed (`projects.csv` `committed` = yes: construction
-  decision taken) and has a published study. Its risk-adjusted NPV (Part 3), at the company's share, is added.
+  decision taken) and has a published study. Its risk-adjusted NPV (Part 3), at the company's share, is added;
+  one whose construction is under way is valued from first production (Part 3, step 4).
 - **Cost inflation:** the pessimistic deck runs with costs raised by `[valuation] pessimistic_cost_increase`
   (the existing cost-change function; roadmap 4a's company AISC improves it). Base and optimistic use reported costs.
 - **Measures:** EV / NPV at each deck; sustaining FCF yield = base-deck cash flow ÷ EV; downside test: EV ≤
@@ -78,7 +79,8 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
 
 - **Records:** `data/research/projects.csv`, one row per study (`studies.PROJECT_COLS`: share, study type and
   date, study prices, published NPV and rate, `discounting`, `marginal_tax_rate`, `net_revenue_share`,
-  `sensitivity`, capex, `construction_start`, `permits`, `committed`, `superseded`, sources), and
+  `sensitivity`, initial capex, remaining capex to completion (as the company states it, once construction is
+  under way), `construction_start`, `first_production`, `permits`, `committed`, `superseded`, sources), and
   `data/research/project_cashflows.csv`, one row per study and year (`studies.CASHFLOW_COLS`: pre- and after-tax
   free cash flow, payable metal by metal; year 1 = first construction year).
 - **Method** (`minerval/studies.py`, `research studies`):
@@ -91,10 +93,15 @@ screen's buy signal uses ([model-portfolio-screen-spec.md](model-portfolio-scree
      has no cash-flow table, or is superseded by a press release without a new technical report, gets no NPV and
      says why. Years a table aggregates are spread evenly only with the user's approval.
   4. **Time:** discount from today to the construction start: the company's guided `construction_start`, else
-     `[valuation.years_to_start]` by stage.
+     `[valuation.years_to_start]` by stage. Once a committed project's construction start has passed, the study's
+     years from its first year of payable metal are used instead, discounted from today to the guided
+     `first_production`, and the remaining capex to completion is subtracted: the capex already spent is out of the
+     company's cash and isn't counted again. Without a guided first production date or a stated remaining capex the
+     project isn't valued, and the report says which is missing.
   5. **Probability:** `[valuation.stage_probability]` by stage: construction (`committed`), permitted (`permits` =
      yes after at least a PFS), else the study type.
-  6. **Risk-adjusted NPV** = NPV × time discount × probability × attributable share.
+  6. **Risk-adjusted NPV** = NPV × time discount × probability × attributable share; under construction,
+     (NPV from first production × time discount × probability − remaining capex) × attributable share.
   7. **Financing and overrun (Rule's financing-adjusted test):** the funding gap (roadmap 3: remaining capex −
      cash − committed funding) at the study's capex and at each of `capex_overrun` (+15%, +30%) is financed with
      `equity_share` (0.35) in equity at `raise_discount` (15%), the rest debt. Dilution at each overrun is shown for
@@ -228,6 +235,11 @@ Valuation (to build):
   `tests/test_layout.py::test_ev_adds_minority_interest`,
   `tests/test_layout.py::test_installed_ev_is_upgraded_to_add_minority_interest`,
   `tests/test_financials.py::test_financials_writes_the_new_columns_once_set_up`
+- [x] A30. A committed project whose construction is under way is valued from its first production year, at the
+  guided first production date, less the stated remaining capex; without either it isn't valued, and says why. —
+  `tests/test_studies.py::test_production_years_start_at_the_first_year_with_payable_metal`,
+  `tests/test_studies.py::test_a_project_under_construction_is_valued_from_first_production`,
+  `tests/test_studies.py::test_under_construction_needs_first_production_and_remaining_capex`
 
 ## Decisions
 
@@ -251,8 +263,14 @@ All by the user, Nov 21, 2026:
   spread evenly over six years.
 - Stage probabilities PEA 0.35, PFS 0.50, FS 0.60, permitted 0.75, construction 0.90, and assumed years to
   construction 4 / 3 / 2 / 1 / 0, as researched (evidence in `config/settings.toml`) (the user, 2026-11-22).
+- A committed project already under construction (Skouries, Oko West) is valued from first production, at the
+  guided date, less the remaining capex the company states, rather than re-pricing the whole study from today or
+  leaving it out until production (the user, 2026-11-22).
 
 ## Open questions
 
 1. Deck values for Pessimistic, Base and Optimistic, with sources: the user sets them when the decks are built.
    For reference, Rule's own conservative deck was about $3,400 gold (Kitco, Sept 2026, from secondary write-ups).
+2. When a committed project's production enters the trailing operating cash flow, it must leave the pipeline (or
+   be counted twice). Proposed: drop it once a full year of production is in the trailing 12 months, by
+   `first_production` against the company's financials date; until then the partial year is counted twice.

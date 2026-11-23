@@ -18,7 +18,7 @@ def silver_sand(**k):
          "study_discount_rate": "5", "discounting": "mid-year", "marginal_tax_rate": "32.5",
          "net_revenue_share": "0.917",
          "sensitivity": "silver 18:329, 30:1124 @5%; silver 18:232, 30:882 @8%", "initial_capex_usd_m": "358",
-         "construction_start": "", "first_production": "", "permits": "", "committed": "", "superseded": "",
+         "remaining_capex_usd_m": "", "construction_start": "", "first_production": "", "permits": "", "committed": "", "superseded": "",
          "source": "x", "as_of": "", "notes": ""}
     p.update(k)
     F = pd.DataFrame({"ticker": "NEWP", "project": "Silver Sand", "study_date": "2024-06-19",
@@ -76,6 +76,39 @@ def test_risk_adjusted_needs_a_construction_date_and_a_stage_probability(monkeyp
     monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {"PFS": 0.5}, "years_to_start": {}})
     z = S.risk_adjusted(p2, F, {"silver": 30}, 0.09, date(2026, 11, 21))
     assert abs(z["risk_adjusted"] - y["npv"] / 1.09 ** 2 * 0.5 * 0.8) < 1      # two years, 50%, 80% share
+
+
+def test_production_years_start_at_the_first_year_with_payable_metal():
+    _, F = silver_sand()
+    P = S.production_years(F)
+    assert list(P.year) == list(range(1, len(POST) - 1)) and list(P.post_tax_fcf_usd_m) == POST[2:]
+
+
+def test_a_project_under_construction_is_valued_from_first_production(monkeypatch):
+    """Construction under way: the study's years from first production, placed at the guided date, less the
+    remaining capex the company states (the capex already spent isn't counted again)."""
+    monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {"construction": 0.9}, "years_to_start": {}})
+    p, F = silver_sand(committed="yes", construction_start="2025-01-01", first_production="2027-11-21",
+                       remaining_capex_usd_m="100", attributable_pct="80")
+    x = S.risk_adjusted(p, F, {"silver": 30}, 0.09, date(2026, 11, 21))
+    v = S.npv(S.production_years(F), 0.09, {"silver": 24 + 6}, {"silver": 24}, x["check"]["tax_share"],
+              x["check"]["rev_share"], "mid-year")
+    assert x["npv"] == v and x["stage"] == "construction"
+    assert abs(x["risk_adjusted"] - (v / 1.09 * 0.9 - 100) * 0.8) < 0.5          # one year to first production
+    assert x["why"] == ""
+
+
+def test_under_construction_needs_first_production_and_remaining_capex(monkeypatch):
+    monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {"construction": 0.9}, "years_to_start": {}})
+    p, F = silver_sand(committed="yes", construction_start="2025-01-01", remaining_capex_usd_m="100")
+    x = S.risk_adjusted(p, F, {"silver": 30}, 0.09, date(2026, 11, 21))
+    assert x["risk_adjusted"] is None and "no guided first production" in x["why"]
+    p, F = silver_sand(committed="yes", construction_start="2025-01-01", first_production="2027-11-21")
+    y = S.risk_adjusted(p, F, {"silver": 30}, 0.09, date(2026, 11, 21))
+    assert y["risk_adjusted"] is None and "no remaining capex" in y["why"]
+    p, F = silver_sand(committed="yes", construction_start="2027-11-21")          # not started: the whole study
+    z = S.risk_adjusted(p, F, {"silver": 30}, 0.09, date(2026, 11, 21))
+    assert abs(z["risk_adjusted"] - z["npv"] / 1.09 * 0.9) < 0.5
 
 
 def test_superseded_study_has_no_npv():
