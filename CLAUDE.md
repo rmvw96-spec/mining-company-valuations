@@ -256,6 +256,10 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
     (Pan American's 44% of Juanicipio).
   - Where a release's text and its tables disagree, record the tables and note the gap (Coeur Q3 2026: text
     ~$122M, mine tables $104M).
+  - AISC "exploration costs" can be expensed, so they're already in operating cash flow: check the income
+    statement and take them out of a combined figure (Americas Gold & Silver).
+  - A company whose only mine was under construction has zero sustaining spending for those periods: record 0
+    with the reason (Rio2, 2025).
 - **A press release that supersedes a study** (new economics, no new technical report) is not used for an NPV
   (Perpetua, March 2026).
 - **Juniors** split sustaining from growth less often and publish reserves less often; their MD&As may be on
