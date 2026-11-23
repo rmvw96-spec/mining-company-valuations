@@ -38,7 +38,7 @@ MEASURES = {        # measure, higher is better
     "producer": [("peer_norm", False), ("pnav_low", False), ("breakeven_gap", False), ("net_cash_pct", True),
                  ("share_change_3y", False), ("addon", False), ("addon_reliance", False)],
     "developer": [("pnav_after", False), ("peer_ev_ratio", False), ("months_of_cash", True), ("addon", False)],
-    "royalty": [("independent_pnav", False), ("own_pctile", False), ("peer_norm", False), ("addon", False)],
+    "royalty": [("pnav_used", False), ("own_pctile", False), ("peer_norm", False), ("addon", False)],
 }
 HOME = {".AX": "ASX", ".L": "LSE", ".JO": "JSE", ".HK": "HKEX", ".IS": "Borsa Istanbul", ".WA": "Warsaw",
         ".JK": "IDX", ".PS": "PSE", ".HE": "Helsinki", ".ST": "Stockholm", ".SN": "Santiago", ".LM": "Lima",
@@ -173,7 +173,7 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
     P, a, b, tab = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs_tab"]
     T, D = S["pnav_tab_cols"], S["downside_cols"]
     fields = {"holding": P["holding"], "mcap": P["mcap"], "addon": P["addon"], "peer_group": P["peer_group"],
-              "independent_pnav": P["independent_pnav"], "royalty_band": P["royalty_band"],
+              "pnav_used": P["pnav_used"], "royalty_band": P["royalty_band"],
               "resource_unit": P["resource_unit"], "months_of_cash": P["months_of_cash"],
               "developer_check": P["developer_check"], "pnav_after_raw": P["pnav_after"],
               "peer_ev_ratio": P["peer_ev_ratio"], "pnav_addon_up": P["pnav_addon_up"],
@@ -241,7 +241,7 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
 
 def add_measures(U: pd.DataFrame, metals: dict) -> pd.DataFrame:
     U = U.copy()
-    for c in ("mcap", "pnav_today", "pnav_peer", "pnav_low", "independent_pnav", "peer_ev_ratio", "pnav_addon_up",
+    for c in ("mcap", "pnav_today", "pnav_peer", "pnav_low", "pnav_used", "peer_ev_ratio", "pnav_addon_up",
               "pocf_pctile", "pnav_pctile", "net_cash_pct", "share_change_3y", "breakeven"):
         U[c] = U[c].map(num) if c in U else np.nan
     U["addon"] = U["addon"].map(num) * 100 if "addon" in U else np.nan     # P is a fraction (0.01 = 1 point)
@@ -513,7 +513,7 @@ def why_text(r, k: str, rank: int, of: int) -> str:
     def f(v, fmt):
         return format(v, fmt) if v == v else "—"
     if k == "royalty":
-        body = (f"independent P/NAV {f(r.independent_pnav, '.2f')}; own-history percentile "
+        body = (f"P/NAV {f(r.pnav_used, '.2f')}; own-history percentile "
                 f"{f(r.own_pctile, '.0f')}; valuation {f(r.peer_norm, '.2f')}× peer norm")
     elif k == "developer":
         after = "funded" if _text(r.pnav_after_raw) in FUNDED else f(r.pnav_after, ".2f")

@@ -19,14 +19,14 @@ import pandas as pd
 from .config import OUT, RESEARCH, ensure, settings
 from .pnav import RESOURCE_COLS
 from .sheets import col_to_num, num_to_col, split_cell
-from .signals import SIGNALS, aisc_at, aisc_label, look, status_formula, value_formula
+from .signals import SIGNALS, VALUE_FORMULAS_V1, aisc_at, aisc_label, look, status_formula, value_formula
 
 DEST = OUT / "layout"
 
 # Headers (row 11 on PNAV inputs, row 1 on P/NAV and Holdings downside, the header row on Model portfolio).
 PNAV_HEADERS = {
-    "buy_below": "Buy-below price US$ (framework: buy-zone top × independent NAV per share)",
-    "royalty_band": "Royalty valuation band (framework; uses the independent NAV in R, refreshed by hand)",
+    "buy_below": "Buy-below price US$ (framework: buy-zone top × the NAV per share used in CU)",
+    "royalty_band": "Royalty valuation band (framework; on the P/NAV used in CV: our NAV where valued, else R)",
     "resource_amount": "Resource, millions of the unit",
     "resource_unit": "Resource unit (oz Au, oz AuEq, oz AgEq, lb Cu, lb CuEq)",
     "resource_category": "Resource category",
@@ -41,8 +41,11 @@ PNAV_HEADERS = {
     "developer_check": "Developer check (funding gap when remaining capex is filled in; else the runway)",
 }
 # Columns whose header and formula changed after the first install: `setup-sheet` replaces the old ones (below).
-UPGRADED = {"months_of_cash", "developer_check", "ev"}
+UPGRADED = {"months_of_cash", "developer_check", "ev", "buy_below", "royalty_band"}
 PNAV_HEADERS_V1 = {"months_of_cash": "Months of cash (at the last 12 months' burn)",
+                   "buy_below": "Buy-below price US$ (framework: buy-zone top × independent NAV per share)",
+                   "royalty_band": "Royalty valuation band (framework; uses the independent NAV in R, refreshed by "
+                                   "hand)",
                    "ev": "EV $M (market cap − net cash)",
                    "developer_check": "Developer check (project loans aren't counted as cash: check undrawn "
                                       "facilities)"}
@@ -55,7 +58,7 @@ FINANCING_HEADERS = {
     "funding_gap": "Funding gap $M (remaining capex − cash − committed funding)",
     "new_shares": "New shares if the gap is raised in equity, millions (pessimistic: debt and streams dilute less)",
     "dilution": "Dilution from that raise",
-    "nav_per_share_after": "NAV per share after the raise US$ (NAV: R × shares, or study value S + net cash)",
+    "nav_per_share_after": "NAV per share after the raise US$ (NAV: CU × shares, or study value S + net cash)",
     "pnav_after": "P/NAV after an equity raise for the gap (pessimistic), or funded",
     "resource_reserves": "Reserves, millions of the unit in AU (optional split)",
     "resource_mi": "M&I excluding reserves, millions of the unit (optional split)",
@@ -66,6 +69,10 @@ FINANCING_HEADERS = {
     "ev_per_weighted": "EV per weighted unit US$ (per gold-equivalent oz for gold and silver; per lb for copper)",
     "peer_ev_ratio": "EV per weighted unit ÷ peer-group median (same unit family)",
 }
+# Financing columns whose header and formula changed after install (own-nav-first: the NAV used in CU).
+FINANCING_UPGRADED = {"nav_per_share_after"}
+FINANCING_HEADERS_V1 = {"nav_per_share_after": "NAV per share after the raise US$ (NAV: R × shares, or study value S + "
+                                               "net cash)"}
 FINANCING_INPUTS = ["committed_funding", "remaining_capex", "funded_statement", "financing_source",
                     "resource_reserves", "resource_mi", "resource_inferred", "resource_split_source"]
 FINANCING_FORMATS = {"committed_funding": "#,##0.0", "remaining_capex": "#,##0.0", "months_of_cash_only": "0.0",
@@ -244,13 +251,12 @@ def pnav_formulas() -> dict:
     def r(name):
         return pnav_range(name)
     return {
-        "buy_below": f'=ARRAYFORMULA(IF(({r("peer_group")}="Royalty/streaming")*({r("nav_per_share")}<>""),'
-                     f'{r("nav_per_share")}*{sig("royalty_pnav_median", "G")},""))',
+        "buy_below": f'=ARRAYFORMULA(IF(({r("peer_group")}="Royalty/streaming")*ISNUMBER({r("nav_used")}),'
+                     f'IF({r("nav_used")}>0,{r("nav_used")}*{sig("royalty_pnav_median", "G")},""),""))',
         "royalty_band": f'=ARRAYFORMULA(LET(buy_top,{sig("royalty_pnav_median", "G")},'
-                        f'normal_top,{sig("royalty_pnav_median", "H")},'
-                        f'IF({r("peer_group")}<>"Royalty/streaming","",IF({r("independent_pnav")}="",'
-                        f'"no independent NAV",IF({r("independent_pnav")}<=buy_top,"Buy zone",'
-                        f'IF({r("independent_pnav")}<=normal_top,"Normal range","Rich"))))))',
+                        f'normal_top,{sig("royalty_pnav_median", "H")},pnav,{r("pnav_used")},'
+                        f'IF({r("peer_group")}<>"Royalty/streaming","",IF(pnav="","no NAV",IF(ISNUMBER(pnav),'
+                        f'IF(pnav<=buy_top,"Buy zone",IF(pnav<=normal_top,"Normal range","Rich")),pnav)))))',
         "ev": f'=ARRAYFORMULA(IF(ISNUMBER({r("mcap")})*ISNUMBER({r("net_cash")}),'
               f'{r("mcap")}-{r("net_cash")}+{n(r("minority"))},""))',
         "ev_per_unit": f'=ARRAYFORMULA(IF(ISNUMBER({r("ev")})*ISNUMBER({r("resource_amount")}),'
@@ -296,6 +302,13 @@ def pnav_formulas_v1() -> dict:
     def r(name):
         return pnav_range(name)
     return {
+        "buy_below": f'=ARRAYFORMULA(IF(({r("peer_group")}="Royalty/streaming")*({r("nav_per_share")}<>""),'
+                     f'{r("nav_per_share")}*{sig("royalty_pnav_median", "G")},""))',
+        "royalty_band": f'=ARRAYFORMULA(LET(buy_top,{sig("royalty_pnav_median", "G")},'
+                        f'normal_top,{sig("royalty_pnav_median", "H")},'
+                        f'IF({r("peer_group")}<>"Royalty/streaming","",IF({r("independent_pnav")}="",'
+                        f'"no independent NAV",IF({r("independent_pnav")}<=buy_top,"Buy zone",'
+                        f'IF({r("independent_pnav")}<=normal_top,"Normal range","Rich"))))))',
         "ev": f'=ARRAYFORMULA(IF(ISNUMBER({r("mcap")})*ISNUMBER({r("net_cash")}),{r("mcap")}-{r("net_cash")},""))',
         "months_of_cash": f'=ARRAYFORMULA(IF(ISNUMBER({r("fcf_12m")})*ISNUMBER({r("cash")}),'
                           f'IF({r("fcf_12m")}<0,{r("cash")}/-{r("fcf_12m")}*12,"Cash-generating"),""))',
@@ -309,13 +322,14 @@ def pnav_formulas_v1() -> dict:
     }
 
 
-def financing_formulas() -> dict:
-    """{column name: formula for row pnav_first_row} for the developer financing and weighted-resource columns."""
+def financing_formulas(nav_col: str = "nav_used") -> dict:
+    """{column name: formula for row pnav_first_row} for the developer financing and weighted-resource columns. The
+    NAV before a raise is the NAV per share used (CU) × shares, else the study value + net cash."""
     def r(name):
         return pnav_range(name)
     dev = f'{r("peer_group")}<>"Developer"'
     shares = f'{r("mcap")}/{r("price")}'
-    nav = (f'IF(ISNUMBER({r("nav_per_share")}),{r("nav_per_share")}*{shares},'
+    nav = (f'IF(ISNUMBER({r(nav_col)}),{r(nav_col)}*{shares},'
            f'IF(ISNUMBER({r("study_value")}),{r("study_value")}+{n(r("net_cash"))},""))')
     gap, new = r("funding_gap"), r("new_shares")
     raise_ = f"IF({gap}>0,{gap},0)"
@@ -355,6 +369,35 @@ def financing_formulas() -> dict:
         "peer_ev_ratio": f'=MAP({r("peer_group")},{unit},{r("ev_per_weighted")},LAMBDA(p,u,v,IF(NOT(ISNUMBER(v)),"",'
                          f'IFERROR(v/MEDIAN(FILTER({col("ev_per_weighted")},{col("peer_group")}=p,'
                          f'LEFT({col("resource_unit")},2)=LEFT(u,2),ISNUMBER({col("ev_per_weighted")}))),""))))',
+    }
+
+
+def financing_formulas_v1() -> dict:
+    """The installed formulas for FINANCING_UPGRADED before own-nav-first (the NAV from the independent NAV in R)."""
+    return {k: v for k, v in financing_formulas("nav_per_share").items() if k in FINANCING_UPGRADED}
+
+
+NAV_USED_HEADERS = {
+    "nav_used": "NAV per share used US$: ours ((CE + E − CT) ÷ shares) where CE has a base-deck NPV, else the "
+                "independent NAV in R",
+    "pnav_used": "P/NAV used: price ÷ CU (a NAV at or below zero shows \"negative NAV\"); developers without one: "
+                 "market cap ÷ (study value S + net cash)",
+}
+NAV_USED_FORMATS = {"nav_used": "0.00", "pnav_used": "0.00"}
+
+
+def nav_used_formulas() -> dict:
+    """PNAV inputs CU:CV (own-nav-first): our NAV per share where the valuation has a base-deck NPV, else R; and the
+    P/NAV on it. Our valuation takes precedence over an independent value (the user, Nov 23, 2026)."""
+    def r(name):
+        return pnav_range(name)
+    ce, e, c, d, cu, s = r("npv_base"), r("net_cash"), r("price"), r("mcap"), r("nav_used"), r("study_value")
+    return {
+        "nav_used": f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({ce})*ISNUMBER({e})*ISNUMBER({c})*ISNUMBER({d}),'
+                    f'IF(({c}>0)*({d}>0),({ce}+{e}-{n(r("minority"))})*{c}/{d},""),'
+                    f'IF(ISNUMBER({r("nav_per_share")}),{r("nav_per_share")},"")),""))',
+        "pnav_used": f'=ARRAYFORMULA(IFERROR(IF(ISNUMBER({cu}),IF({cu}>0,{c}/{cu},"negative NAV"),'
+                     f'IF(ISNUMBER({s}),{d}/({s}+{e}),"")),""))',
     }
 
 
@@ -540,7 +583,8 @@ def step_signals(sheet) -> Step:
         for c, v in (("B", s.tier), ("C", s.label), ("D", s.unit), ("J", s.note), ("K", s.source)):
             st.add(tab, f"{c}{r}", v, "seed")
         if s.formula:
-            st.add(tab, f"E{r}", value_formula(s))
+            old = VALUE_FORMULAS_V1.get(s.key)
+            st.add(tab, f"E{r}", value_formula(s), *(("upgrade", old()) if old else ()))
         if s.key in th:
             st.add(tab, f"G{r}", th[s.key][0], "seed")
             st.add(tab, f"H{r}", th[s.key][1], "seed")
@@ -659,10 +703,16 @@ def step_financing() -> Step:
     tab, a, b, P = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs"]
     st = Step(f"{tab}: developer financing and weighted resource columns "
               f"{P['committed_funding']}:{P['peer_ev_ratio']}")
+    v1 = financing_formulas_v1()
     for name, h in FINANCING_HEADERS.items():
-        st.add(tab, f"{P[name]}{a - 1}", h)
+        if name in FINANCING_UPGRADED:
+            st.add(tab, f"{P[name]}{a - 1}", h, "upgrade", FINANCING_HEADERS_V1[name])
+        else:
+            st.add(tab, f"{P[name]}{a - 1}", h)
     for name, f in financing_formulas().items():
         _spill(st, tab, P[name], a, b, f)
+        if name in FINANCING_UPGRADED:
+            st.cells[-(b - a + 1)] = Cell(tab, f"{P[name]}{a}", f, "upgrade", v1[name])
     for (row, name), v in financing_seeds().items():
         st.add(tab, f"{P[name]}{row}", v, "seed")
     for name, fmt in FINANCING_FORMATS.items():
@@ -749,6 +799,20 @@ def step_minority() -> Step:
     st = Step(f"{tab}: column {P['minority']} (minority interest, added to EV in {P['ev']})")
     st.add(tab, f"{P['minority']}{a - 1}", MINORITY_HEADER)
     st.formats.append((tab, f"{P['minority']}{a}:{P['minority']}{b}", "#,##0.0"))
+    return st
+
+
+def step_nav_used() -> Step:
+    """PNAV inputs CU:CV (own-nav-first): the NAV per share and P/NAV used, spill formulas over CE, E, CT and R."""
+    S = _S()
+    tab, a, b, P = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs"]
+    st = Step(f"{tab}: columns {P['nav_used']}:{P['pnav_used']} (NAV per share and P/NAV used: ours first)")
+    for name, h in NAV_USED_HEADERS.items():
+        st.add(tab, f"{P[name]}{a - 1}", h)
+    for name, f in nav_used_formulas().items():
+        _spill(st, tab, P[name], a, b, f)
+    for name, fmt in NAV_USED_FORMATS.items():
+        st.formats.append((tab, f"{P[name]}{a}:{P[name]}{b}", fmt))
     return st
 
 
@@ -845,7 +909,7 @@ def _short(v, n=70):
 
 def steps(sheet) -> list[Step]:
     return [step_signals(sheet), step_pnav(sheet), step_financing(), step_cash_flow_change(), step_pnav_tab(),
-            step_sensitivity(), step_own_history(), step_valuation(), step_minority(), step_downside(), step_portfolio(),
+            step_sensitivity(), step_own_history(), step_valuation(), step_minority(), step_nav_used(), step_downside(), step_portfolio(),
             step_portfolio_after()]
 
 

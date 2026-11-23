@@ -181,15 +181,22 @@ def buy_levels(tier: str, npv_base, npv_pessimistic=None, net_cash_m=None, share
     return out | {"buy_below": price, "binding": binding}
 
 
+def nav_per_share(npv_base, net_cash_m, shares_m) -> float | None:
+    """Our NAV per share at the base deck: (NPV + net cash, less minority interest) ÷ shares (own-nav-first)."""
+    if npv_base is None or not _num(npv_base) or not (_num(shares_m) and shares_m > 0):
+        return None
+    return (npv_base + (net_cash_m if _num(net_cash_m) else 0.0)) / shares_m
+
+
 def validation_flags(npv_base, net_cash_m, shares_m, independent_nav=None, consensus_pnav=None, price=None,
                      factor: float | None = None) -> list[str]:
     """Our NAV per share at the base deck ((NPV + net cash) ÷ shares) against the independent NAV per share (PNAV
     inputs R) and the consensus NAV implied by the consensus P/NAV (P_NAV I): one line for each more than `factor`
     ([valuation] check_factor) away, so a bad input shows before it reaches a buy signal."""
     f = cfg()["check_factor"] if factor is None else factor
-    if npv_base is None or not (_num(shares_m) and shares_m > 0):
+    ours = nav_per_share(npv_base, net_cash_m, shares_m)
+    if ours is None:
         return []
-    ours = (npv_base + (net_cash_m if _num(net_cash_m) else 0.0)) / shares_m
     others = []
     if _num(independent_nav) and independent_nav > 0:
         others.append(("independent NAV", independent_nav))
@@ -344,6 +351,7 @@ def compute(I: pd.DataFrame, deck_prices: dict, today, P=None, C=None,
         d.update(buy_below=b["buy_below"], fair_value=b["fair_value"], binding=b["binding"])
         if b["why"] and not d["why"]:
             d["why"] = b["why"]
+        d["nav_per_share"] = nav_per_share(d.get(f"npv {base}"), nc_eq, shares)
         d["flags"] = "; ".join(validation_flags(d.get(f"npv {base}"), nc_eq, shares, r.get("model_nav_per_share_usd"),
                                                 r.get("analyst_consensus_pnav_dec2025"), price))
         rows.append(d)

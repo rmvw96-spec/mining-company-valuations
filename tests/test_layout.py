@@ -30,7 +30,7 @@ def test_fresh_install(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     text = "\n".join(rep)
     assert "conflict" not in text and "Created the Signals tab." in text
-    assert sh.sizes["PNAV inputs"][1] == col_to_num("CT")                     # through minority interest
+    assert sh.sizes["PNAV inputs"][1] == col_to_num("CV")                     # through the P/NAV used
     sig, p = sh.cells["Signals"], sh.cells["PNAV inputs"]
     keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit() and int(k[1:]) >= 5}
     assert set(s.key for s in SIGNALS) <= set(keys)
@@ -245,6 +245,52 @@ def test_installed_ev_is_upgraded_to_add_minority_interest(tmp_path):
     p[ref] = "=MY_OWN()"
     rep = layout.run(sh, out_dir=tmp_path)
     assert p[ref] == "=MY_OWN()" and any("conflict" in line and ref in line for line in rep)
+
+
+def test_nav_used_prefers_our_valuation(tmp_path):
+    """own-nav-first A2: CU is our NAV per share where CE has a base-deck NPV ((CE + E − CT) × C ÷ D), else the
+    independent NAV in R; CV is the P/NAV on it, else the developers' study value (S + net cash)."""
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, P = sh.cells["PNAV inputs"], S["pnav_inputs"]
+    assert (P["nav_used"], P["pnav_used"]) == ("CU", "CV")
+    f = layout.nav_used_formulas()
+    assert p["CU12"] == f["nav_used"] and p["CV12"] == f["pnav_used"] and p.get("CU13", "") == ""
+    assert p["CU11"] == layout.NAV_USED_HEADERS["nav_used"] and p["CV11"] == layout.NAV_USED_HEADERS["pnav_used"]
+    nav = f["nav_used"]
+    assert "(CE12:CE154+E12:E154-IF(ISNUMBER(CT12:CT154),CT12:CT154,0))*C12:C154/D12:D154" in nav
+    assert nav.index("CE12:CE154") < nav.index("R12:R154")                  # ours first, then the independent NAV
+    assert "C12:C154/CU12:CU154" in f["pnav_used"] and "D12:D154/(S12:S154+E12:E154)" in f["pnav_used"]
+    assert '"negative NAV"' in f["pnav_used"]
+
+
+def test_installed_nav_readers_are_upgraded_to_the_nav_used(tmp_path):
+    """own-nav-first A3: the royalty buy-below (AR) and band (AS), the NAV after a raise (BN) and the Signals royalty
+    median read CU and CV; a Sheet with the exact earlier formulas and headers is upgraded in place."""
+    from minerval import signals
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    p, P, sig = sh.cells["PNAV inputs"], S["pnav_inputs"], sh.cells["Signals"]
+    f, fin = layout.pnav_formulas(), layout.financing_formulas()
+    assert "CU12:CU154" in f["buy_below"] and "R12:R154" not in f["buy_below"]
+    assert "CV12:CV154" in f["royalty_band"] and "AJ12:AJ154" not in f["royalty_band"]
+    assert "CU12:CU154" in fin["nav_per_share_after"] and "R12:R154" not in fin["nav_per_share_after"]
+    keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit()}
+    med = f"E{keys['royalty_pnav_median']}"
+    assert "!CV12:CV154" in sig[med] and "!CU12:CU154" in sig[med] and "!AJ12" not in sig[med]
+    v1, fv1 = layout.pnav_formulas_v1(), layout.financing_formulas_v1()
+    for name in ("buy_below", "royalty_band"):
+        p[f"{P[name]}{A - 1}"], p[f"{P[name]}{A}"] = layout.PNAV_HEADERS_V1[name], v1[name]
+    p[f"{P['nav_per_share_after']}{A - 1}"] = layout.FINANCING_HEADERS_V1["nav_per_share_after"]
+    p[f"{P['nav_per_share_after']}{A}"] = fv1["nav_per_share_after"]
+    sig[med] = signals.VALUE_FORMULAS_V1["royalty_pnav_median"]()
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert not any("conflict" in line for line in rep), rep
+    assert p[f"{P['buy_below']}{A}"] == f["buy_below"] and p[f"{P['royalty_band']}{A}"] == f["royalty_band"]
+    assert p[f"{P['royalty_band']}{A - 1}"] == layout.PNAV_HEADERS["royalty_band"]
+    assert p[f"{P['nav_per_share_after']}{A}"] == fin["nav_per_share_after"]
+    assert p[f"{P['nav_per_share_after']}{A - 1}"] == layout.FINANCING_HEADERS["nav_per_share_after"]
+    assert "!CV12:CV154" in sig[med]
 
 
 def test_financing_seeds_come_from_the_research_file():

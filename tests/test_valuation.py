@@ -393,6 +393,20 @@ def test_ev_adds_minority_interest_because_cash_flow_is_consolidated(monkeypatch
     assert T.loc["PRD", "minority_m"] == pytest.approx(250.0)
 
 
+def test_compute_gives_our_nav_per_share(monkeypatch):
+    """own-nav-first A1: our base-deck NAV per share, (NPV + net cash − minority interest) ÷ shares, as the check uses."""
+    from datetime import date
+    P, C = study_stub(monkeypatch)
+    F = inputs_frame()
+    F["minority_m"] = [250.0, np.nan, np.nan, np.nan]
+    T = V.compute(F, DECKS, date(2026, 11, 22), P, C, ten_year_yield=0.04).set_index("ticker")
+    prd = T.loc["PRD"]
+    assert prd["nav_per_share"] == pytest.approx((prd["npv Base"] + 100.0 - 250.0) / 100.0)
+    assert f"NAV ${prd['nav_per_share']:.2f}/share" in prd["flags"]
+    assert T.loc["DEV", "nav_per_share"] == pytest.approx((T.loc["DEV", "npv Base"] + 30.0) / 100.0)
+    assert np.isnan(T.loc["PHYS", "nav_per_share"])                        # not valued: no NAV of ours
+
+
 def test_per_share_figures_subtract_minority_interest(monkeypatch):
     from datetime import date
     P, C = study_stub(monkeypatch)

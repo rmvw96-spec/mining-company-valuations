@@ -59,9 +59,9 @@ holding's relevant signal.
 
 ### Royalty buy zone
 
-- PNAV inputs AR: buy-below price = independent NAV per share (R) × the buy-zone top (Signals G of
-  `royalty_pnav_median`). AS: band ("Buy zone", "Normal range", "Rich", or "no independent NAV"), from the same
-  cells. P/NAV U:V show them. `pnav.py` writes `royalty_band` and `buy_below_price_usd`.
+- PNAV inputs AR: buy-below price = the NAV per share used (CU: ours where valued, else the independent NAV in R;
+  roadmap 6c) × the buy-zone top (Signals G of `royalty_pnav_median`). AS: band ("Buy zone", "Normal range",
+  "Rich", "no NAV" or "negative NAV") on the P/NAV used (CV). P/NAV U:V show them. `pnav.py` writes `royalty_band` and `buy_below_price_usd`.
 - Caveat (header note and README): AJ uses the independent model's NAV at that model's own metal prices, a research
   input refreshed by hand.
 

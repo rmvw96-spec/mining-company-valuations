@@ -25,7 +25,7 @@ signal.
 
 - **Remove:** the valuation filters (peer norm above the review level; developers' `max_peer_ev_ratio`;
   royalties' `royalty_excluded_bands`) and the valuation score measures (`peer_norm`, `pnav_low`, `breakeven_gap`,
-  `addon`, `addon_reliance`, `pnav_after`, `peer_ev_ratio`, `months_of_cash`, `independent_pnav`, `own_pctile`).
+  `addon`, `addon_reliance`, `pnav_after`, `peer_ev_ratio`, `months_of_cash`, `pnav_used`, `own_pctile`).
 - **Replace:** the score with the performance measures below; S's peer-norm level (`[portfolio_screen.review]`)
   with the buy multiple; T's status with the buy-signal order; the generated U and V lines.
 - **Keep:** markets, the data, size, dilution and developer-cash filters, bucket sizes, limits, selection, weights,
