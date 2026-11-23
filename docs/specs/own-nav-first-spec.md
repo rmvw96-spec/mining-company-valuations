@@ -1,6 +1,6 @@
 # Our NAV first: the Sheet's P/NAV decisions use our valuation where we have one
 
-Roadmap 6c · Status: In progress · Depends on: 6 (valuation by tier)
+Roadmap 6c · Status: Built Nov 23, 2026 · Depends on: 6 (valuation by tier)
 
 Instructions for Claude Code. Follow CLAUDE.md; don't restate it here.
 
@@ -68,8 +68,8 @@ direction (lower is better).
 - [x] A4. Python's royalty median reads CV and CU from the Sheet, and our NAV from `valuation.csv` without it. —
   `tests/test_signals.py::test_royalty_median_uses_our_nav_first`
 - [x] A5. The screen's royalty measure is the P/NAV used. — `tests/test_screen.py::test_royalty_measure_is_the_pnav_used`
-- [ ] A6. The live Sheet is upgraded: `setup-sheet --dry-run` shown to the user, then `setup-sheet`, and CU, CV and
-  the four readers read back without error values. — the `setup-sheet` report
+- [x] A6. The live Sheet is upgraded: `setup-sheet --dry-run` shown to the user, then `setup-sheet`, and CU, CV and
+  the four readers read back without error values. — the `setup-sheet` report (Nov 23, 2026: 11 cells, no conflicts; 113 rows with a NAV used, no error values; the royalty median reads 1.73, "Normal range")
 - [x] A7. CLAUDE.md (spill ranges) and the README describe CU and CV. — `grep -n "CU12" CLAUDE.md` and `grep -n
   "NAV per share used" README.md`
 
