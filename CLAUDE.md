@@ -274,6 +274,16 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
     statement and take them out of a combined figure (Americas Gold & Silver).
   - A company whose only mine was under construction has zero sustaining spending for those periods: record 0
     with the reason (Rio2, 2025).
+  - Where sustaining is published only at the company's share of a consolidated mine, gross that mine's figure up
+    to 100% and say so in `notes` (First Majestic's Los Gatos at 70%; the user, Nov 23, 2026).
+  - Where the AISC lines cover only part of the consolidated operations and the rest has no split, record the AISC
+    lines and name what's missing in `notes` (Harmony's gold AISC without CSA copper; the user, Nov 23, 2026).
+  - Capitalized mine development that the company counts in AISC is sustaining spending, like capitalized stripping,
+    once the financial statements confirm it is capitalized (investing cash flow, not operating): Ora Banda's
+    "sustaining mine development", Ramelius's development inside AISC costs (the user, Nov 23, 2026).
+  - ASX announcements by script: the year's list is
+    `asx.com.au/asx/v2/statistics/announcements.do?by=asxCode&asxCode=<CODE>&timeframe=Y&year=<YYYY>`, and each
+    `displayAnnouncement.do?display=pdf&idsId=<id>` page names its `announcements.asx.com.au/asxpdf/...pdf`.
 - **A press release that supersedes a study** (new economics, no new technical report) is not used for an NPV
   (Perpetua, March 2026).
 - **Juniors** split sustaining from growth less often and publish reserves less often; their MD&As may be on

@@ -1,53 +1,37 @@
 ticker,gap,status,next_step,due,source,notes
 FCX,sustaining,not published,the user decides whether total capital less major projects (rounded to US$0.1 billion) counts as sustaining,,https://www.sec.gov/Archives/edgar/data/831259/000083125926000051/fcx-20260930.htm,only total capital less major projects is published
-HBM,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 KGH PW,sustaining,to research,find the consolidated group's split (the H1 presentation covers the parent company only),,https://kghm.com/sites/default/files/2026-08/KGHM_H1_2026_presentation.pdf,"parent company only: not recorded, to avoid mixing bases"
-SFR AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 WAF AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 EMR AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 WDO CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 AAUC CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 TRALT TI,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-OBM AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 KCN AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 TGB,sustaining,not published,check each new MD&A for a sustaining split,,https://www.sec.gov/Archives/edgar/data/878518/000106299326005753/exhibit99-2.htm,the MD&A doesn't split sustaining from growth capital
 ATYM LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 PUCOBREC,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-AG,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 AYA CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-EXK,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-SVM,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 GGD CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-DRD SJ,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 DSV CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 ALK AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-RMS AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-CYL AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
+CYL AU,sustaining,not published,check each quarterly and annual report for sustaining capital in A$ (published per ounce only),,https://announcements.asx.com.au/asxpdf/20260731/pdf/07287jgkc4r8p4.pdf,"FY26: A$169/oz on 99,359 oz sold, no A$ total"
 340 HK,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-GMD AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-WGX AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-HMY,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 KNT CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 1208 HK,sustaining,not published,check the 2026 annual report for a sustaining split,,https://www.mmg.com/content/uploads/2026/08/e_2026-08-11-Interim-Results.pdf,capex by asset only
 AMMN IJ,sustaining,to research,check the IDX filings (9M 2026 financial statements) for a sustaining split,,https://www.investortrust.id/market/121012/laba-bersih-amman-ammn-meroket-jadi-us-880-juta-hingga-kuartal-iii-2026,press coverage only so far: no sustaining split
 AAZ LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 AIS AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 III CN,sustaining,not published,record FY2026 sustaining from the Q4 2026 MD&A (FY2025 was split),,https://wp-imperialmetals-2024.s3.ca-central-1.amazonaws.com/media/2026/11/05155204/2026-Q3-MDA.pdf,"the 2026 year to date isn't split, so the trailing 12 months can't be built"
-HL,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 VALT LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 CAML LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-SSRM,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 BGL AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 RSG AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-ARIS CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 HMMC CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 FRES LN,sustaining,not published,check the 2026 annual report for a sustaining split in US$,,https://www.investegate.co.uk/announcement/rns/fresnillo--fres/interim-results-for-the-six-months-to-30-june-2026/9702443,capex by mine with descriptions only; AISC per ounce only
 PEOLES*,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 29M AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 KAN AU,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 GSVR CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-BTO CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
-AUGO,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 SOSI1 FH,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 HOC LN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
 IPT CN,sustaining,to research,"record the latest annual and year-to-date sustaining capital in capex_periods.csv, then research sustaining --write",,,
@@ -76,6 +60,7 @@ EQX CN,growth_project,to research,"check the latest MD&A for committed growth pr
 AGI,growth_project,to research,"check the latest MD&A for committed growth projects with a published study and record each in projects.csv (committed = yes), or mark this row not published with its source",,,"flagged Nov 23, 2026: NAV under half the independent NAV; cause (A26): the 10-year horizon, and growth not recorded"
 ARIS CN,growth_project,to research,"check the latest MD&A for committed growth projects with a published study and record each in projects.csv (committed = yes), or mark this row not published with its source",,,"flagged Nov 23, 2026: NAV under half the independent NAV; cause (A26): the fallback, and growth still ramping up"
 ARTG CN,growth_project,to research,"check the latest MD&A for committed growth projects with a published study and record each in projects.csv (committed = yes), or mark this row not published with its source",,,"flagged Nov 23, 2026: NAV under half the independent NAV; cause (A26): the 10-year horizon, and growth still ramping up"
+BTO CN,growth_project,to research,"check the latest MD&A for committed growth projects with a published study and record each in projects.csv (committed = yes), or mark this row not published with its source",,,"flagged Nov 23, 2026 once sustaining was recorded: NAV under half the independent NAV; cause: the 8-year reserve life within the 10-year horizon, and Goose still ramping up (the old fallback NPV was too high: Yahoo's free cash flow equals operating cash flow, with no capex)"
 GMIN CN,growth_project,waiting,record the combined Oko West / Oko-Ghanie feasibility study,2027-06,https://gmin.gold/assets/oko/,"Oko West is in projects.csv but not valued: its price grid fails the re-pricing check; the user chose to wait for the combined study (Nov 22, 2026)"
 EGO,growth_project,not published,"record McIlvenna Bay when remaining capex is published (the 2025 FS technical report is on SEDAR+, a user download)",,https://www.sec.gov/Archives/edgar/data/918608/000091860826000027/managementsdiscussionandan.htm,"project capital and Eldorado's spend since the acquisition are published, but not the cumulative spend"
 PX PM,growth_project,not published,record the Silangan study if its NPV and cash flows are published,,https://edge.pse.com.ph/downloadFile.do?file_id=1900017,"the user chose to skip it (Nov 22, 2026)"
