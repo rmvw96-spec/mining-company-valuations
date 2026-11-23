@@ -230,6 +230,8 @@ buy_below_value = "CQ"
 fair_value_price = "CR"
 valuation_why = "CS"
 minority = "CT"                     # minority interest $M (written by financials), added to EV in AZ
+nav_used = "CU"                     # formula: NAV per share used (ours where CE has an NPV, else R; roadmap 6c)
+pnav_used = "CV"                    # formula: P/NAV on CU (developers without one: study value S)
 study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 
@@ -469,7 +471,7 @@ max_peer_ev_ratio = 1.5             # developers: EV per weighted unit at most 1
 # 1.5× × 0.94 on Metal prices reference, sits below where the whole group has traded, so every royalty company reads
 # 1.5-1.9× its norm in Nov 2026). Excluded when the framework band (PNAV inputs AS) is one of these, or the company
 # is at or above the own-history "expensive" threshold (Signals royalty_own_pctile_median H, 75).
-royalty_excluded_bands = ["Rich", "no independent NAV"]
+royalty_excluded_bands = ["Rich", "no NAV", "negative NAV", "no independent NAV"]
 
 # Score: rank percentiles within the bucket (1 = best), averaged with these weights. Equal by default; don't tune
 # them to the backtest (most measures have no history, and one period's best fit is noise).
@@ -484,7 +486,7 @@ addon_reliance = 1.0                # P/NAV with the add-on raised ÷ P/NAV toda
 pnav_after = 1.0                    # developers: P/NAV after a raise (lower; funded counts as best)
 peer_ev_ratio = 1.0                 # developers: EV per weighted unit ÷ peer median (lower)
 months_of_cash = 1.0                # developers (higher; cash-generating counts as best)
-independent_pnav = 1.0              # royalty: independent P/NAV (lower)
+pnav_used = 1.0                     # royalty: P/NAV used, PNAV inputs CV (our NAV where valued; lower)
 own_pctile = 1.0                    # royalty: own-history percentile, P/NAV when recorded else P/OCF (lower)
 
 # Review level S = review_multiple × peer norm (T flags K above S). A level typed by hand is kept.

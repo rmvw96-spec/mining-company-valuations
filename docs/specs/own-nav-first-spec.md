@@ -1,6 +1,6 @@
 # Our NAV first: the Sheet's P/NAV decisions use our valuation where we have one
 
-Roadmap 6c · Status: Outstanding · Depends on: 6 (valuation by tier)
+Roadmap 6c · Status: In progress · Depends on: 6 (valuation by tier)
 
 Instructions for Claude Code. Follow CLAUDE.md; don't restate it here.
 
@@ -59,20 +59,18 @@ direction (lower is better).
 
 ## Acceptance criteria
 
-- [ ] A1. `valuation.csv` gives our base-deck NAV per share, the one the outside-view check uses. — new test in
-  `tests/test_valuation.py`, `test_compute_gives_our_nav_per_share`
-- [ ] A2. `setup-sheet` installs CU and CV as spill formulas with their headers; CU prefers our NAV and falls back to R,
-  and CV falls back to the study value. — new test in `tests/test_layout.py`, `test_nav_used_prefers_our_valuation`
-- [ ] A3. AR, AS, BN and the Signals royalty median read CU and CV, and an installed Sheet's exact old formulas and
-  headers are upgraded in place. — new test in `tests/test_layout.py`,
-  `test_installed_nav_readers_are_upgraded_to_the_nav_used`
-- [ ] A4. Python's royalty median reads CV and CU from the Sheet, and our NAV from `valuation.csv` without it. — new
-  test in `tests/test_signals.py`, `test_royalty_median_uses_our_nav_first`
-- [ ] A5. The screen's royalty measure is the P/NAV used. — new test in `tests/test_screen.py`,
-  `test_royalty_measure_is_the_pnav_used`
+- [x] A1. `valuation.csv` gives our base-deck NAV per share, the one the outside-view check uses. —
+  `tests/test_valuation.py::test_compute_gives_our_nav_per_share`
+- [x] A2. `setup-sheet` installs CU and CV as spill formulas with their headers; CU prefers our NAV and falls back to R,
+  and CV falls back to the study value. — `tests/test_layout.py::test_nav_used_prefers_our_valuation`
+- [x] A3. AR, AS, BN and the Signals royalty median read CU and CV, and an installed Sheet's exact old formulas and
+  headers are upgraded in place. — `tests/test_layout.py::test_installed_nav_readers_are_upgraded_to_the_nav_used`
+- [x] A4. Python's royalty median reads CV and CU from the Sheet, and our NAV from `valuation.csv` without it. —
+  `tests/test_signals.py::test_royalty_median_uses_our_nav_first`
+- [x] A5. The screen's royalty measure is the P/NAV used. — `tests/test_screen.py::test_royalty_measure_is_the_pnav_used`
 - [ ] A6. The live Sheet is upgraded: `setup-sheet --dry-run` shown to the user, then `setup-sheet`, and CU, CV and
   the four readers read back without error values. — the `setup-sheet` report
-- [ ] A7. CLAUDE.md (spill ranges) and the README describe CU and CV. — `grep -n "CU12" CLAUDE.md` and `grep -n
+- [x] A7. CLAUDE.md (spill ranges) and the README describe CU and CV. — `grep -n "CU12" CLAUDE.md` and `grep -n
   "NAV per share used" README.md`
 
 ## Decisions

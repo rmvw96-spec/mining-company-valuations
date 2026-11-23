@@ -339,14 +339,32 @@ def test_fallback_never_overrides_fresh_data():
 def test_royalty_median_from_the_pnav_inputs_tab(tmp_path, monkeypatch):
     monkeypatch.setattr(signals, "load_cache", lambda: base_data())
     monkeypatch.setattr(signals, "royalty_pnavs_from_derived", lambda: [])
-    pnav = {"R12": 50.0, "AJ12": 2.0, "AL12": "Royalty/streaming",
-            "R13": 40.0, "AJ13": 2.6, "AL13": "Royalty/streaming",
-            "R14": "", "AJ14": 9.0, "AL14": "Royalty/streaming",     # no NAV per share: left out, as on the Sheet
-            "R15": 30.0, "AJ15": 0.5, "AL15": "Gold producer"}
+    pnav = {"CU12": 50.0, "CV12": 2.0, "AL12": "Royalty/streaming",
+            "CU13": 40.0, "CV13": 2.6, "AL13": "Royalty/streaming",
+            "CU14": "", "CV14": 9.0, "AL14": "Royalty/streaming",   # no NAV per share used: left out, as on the Sheet
+            "CU15": 30.0, "CV15": 0.5, "AL15": "Gold producer"}
     sh = MemorySheet({"Signals": signals_tab(), "Holdings": {}, "PNAV inputs": pnav})
     signals.run(sh, out_dir=tmp_path, fetch_data=False, today=TODAY)
     out = json.loads((tmp_path / "signals.json").read_text())["signals"]
     assert row(out, "royalty_pnav_median")["value"] == pytest.approx(2.3)
+
+
+def test_royalty_median_uses_our_nav_first(tmp_path, monkeypatch):
+    """own-nav-first A4: from the Sheet, the P/NAV used (CV) of royalty rows with a NAV used (CU), not the independent
+    P/NAV in AJ; without the Sheet, price ÷ our NAV per share in valuation.csv, and the independent P/NAV in pnav.csv
+    for a royalty we don't value."""
+    sh = MemorySheet({"PNAV inputs": {"CU12": 50.0, "CV12": 1.8, "AJ12": 2.0, "AL12": "Royalty/streaming",
+                                      "CU13": 40.0, "CV13": 1.6, "AJ13": 2.6, "AL13": "Royalty/streaming",
+                                      "CU14": "", "CV14": 9.0, "AJ14": 9.0, "AL14": "Royalty/streaming"}})
+    assert sorted(signals.royalty_pnavs_from_sheet(sh)) == [1.6, 1.8]
+    import pandas as pd
+    pd.DataFrame({"sheet_row": [12, 13, 14], "ticker": ["ROY", "OLD", "PRD"], "basis": ["OCF", "OCF", "FCF"],
+                  "model_nav_per_share_usd": [40.0, 25.0, 9.0], "independent or study pnav": [2.5, 2.6, 1.1]}
+                 ).to_csv(tmp_path / "pnav.csv", index=False)
+    pd.DataFrame({"sheet_row": [12, 13, 14], "tier": ["royalty", "royalty", "producer"], "price_usd": [100.0, 65.0, 10.0],
+                  "nav_per_share": [50.0, float("nan"), 12.0]}).to_csv(tmp_path / "valuation.csv", index=False)
+    monkeypatch.setattr(signals, "DERIVED", tmp_path)
+    assert sorted(signals.royalty_pnavs_from_derived()) == [2.0, 2.6]       # ROY: 100 ÷ 50 (ours); OLD: independent
 
 
 def test_changes_are_measured_against_the_sheet_before_the_write(tmp_path, monkeypatch):

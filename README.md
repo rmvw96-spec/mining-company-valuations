@@ -392,6 +392,12 @@ cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `
   (`out/valuation/report.txt`): what was valued on which basis, what wasn't and why, and every NAV more than 2× away
   from the independent or consensus NAV, so a bad input shows before it reaches a buy signal. On the Sheet, PNAV
   inputs CC:CS hold the results (`setup-sheet` adds them).
+- **Our NAV first** (spec: `docs/specs/own-nav-first-spec.md`): our valuation takes precedence over an independent
+  value. PNAV inputs CU is the NAV per share used, ours ((base-deck NPV + net cash − minority interest) ÷ shares)
+  wherever the valuation has one, else the independent NAV typed in R; CV is the P/NAV on it. The royalty buy-below
+  price and band, a developer's P/NAV after a raise, the Signals royalty median and the screen's royalty measure use
+  them. R and its P/NAV in AJ stay as the outside reference: the validation check compares against R, and Company
+  history keeps recording AJ, so own-history percentiles compare like with like.
 - **Coverage** (`data/research/coverage.csv`; spec: `docs/specs/valuation-coverage-spec.md`): one row for each
   company the valuation doesn't fully cover, by gap (`sustaining` for a producer on the free-cash-flow fallback,
   `study` for a developer without a study's cash flows, `growth_project` for a committed project not valued,

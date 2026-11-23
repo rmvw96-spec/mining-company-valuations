@@ -180,6 +180,17 @@ def test_score_averages_the_measures_each_company_has():
     assert S.set_index("holding").loc["B", "measures_used"] == 6     # no Low-price P/NAV
 
 
+def test_royalty_measure_is_the_pnav_used():
+    """own-nav-first A5: royalties are scored on the P/NAV used (PNAV inputs CV: our NAV where valued), lower better."""
+    assert ("pnav_used", False) in SC.MEASURES["royalty"]
+    assert all(m != "independent_pnav" for m, _ in SC.MEASURES["royalty"])
+    assert settings()["portfolio_screen"]["score"]["pnav_used"] == 1.0
+    U = universe(company(holding="A", peer_group="Royalty/streaming", pnav_used=1.9, pnav_peer=1.0),
+                 company(holding="B", peer_group="Royalty/streaming", pnav_used="1.4", pnav_peer=1.0))
+    assert list(SC.score(U, "royalty").holding)[0] == "B"
+    assert "no NAV" in settings()["portfolio_screen"]["filters"]["royalty_excluded_bands"]
+
+
 def test_select_with_the_turnover_buffer():
     ranked = list("abcdefgh")
     assert SC.select(ranked, {"e"}, 3, 2) == ["a", "b", "e"]          # rank 5 = n + 2 stays

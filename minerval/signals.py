@@ -120,7 +120,7 @@ SIGNALS = [
            "drawdown", ("Stock-market panic: framework's moment for bullion and royalties",
                         "Market pullback: watch royalty companies", "Calm"),
            "Panics are when the framework buys bullion and royalty companies.", "Yahoo, SPY", "0.0%"),
-    Signal("royalty_pnav_median", "Royalty", "Royalty companies: median independent P/NAV", "× NAV", "band",
+    Signal("royalty_pnav_median", "Royalty", "Royalty companies: median P/NAV (our NAV first)", "× NAV", "band",
            ("Buy zone", "Normal range", "Rich"),
            "Buy royalty companies at 1.1-1.4× NAV; 1.5-2.2× is their normal range. Uses the independent model's "
            "NAV per share (PNAV inputs R), refreshed by hand.", "PNAV inputs AJ (formula)", "0.00", formula=True),
@@ -421,28 +421,43 @@ def aisc_label(a: dict) -> str:
 
 
 def royalty_pnavs_from_sheet(sheet) -> list[float]:
-    """Independent P/NAVs of the royalty/streaming rows on PNAV inputs, picked as the Sheet's median formula
-    picks them (peer group "Royalty/streaming", a NAV per share). Works where data/derived/ doesn't exist."""
+    """P/NAVs used (PNAV inputs CV: our NAV where valued, else the independent NAV) of the royalty/streaming rows, picked
+    as the Sheet's median formula picks them (a NAV per share used in CU). Works where data/derived/ doesn't exist."""
     S = settings()["sheet"]
     P, a, b = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"]
-    rows = sheet.read(S["pnav_inputs_tab"], f"A{a}:{P['peer_group']}{b}")
-    ip, pg, nav = (col_to_num(P[k]) - 1 for k in ("independent_pnav", "peer_group", "nav_per_share"))
+    pv, pg, nav = (col_to_num(P[k]) - 1 for k in ("pnav_used", "peer_group", "nav_used"))
+    rows = sheet.read(S["pnav_inputs_tab"], f"A{a}:{P['pnav_used']}{b}")
     out = []
     for r in rows:
-        r = list(r) + [""] * (pg + 1)
-        if str(r[pg]).strip() == "Royalty/streaming" and r[nav] not in ("", None) and _num(r[ip]):
-            out.append(float(r[ip]))
+        r = list(r) + [""] * (max(pv, pg, nav) + 1)
+        if str(r[pg]).strip() == "Royalty/streaming" and _num(r[nav]) and _num(r[pv]):
+            out.append(float(r[pv]))
     return out
 
 
 def royalty_pnavs_from_derived() -> list[float]:
-    """Independent P/NAVs of royalty/streaming companies (basis OCF) from data/derived/pnav.csv."""
+    """P/NAVs of royalty/streaming companies (basis OCF): price ÷ our NAV per share (data/derived/valuation.csv) where
+    we value them, else the independent P/NAV in data/derived/pnav.csv (own-nav-first)."""
     p = DERIVED / "pnav.csv"
     if not p.exists():
         return []
     T = pd.read_csv(p)
-    m = T[(T.basis == "OCF") & T.model_nav_per_share_usd.notna()]
-    return [float(v) for v in m["independent or study pnav"].dropna()]
+    ours = {}
+    v = DERIVED / "valuation.csv"
+    if v.exists():
+        Q = pd.read_csv(v)
+        if "nav_per_share" in Q:
+            for _, q in Q.iterrows():
+                if _num(q.nav_per_share) and q.nav_per_share > 0 and _num(q.price_usd):
+                    ours[int(q.sheet_row)] = q.price_usd / q.nav_per_share
+    out = []
+    for _, r in T[T.basis == "OCF"].iterrows():
+        x = ours.get(int(r.sheet_row))
+        if x is None and pd.notna(r.model_nav_per_share_usd):
+            x = r["independent or study pnav"]
+        if _num(x):
+            out.append(float(x))
+    return out
 
 
 # ---------- status rules (Python) and the matching Sheet formulas ----------
@@ -537,6 +552,21 @@ def status_formula(sig: Signal, r: int) -> str:
     return f'=IF({E}="","",{body})'
 
 
+def _royalty_median_v1() -> str:
+    """The royalty median's formula before own-nav-first (the independent P/NAV in AJ), which `setup-sheet` replaces."""
+    S = settings()["sheet"]
+    P, a, b, tab = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs_tab"]
+
+    def rng(c):
+        return f"'{tab}'!{P[c]}{a}:{P[c]}{b}"
+    return (f'=IFERROR(MEDIAN(FILTER({rng("independent_pnav")},{rng("peer_group")}="Royalty/streaming",'
+            f'{rng("nav_per_share")}<>"")),"")')
+
+
+# Signals E formulas that changed after install: {key: () -> the installed formula `setup-sheet` replaces}.
+VALUE_FORMULAS_V1 = {"royalty_pnav_median": _royalty_median_v1}
+
+
 def value_formula(sig: Signal) -> str:
     """Column E for the formula rows."""
     if sig.key == "royalty_pnav_median":
@@ -545,8 +575,8 @@ def value_formula(sig: Signal) -> str:
 
         def rng(c):
             return f"'{tab}'!{P[c]}{a}:{P[c]}{b}"
-        return (f'=IFERROR(MEDIAN(FILTER({rng("independent_pnav")},{rng("peer_group")}="Royalty/streaming",'
-                f'{rng("nav_per_share")}<>"")),"")')
+        return (f'=IFERROR(MEDIAN(FILTER({rng("pnav_used")},{rng("peer_group")}="Royalty/streaming",'
+                f'ISNUMBER({rng("nav_used")}),ISNUMBER({rng("pnav_used")}))),"")')
     if sig.key == "royalty_own_pctile_median":
         S = settings()["sheet"]
         P, a, b, tab = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs_tab"]

@@ -29,7 +29,7 @@ built. **Outstanding**: not started. `tests/test_data_files.py` checks this tabl
 | 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Outstanding | A20–A28 | 0 of 9 | all |
 | 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | Built | A1–A31 | 29 of 31 | the decks with `pessimistic_cost_increase` (user); NPVs for the last three candidates (data) |
 | 6b | Valuation coverage | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | Built | A1–A7 | 5 of 7 | the 47 `sustaining` rows still to research (data); the 24 `study` and `growth_project` rows still to research (data) |
-| 6c | Our NAV first | [own-nav-first-spec.md](specs/own-nav-first-spec.md) | Outstanding | A1–A7 | 0 of 7 | all |
+| 6c | Our NAV first | [own-nav-first-spec.md](specs/own-nav-first-spec.md) | In progress | A1–A7 | 6 of 7 | A6: `setup-sheet` on the live Sheet |
 
 ## Principles
 
