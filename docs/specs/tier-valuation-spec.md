@@ -299,6 +299,8 @@ All by the user, Nov 21, 2026:
 - An expansion whose study covers the whole operation (Island Gold District, Valentine Phase 2, the Fekola complex)
   counts only as its increment over a published base case of the same operation; without one it isn't valued
   (the user, 2026-11-23).
+- The Pessimistic deck is 12.5% below spot on Nov 23, 2026 (gold 3,180, silver 37.60, copper 4.91), replacing the
+  midpoint of the user's range, which sat at today's prices; Base and Optimistic are unchanged (the user, 2026-11-24).
 
 ## Open questions
 
