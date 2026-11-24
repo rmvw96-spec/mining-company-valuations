@@ -1,6 +1,6 @@
 # Model portfolio from a screen
 
-Roadmap 5 and 5b · Status: revision 1 Built Nov 20, 2026; revision 2 Outstanding · Depends on: 6 for revision 2
+Roadmap 5 and 5b · Status: revision 1 Built Nov 20, 2026; revision 2 In progress · Depends on: 6 for revision 2
 ([tier-valuation-spec.md](tier-valuation-spec.md))
 
 Instructions for Claude Code. Follow CLAUDE.md, in particular its rule that Model portfolio content (names, weights,
@@ -209,9 +209,11 @@ Revision 2 (to build):
 - [ ] A20. A year's cash flow and production are re-priced to the base deck and taken per share with that year's
   share count. — new test
 - [ ] A21. Each performance measure, the FCF-basis label and "too little history". — new tests
-- [ ] A22. Selection ignores price: an expensive company with the best score is selected, with no buy status. —
-  new test
-- [ ] A23. The valuation filters and valuation score measures are gone from code and settings. — updated tests
+- [x] A22. Selection ignores price: an expensive company with the best score is selected, with no buy status. —
+  `tests/test_screen.py::test_selection_ignores_price`
+- [x] A23. The valuation filters and valuation score measures are gone from code and settings. —
+  `tests/test_screen.py::test_valuation_filters_and_measures_are_gone`,
+  `tests/test_screen.py::test_no_filter_on_price_or_valuation`
 - [ ] A24. T's status at each edge (no NPV, downside test, buy, above fair value, hold) and the buy-below price at
   each binding condition; a typed S is kept. — new tests
 - [ ] A25. `setup-sheet --dry-run` places the buy-below column after Z, and the user has seen it. — command (user)

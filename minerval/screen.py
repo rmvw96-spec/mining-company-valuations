@@ -1,16 +1,19 @@
-"""Model portfolio from a screen (roadmap 5).
+"""Model portfolio from a screen (roadmap 5 and 5b).
 
-Ranks the companies on PNAV inputs within each bucket and proposes the Model portfolio's holdings and target
-weights (A-F), review levels (S) and notes (U-V). Physical metal rows are the user's and are kept as typed.
+Ranks the companies on PNAV inputs within each bucket on business performance (never on price) and proposes the
+Model portfolio's holdings and target weights (A-F), buy multiples (S) and notes (U-V). Value only sets each row's
+buy signal: the buy-below price at S and the status in T (tier-valuation spec, Part 5). Physical metal rows are the
+user's and are kept as typed.
 
-- The rules are public: [portfolio_screen] in config/settings.toml (buckets, markets, filters, score, review
-  levels, sizing limits). Each bucket's total weight and number of names are private: private/screen.toml.
+- The rules are public: [portfolio_screen] in config/settings.toml (buckets, markets, filters, score, sizing limits)
+  and [valuation.buy] (the buy multiples). Each bucket's total weight and number of names are private:
+  private/screen.toml.
 - By default only companies buyable on a US or Canadian market are proposed (`--all-markets` adds the rest):
   pnav_companies.csv us_listing / canada_listing, and the fee reasons in settings. An OTC ADR with no Canadian
   listing also needs a median daily dollar volume over 3 months of at least `otc_adr_min_dollar_volume`.
 - Holding names, weights and statuses never go into the repo, a log or the step summary: the report is
   out/screen/ (local), the Sheet and, with --email, a private email. The command never runs on GitHub.
-- A review level the user typed in S is kept: private/screen_state.json records the levels the screen wrote.
+- A buy multiple the user typed in S is kept: private/screen_state.json records the levels the screen wrote.
 
 `portfolio-file` (Part 3) writes private/portfolio.csv from the tab for `backtest` and `project`.
 """
@@ -33,13 +36,13 @@ PORTFOLIO_FILE = PRIVATE / "portfolio.csv"
 PHYSICAL = "Physical metal"
 ROYALTY = "Royalty"
 DEVELOPERS = "Growth: developers"
-FUNDED = ("Fully funded", "Funded (company says)")
-MEASURES = {        # measure, higher is better
-    "producer": [("peer_norm", False), ("pnav_low", False), ("breakeven_gap", False), ("net_cash_pct", True),
-                 ("share_change_3y", False), ("addon", False), ("addon_reliance", False)],
-    "developer": [("pnav_after", False), ("peer_ev_ratio", False), ("months_of_cash", True), ("addon", False)],
-    "royalty": [("pnav_used", False), ("own_pctile", False), ("peer_norm", False), ("addon", False)],
+MEASURES = {        # measure, higher is better: business performance per share, never price
+    "producer": [("net_cash_pct", True), ("share_change_3y", False)],
+    "developer": [("share_change_3y", False)],
+    "royalty": [("share_change_3y", False)],
 }
+STUDY_BASIS, ROYALTY_BASIS = "study (risk-adjusted)", "OCF (royalty)"     # valuation.py's labels (PNAV inputs CC)
+DOWNSIDE_FAILS = ("fails the downside test at any price", "negative value per share after a +30% overrun")
 HOME = {".AX": "ASX", ".L": "LSE", ".JO": "JSE", ".HK": "HKEX", ".IS": "Borsa Istanbul", ".WA": "Warsaw",
         ".JK": "IDX", ".PS": "PSE", ".HE": "Helsinki", ".ST": "Stockholm", ".SN": "Santiago", ".LM": "Lima",
         ".MX": "Mexico"}
@@ -171,29 +174,22 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
     """Every PNAV inputs company with the screen's raw fields and measures, and today's metal prices."""
     S = settings()["sheet"]
     P, a, b, tab = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs_tab"]
-    T, D = S["pnav_tab_cols"], S["downside_cols"]
+    D = S["downside_cols"]
     fields = {"holding": P["holding"], "mcap": P["mcap"], "addon": P["addon"], "peer_group": P["peer_group"],
-              "pnav_used": P["pnav_used"], "royalty_band": P["royalty_band"],
-              "resource_unit": P["resource_unit"], "months_of_cash": P["months_of_cash"],
-              "developer_check": P["developer_check"], "pnav_after_raw": P["pnav_after"],
-              "peer_ev_ratio": P["peer_ev_ratio"], "pnav_addon_up": P["pnav_addon_up"],
-              "pocf_pctile": P["pocf_pctile"], "pnav_pctile": P["pnav_pctile"], "yahoo": P["yahoo"],
-              "share_gold": "J", "share_silver": "K", "share_copper": "L"}
+              "resource_unit": P["resource_unit"], "developer_check": P["developer_check"], "yahoo": P["yahoo"],
+              "share_gold": "J", "share_silver": "K", "share_copper": "L",
+              # the valuation (roadmap 6), for the buy signal only
+              "price": P["price"], "net_cash": P["net_cash"], "valuation_basis": P["valuation_basis"],
+              "npv_pess": P["npv_pessimistic"], "npv_base": P["npv_base"], "dilution_30": P["dilution_30"],
+              "buy_below_value": P["buy_below_value"], "fair_value_price": P["fair_value_price"],
+              "valuation_why": P["valuation_why"], "minority": P["minority"]}
     last = max(col_to_num(c) for c in fields.values())
     grid = sheet.read(tab, f"A{a}:{num_to_col(last)}{b}")
-    tcols = {"pnav_today": T["pnav_today"], "pnav_peer": T["pnav_peer"], "pnav_low": T["pnav_low"]}
-    tlast = max(col_to_num(c) for c in tcols.values())
-    pa = S["pnav_tab_first_row"]
-    tgrid = sheet.read(S["pnav_tab"], f"A{pa}:{num_to_col(tlast)}{S['pnav_tab_last_row']}")
     rows = []
     for i in range(b - a + 1):
         r = list(grid[i]) if i < len(grid) else []
         r += [""] * (last - len(r))
         d = {k: r[col_to_num(c) - 1] for k, c in fields.items()}
-        j = (a + i) - 10 - pa                          # P/NAV tab row N is PNAV inputs row N+10
-        t = list(tgrid[j]) if 0 <= j < len(tgrid) else []
-        t += [""] * (tlast - len(t))
-        d.update({k: t[col_to_num(c) - 1] for k, c in tcols.items()})
         d["sheet_row"] = a + i
         if _text(d["holding"]):
             rows.append(d)
@@ -239,32 +235,80 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
     return add_measures(U, metals), metals
 
 
-def add_measures(U: pd.DataFrame, metals: dict) -> pd.DataFrame:
+def add_measures(U: pd.DataFrame, metals: dict | None = None) -> pd.DataFrame:
     U = U.copy()
-    for c in ("mcap", "pnav_today", "pnav_peer", "pnav_low", "pnav_used", "peer_ev_ratio", "pnav_addon_up",
-              "pocf_pctile", "pnav_pctile", "net_cash_pct", "share_change_3y", "breakeven"):
+    for c in ("mcap", "net_cash_pct", "share_change_3y", "breakeven", "price", "net_cash", "npv_pess", "npv_base",
+              "dilution_30", "buy_below_value", "fair_value_price", "minority"):
         U[c] = U[c].map(num) if c in U else np.nan
     U["addon"] = U["addon"].map(num) * 100 if "addon" in U else np.nan     # P is a fraction (0.01 = 1 point)
+    U["shares"] = U.mcap / U.price.where(U.price > 0)
     U["metal"] = [main_metal(r) for _, r in U.iterrows()]
     U["bucket"] = [bucket_of(r) for _, r in U.iterrows()]
-    U["peer_norm"] = U.pnav_peer
-    price = [metals.get(_text(m).split(" ")[0].lower(), np.nan) for m in U.get("breakeven_metal", [""] * len(U))]
-    U["breakeven_gap"] = U.breakeven / pd.Series(price, index=U.index) - 1
-    U["addon_reliance"] = U.pnav_addon_up / U.pnav_today
-    U["pnav_after"] = [0.0 if _text(v) in FUNDED else num(v) for v in U.pnav_after_raw]
-    U["months_of_cash"] = [1e9 if _text(v) == "Cash-generating" else num(v) for v in U.months_of_cash]
-    U["own_pctile"] = U.pnav_pctile.where(U.pnav_pctile.notna(), U.pocf_pctile)
     mk = [market(r) for _, r in U.iterrows()]
     U["market_ok"], U["market_note"] = [m[0] for m in mk], [m[1] for m in mk]
     U["where"] = [where(r) for _, r in U.iterrows()]
     return U
 
 
-# ---------- filters, score, selection, weights ----------
+# ---------- the buy signal (revision 2; tier-valuation spec, Part 5) ----------
 
-def review_level(bucket: str, c: dict | None = None) -> float:
-    r = (c or cfg())["review"]
-    return float(r.get("by_bucket", {}).get(bucket, r["review_multiple"]))
+def tier(r) -> str:
+    """The valuation's tier from its basis (PNAV inputs CC), else from the bucket."""
+    b = _text(r.get("valuation_basis"))
+    if b == STUDY_BASIS:
+        return "developer"
+    if b == ROYALTY_BASIS:
+        return "royalty"
+    return "producer" if b else kind(_text(r.get("bucket")))
+
+
+def buy_multiple(r) -> float:
+    """S from the rule: the tier's buy multiple in [valuation.buy]."""
+    return float(settings()["valuation"]["buy"][tier(r)]["buy"])
+
+
+def buy_below_at(r, level: float) -> float | None:
+    """The buy-below price (US$/share) at buy multiple `level`. At the rule's multiple it is the valuation's own
+    (PNAV inputs CQ). A typed level re-prices it: producers and royalties (min(level × base NPV, pessimistic NPV) +
+    net cash − minority interest) ÷ shares; developers the +30% overrun case, the level's change in NPV spread over
+    the shares after the raise (shares × (1 + CN)). None where there's no price (the status says why)."""
+    k, rule = tier(r), buy_multiple(r)
+    cq = num(r.get("buy_below_value"))
+    if abs(level - rule) < 1e-9:
+        return cq if cq == cq else None
+    base, shares = num(r.get("npv_base")), num(r.get("shares"))
+    if not (base == base and base > 0 and shares == shares and shares > 0):
+        return None
+    if k == "developer":
+        if cq != cq:
+            return None
+        d = num(r.get("dilution_30"))
+        price = cq + (level - rule) * base / (shares * (1 + (d if d == d else 0.0)))
+    else:
+        pess = num(r.get("npv_pess"))
+        if pess != pess:
+            return None
+        nc, mi = num(r.get("net_cash")), num(r.get("minority"))
+        price = (min(level * base, pess) + (nc if nc == nc else 0.0) - (mi if mi == mi else 0.0)) / shares
+    return price if price > 0 else None
+
+
+def status(r, level: float) -> str:
+    """Model portfolio T, in order: "No NPV: <why>"; "Fails downside test"; "Buy: below US$<price>" (price at or
+    below); "Above fair value: review" (at or above the fair value price); "Hold"."""
+    bb = buy_below_at(r, level)
+    if bb is None:
+        why = _text(r.get("valuation_why"))
+        return "Fails downside test" if why in DOWNSIDE_FAILS else f"No NPV: {why or 'not valued'}"
+    price, fair = num(r.get("price")), num(r.get("fair_value_price"))
+    if price == price and price <= bb:
+        return f"Buy: below US${bb:,.2f}"
+    if price == price and fair == fair and price >= fair:
+        return "Above fair value: review"
+    return "Hold"
+
+
+# ---------- filters, score, selection, weights ----------
 
 
 def _age(d: str, today: date) -> float:
@@ -274,8 +318,8 @@ def _age(d: str, today: date) -> float:
         return np.inf
 
 
-def failure(r, today: date, level: float, all_markets: bool = False, c: dict | None = None) -> str:
-    """The first hard filter a company fails ("" when it passes)."""
+def failure(r, today: date, all_markets: bool = False, c: dict | None = None) -> str:
+    """The first hard filter a company fails ("" when it passes). No filter on price or valuation."""
     c = c or cfg()
     F, k = c["filters"], kind(r["bucket"])
     if not all_markets and not r["market_ok"]:
@@ -292,23 +336,8 @@ def failure(r, today: date, level: float, all_markets: bool = False, c: dict | N
         return f"dilution {r['share_change_3y']:.0f}% in 3 years"
     if F.get("max_addon_points") is not None and r["addon"] > F["max_addon_points"]:
         return f"jurisdiction add-on {r['addon']:.2f} points"
-    if k == "developer":
-        if _text(r.get("developer_check")).startswith("Short of cash"):
-            return "developer short of cash"
-        if not (r["pnav_after"] == r["pnav_after"]):
-            return "no P/NAV after a raise or funding statement"
-        if r["peer_ev_ratio"] > F["max_peer_ev_ratio"]:
-            return f"EV per unit {r['peer_ev_ratio']:.2f}× the peer median"
-    if k == "royalty":
-        band = _text(r.get("royalty_band"))
-        if band in F["royalty_excluded_bands"]:
-            return f"framework band: {band}"
-        hi = settings()["signals"]["thresholds"]["royalty_own_pctile_median"][1]
-        if r["own_pctile"] >= hi:
-            return f"expensive for itself (own-history percentile {r['own_pctile']:.0f})"
-        return ""
-    if r["peer_norm"] >= level:
-        return f"valuation {r['peer_norm']:.2f}× peer norm, at or above the review level {level:g}"
+    if k == "developer" and _text(r.get("developer_check")).startswith("Short of cash"):
+        return "developer short of cash"
     return ""
 
 
@@ -446,8 +475,7 @@ def plan(U: pd.DataFrame, tab: list[dict], sizes: dict, today: date, state: dict
         n = int(sizes[b]["names"])
         k = kind(b)
         B = U[U.bucket == b].copy()
-        B["level"] = [typed.get(_text(h), review_level(b, c)) for h in B.holding]
-        B["fail"] = [failure(r, today, r["level"], all_markets, c) for _, r in B.iterrows()]
+        B["fail"] = [failure(r, today, all_markets, c) for _, r in B.iterrows()]
         E = score(B[B.fail == ""], k, c)
         ranked = [_text(h) for h in E.holding]
         chosen = select(ranked, set(existing), n, int(c["buffer"]))
@@ -460,15 +488,16 @@ def plan(U: pd.DataFrame, tab: list[dict], sizes: dict, today: date, state: dict
             warn.append(f"{b}: {un:.1%} unallocated (per-name cap {cap:.0%}).")
         for (t, r), w in zip(Ec.iterrows(), ws):
             rank = ranked.index(t) + 1
-            level = typed.get(t, review_level(b, c))
+            level = typed.get(t, buy_multiple(r))
             old = existing.get(t)
             why = _text(old["U"]) if old and _text(old["U"]) and not _text(old["U"]).startswith("Screen:") \
                 else why_text(r, k, rank, len(ranked))
-            change = _text(old["V"]) if old else f"Screen: review above {level:g}× peer norm, or if it fails a filter"
+            change = _text(old["V"]) if old else "Screen: review above fair value, or if it fails a filter"
             rows.append({"A": b, "B": t, "C": r["where"], "D": _text(old["D"]) if old else r.ticker_buy,
                          "E": (r.metal or "").capitalize(),
                          "F": round(w, 6), "S": level, "U": why, "V": change, "typed_level": t in typed,
-                         "rank": rank, "score": r.score, "new": old is None})
+                         "rank": rank, "score": r.score, "new": old is None,
+                         "buy_below": buy_below_at(r, level), "status": status(r, level)})
         pc = [f"p_{m}" for m, _ in MEASURES[k] if f"p_{m}" in E]
         ranked_out[b] = B.assign(score=E.score.reindex(B.index), measures_used=E.measures_used.reindex(B.index),
                                  rank=pd.Series(range(1, len(E) + 1), index=E.index).reindex(B.index),
@@ -510,21 +539,17 @@ def plan(U: pd.DataFrame, tab: list[dict], sizes: dict, today: date, state: dict
 
 
 def why_text(r, k: str, rank: int, of: int) -> str:
+    """Model portfolio U for a screened row: its rank and the performance measures it was scored on."""
     def f(v, fmt):
+        v = num(v)
         return format(v, fmt) if v == v else "—"
-    if k == "royalty":
-        body = (f"P/NAV {f(r.pnav_used, '.2f')}; own-history percentile "
-                f"{f(r.own_pctile, '.0f')}; valuation {f(r.peer_norm, '.2f')}× peer norm")
-    elif k == "developer":
-        after = "funded" if _text(r.pnav_after_raw) in FUNDED else f(r.pnav_after, ".2f")
-        moc = "cash-generating" if r.months_of_cash >= 1e9 else f(r.months_of_cash, ".0f")
-        body = (f"P/NAV after a raise {after}; EV per unit {f(r.peer_ev_ratio, '.2f')}× peers; "
-                f"{moc} months of funding")
-    else:
-        body = (f"valuation {f(r.peer_norm, '.2f')}× peer norm; P/NAV at Low prices {f(r.pnav_low, '.2f')}; "
-                f"breakeven {f(r.breakeven_gap, '+.0%')} vs today's {r.metal or 'metal'}; net cash "
-                f"{f(r.net_cash_pct, '.0f')}% of market value")
-    return f"Screen: rank {rank} of {of} (score {f(r.score, '.2f')}); {body}; add-on {f(r.addon, '.2f')}"
+    parts = [f"{LABELS.get(m, m)} {f(r.get(m), FORMATS.get(m, '.2f'))}" for m, _ in MEASURES[k]]
+    return (f"Screen: rank {rank} of {of} (score {f(r.get('score'), '.2f')}, {int(num(r.get('measures_used')) or 0)} "
+            f"of {len(MEASURES[k])} measures); " + "; ".join(parts))
+
+
+LABELS = {"net_cash_pct": "net cash % of market value", "share_change_3y": "3-year share change %"}
+FORMATS = {"net_cash_pct": ".0f", "share_change_3y": ".0f"}
 
 
 # ---------- report and write ----------
@@ -563,13 +588,14 @@ def report(P: dict, all_markets: bool, V: pd.DataFrame | None = None) -> list[st
         L += ["", f"Valuation: {n - len(gaps)} of {n} candidates have an NPV at all "
                   f"{ {3: 'three'}.get(k, str(k)) } decks (roadmap 6)"] + [f"  {b}: {h}: {w}" for b, h, w in gaps]
     L.append("")
-    L.append("Proposal (bucket, holding, where, weight, review level, rank):")
+    L.append("Proposal (bucket, holding, where, weight, buy multiple, rank, status):")
     for r in P["physical"]:
         L.append(f"  {r['A']}: {r['B']} (kept as typed), {num(r['F']):.1%}")
     for r in P["rows"]:
         tag = "new to the tab" if r["new"] else "already on the tab"
         lvl = f"{r['S']:g}" + (" (typed, kept)" if r["typed_level"] else "")
-        L.append(f"  {r['A']}: {r['B']} [{r['D']}; {r['C']}] {r['F']:.1%}, review {lvl}, rank {r['rank']} ({tag})")
+        L.append(f"  {r['A']}: {r['B']} [{r['D']}; {r['C']}] {r['F']:.1%}, buy multiple {lvl}, rank {r['rank']} "
+                 f"({tag}): {r.get('status', '')}")
     total = sum(num(r["F"]) for r in P["physical"] if num(r["F"]) == num(r["F"])) + sum(r["F"] for r in P["rows"])
     L.append(f"  Total {total:.1%} ({len(P['physical']) + len(P['rows'])} rows of 26)")
     if P["drops"]:

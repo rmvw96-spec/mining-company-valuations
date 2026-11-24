@@ -67,7 +67,8 @@ direction (lower is better).
   headers are upgraded in place. — `tests/test_layout.py::test_installed_nav_readers_are_upgraded_to_the_nav_used`
 - [x] A4. Python's royalty median reads CV and CU from the Sheet, and our NAV from `valuation.csv` without it. —
   `tests/test_signals.py::test_royalty_median_uses_our_nav_first`
-- [x] A5. The screen's royalty measure is the P/NAV used. — `tests/test_screen.py::test_royalty_measure_is_the_pnav_used`
+- [x] A5. The screen's royalty measure is the P/NAV used; superseded by the screen's revision 2, which scores no
+  valuation measure (model-portfolio-screen A23). — `tests/test_screen.py::test_valuation_filters_and_measures_are_gone`
 - [x] A6. The live Sheet is upgraded: `setup-sheet --dry-run` shown to the user, then `setup-sheet`, and CU, CV and
   the four readers read back without error values. — the `setup-sheet` report (Nov 23, 2026: 11 cells, no conflicts; 113 rows with a NAV used, no error values; the royalty median reads 1.73, "Normal range")
 - [x] A7. CLAUDE.md (spill ranges) and the README describe CU and CV. — `grep -n "CU12" CLAUDE.md` and `grep -n

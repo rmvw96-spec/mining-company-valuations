@@ -168,7 +168,6 @@ def test_screen_settings():
     assert set(C["bucket_order"]) <= timing | {"Royalty"}
     assert set(C["buckets"].values()) <= set(C["bucket_order"])
     assert set(C["speculation"]) <= set(C["bucket_order"])
-    assert set(C["review"]["by_bucket"]) <= set(C["bucket_order"])
     from minerval.screen import MEASURES
     assert {m for ms in MEASURES.values() for m, _ in ms} <= set(C["score"])
     for k in ("financials_max_days", "price_max_days", "min_mcap_m", "min_mcap_developer_m"):
