@@ -37,10 +37,12 @@ PHYSICAL = "Physical metal"
 ROYALTY = "Royalty"
 DEVELOPERS = "Growth: developers"
 MEASURES = {        # measure, higher is better: business performance per share at constant prices, never price
-    "producer": [("cf_ps_growth", True), ("margin_avg", True), ("margin_min", True), ("share_change_3y", False),
-                 ("net_cash_pct", True), ("aisc_margin", True)],
-    "developer": [("share_change_3y", False)],
-    "royalty": [("ocf_ps_growth", True), ("margin_avg", True), ("margin_min", True), ("share_change_3y", False)],
+    "producer": [("cf_ps_growth", True), ("production_ps_growth", True), ("reserves_ps_growth", True),
+                 ("margin_avg", True), ("margin_min", True), ("share_change_3y", False), ("net_cash_pct", True),
+                 ("aisc_margin", True)],
+    "developer": [("resource_ps_growth", True), ("share_change_3y", False)],
+    "royalty": [("ocf_ps_growth", True), ("geo_ps_growth", True), ("margin_avg", True), ("margin_min", True),
+                ("share_change_3y", False)],
 }
 ALL_MEASURES = sorted({m for ms in MEASURES.values() for m, _ in ms})
 STUDY_BASIS, ROYALTY_BASIS = "study (risk-adjusted)", "OCF (royalty)"     # valuation.py's labels (PNAV inputs CC)
@@ -606,6 +608,10 @@ def why_text(r, k: str, rank: int, of: int) -> str:
 DESCRIBE = {      # measure: (label, format, after) for Model portfolio U
     "cf_ps_growth": ("cash flow per share growth", "+.0%", " a year"),
     "ocf_ps_growth": ("OCF per share growth", "+.0%", " a year"),
+    "production_ps_growth": ("production per share growth", "+.0%", " a year"),
+    "reserves_ps_growth": ("reserves and M&I per share growth", "+.0%", " a year"),
+    "geo_ps_growth": ("GEOs sold per share growth", "+.0%", " a year"),
+    "resource_ps_growth": ("resources per share growth", "+.0%", " a year"),
     "margin_avg": ("cash margin", ".0%", " average"),
     "margin_min": ("lowest year", ".0%", ""),
     "share_change_3y": ("3-year share change", "+.0f", "%"),

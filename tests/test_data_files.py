@@ -313,3 +313,19 @@ def test_study_stage_holds_the_six_values_and_agrees_with_the_latest_study():
         mine = P[P.ticker.eq(r.ticker)].sort_values("study_date")
         if len(mine):
             assert r.study_stage == S.stage(mine.iloc[-1]), (r.ticker, r.study_stage, S.stage(mine.iloc[-1]))
+
+
+def test_operations_record_is_well_formed():
+    """Screen revision 2 (A26): annual production, reserves and resources, and royalty GEOs, one row per company, year
+    end, measure, category and metal, with a source; M&I is recorded exclusive of reserves."""
+    from minerval.performance import MEASURES_RECORDED, OPERATIONS_COLS, UNITS
+    O = pd.read_csv(DATA / "research" / "operations.csv", keep_default_na=False)
+    assert list(O.columns) == OPERATIONS_COLS
+    assert set(O.measure) <= set(MEASURES_RECORDED)
+    assert set(O[O.measure == "resources"].category) <= {"reserves", "mi", "inferred"}
+    assert (O[O.measure != "resources"].category == "").all()
+    assert set(O.unit) <= set(UNITS) and set(O.basis) <= {"attributable", "100%"}
+    assert O.url.str.startswith("https://").all() and (O.document != "").all()
+    assert not O.duplicated(["ticker", "period_end", "measure", "category", "metal"]).any()
+    assert pd.to_datetime(O.period_end, errors="coerce").notna().all()
+    assert pd.to_numeric(O.amount, errors="coerce").notna().all()

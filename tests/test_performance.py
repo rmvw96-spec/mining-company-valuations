@@ -123,3 +123,57 @@ def test_add_fills_the_universe_by_ticker():
     assert V.loc["NEW", "history_years"] == 0
     other = {"PRD": {(pd.Timestamp(d), "CAD"): 150.0 for d in YEARS}}      # another currency: not used
     assert PF.add(U.iloc[:1], holdings, monthly(GOLD), other, BASE).cf_basis.iloc[0] == "FCF"
+
+
+def ops(*rows):
+    cols = ["ticker", "period_end", "measure", "category", "metal", "amount", "unit", "basis", "document", "url",
+            "published", "notes"]
+    return pd.DataFrame([dict(zip(cols, r)) for r in rows], columns=cols)
+
+
+def test_production_is_valued_at_the_base_deck_and_taken_per_share():
+    """A20: each year's production in gold ounces at the base deck's prices (copper lb × copper ÷ gold), ÷ that
+    year's share count; metals outside the deck are left out."""
+    O = ops(*[("PRD", d, "production", "", "gold", 100.0, "koz", "attributable", "AR", "https://x", d, "")
+              for d in YEARS[1:]],
+            *[("PRD", d, "production", "", "copper", 10.0, "Mlb", "attributable", "AR", "https://x", d, "")
+              for d in YEARS[1:]],
+            ("PRD", YEARS[-1], "production", "", "zinc", 50.0, "kt", "attributable", "AR", "https://x", "", ""))
+    A = PF.annual(company())
+    P = PF.per_share_units(O[O.measure == "production"], A, BASE)
+    geo = 100_000.0 + 10e6 * BASE["copper"] / BASE["gold"]
+    assert list(P.index.year) == [2023, 2024, 2025]
+    assert list(P) == pytest.approx([geo / 100.0, geo / 110.0, geo / 125.0])
+    assert PF.unit_factor("kt", "copper") == pytest.approx(2_204_622.6) and PF.unit_factor("Moz", "gold") == 1e6
+
+
+def test_reserves_and_resources_are_weighted_by_category():
+    """A21: reserves plus M&I (exclusive of reserves) at the roadmap 3 weights; developers add inferred."""
+    O = ops(*[("PRD", d, "resources", c, "gold", a, "Moz", "attributable", "AR", "https://x", d, "")
+              for d in YEARS[2:] for c, a in (("reserves", 1.0), ("mi", 2.0), ("inferred", 4.0))])
+    A = PF.annual(company())
+    w = PF.weights()
+    assert w == {"reserves": 1.0, "mi": 0.5, "inferred": 0.2}
+    prod = PF.per_share_units(O, A, BASE, categories=("reserves", "mi"))
+    assert prod.iloc[-1] == pytest.approx((1e6 * 1.0 + 2e6 * 0.5) / 125.0)
+    dev = PF.per_share_units(O, A, BASE, categories=("reserves", "mi", "inferred"))
+    assert dev.iloc[-1] == pytest.approx((1e6 + 1e6 + 4e6 * 0.2) / 125.0)
+
+
+def test_research_measures_by_tier():
+    """A21: production and reserves per share growth (producers), GEOs sold per share (royalties), resources per
+    share (developers), each the trend growth of the per-share series."""
+    O = ops(*[("PRD", d, "production", "", "gold", a, "koz", "attributable", "AR", "https://x", d, "")
+              for d, a in zip(YEARS, [100.0, 110.0, 130.0, 150.0])],
+            *[("ROY", d, "geo_sold", "", "geo", a, "koz", "attributable", "AR", "https://x", d, "")
+              for d, a in zip(YEARS, [50.0, 55.0, 60.0, 70.0])])
+    A = PF.annual(company())
+    m = PF.research_measures(O[O.ticker == "PRD"], A, BASE, "producer")
+    shares = [100.0, 100.0, 110.0, 125.0]
+    assert m["production_ps_growth"] == pytest.approx(
+        PF.trend_growth([a * 1000 / s for a, s in zip([100.0, 110.0, 130.0, 150.0], shares)]))
+    assert np.isnan(m["reserves_ps_growth"])
+    r = PF.research_measures(O[O.ticker == "ROY"], A, BASE, "royalty")
+    assert r["geo_ps_growth"] == pytest.approx(
+        PF.trend_growth([a * 1000 / s for a, s in zip([50.0, 55.0, 60.0, 70.0], shares)]))
+    assert set(PF.research_measures(O.iloc[:0], A, BASE, "developer")) == {"resource_ps_growth"}

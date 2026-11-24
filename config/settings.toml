@@ -483,6 +483,11 @@ min_history_years = 3               # fiscal years of the performance measures (
 cf_ps_growth = 1.0                  # producers: cash flow per share growth at the base deck, a year (OCF − sustaining
                                     # where recorded every year, else FCF, labelled; minerval/performance.py)
 ocf_ps_growth = 1.0                 # royalty: operating cash flow per share growth at the base deck, a year
+production_ps_growth = 1.0          # producers: production per share growth, gold oz at the base deck's prices
+                                    # (data/research/operations.csv; left out where not recorded)
+reserves_ps_growth = 1.0            # producers: reserves + M&I per share growth at roadmap 3's category weights
+geo_ps_growth = 1.0                 # royalty: attributable GEOs sold per share growth
+resource_ps_growth = 1.0            # developers: reserves + M&I + inferred per share growth, roadmap 3's weights
 margin_avg = 1.0                    # cash flow ÷ revenue at the base deck, average of the years (higher)
 margin_min = 1.0                    # the same, lowest year: the cycle's worst (higher)
 net_cash_pct = 1.0                  # net cash, % of market value (higher)

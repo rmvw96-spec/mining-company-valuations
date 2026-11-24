@@ -104,7 +104,10 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
   mean size, a year (it works through a change of sign).
 - Rank percentiles within the bucket; a measure a company lacks is left out of its average, and the report says how
   many it had.
-- Production, reserves, resources and GEOs per year are research inputs (filings, with sources; never estimated).
+- Production, reserves, resources and GEOs per year are research inputs (filings, with sources; never estimated):
+  `data/research/operations.csv`, one row per company, year end, measure (`production`, `resources`, `geo_sold`),
+  category (`reserves`, `mi` exclusive of reserves, `inferred`) and metal, in gold ounces at the base deck's prices
+  per share (metals outside the deck are left out; royalties' GEOs as published).
 
 ### Sizes, limits, selection and weights
 
@@ -216,8 +219,9 @@ Revision 1 (built Nov 20, 2026):
 
 Revision 2 (to build):
 
-- [ ] A20. A year's cash flow and production are re-priced to the base deck and taken per share with that year's
-  share count. — new test
+- [x] A20. A year's cash flow and production are re-priced to the base deck and taken per share with that year's
+  share count. — `tests/test_performance.py::test_each_year_is_repriced_to_the_base_deck_per_share_with_that_years_shares`,
+  `tests/test_performance.py::test_production_is_valued_at_the_base_deck_and_taken_per_share`
 - [ ] A21. Each performance measure, the FCF-basis label and "too little history". — new tests
 - [x] A22. Selection ignores price: an expensive company with the best score is selected, with no buy status. —
   `tests/test_screen.py::test_selection_ignores_price`

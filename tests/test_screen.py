@@ -119,9 +119,13 @@ def test_too_little_history():
 
 def test_performance_measures_by_bucket():
     """A21: the score's measures are business performance per share, never price."""
-    assert [m for m, _ in SC.MEASURES["producer"]] == ["cf_ps_growth", "margin_avg", "margin_min", "share_change_3y",
-                                                       "net_cash_pct", "aisc_margin"]
-    assert [m for m, _ in SC.MEASURES["royalty"]] == ["ocf_ps_growth", "margin_avg", "margin_min", "share_change_3y"]
+    assert [m for m, _ in SC.MEASURES["producer"]] == ["cf_ps_growth", "production_ps_growth", "reserves_ps_growth",
+                                                       "margin_avg", "margin_min", "share_change_3y", "net_cash_pct",
+                                                       "aisc_margin"]
+    assert [m for m, _ in SC.MEASURES["royalty"]] == ["ocf_ps_growth", "geo_ps_growth", "margin_avg", "margin_min",
+                                                      "share_change_3y"]
+    assert [m for m, _ in SC.MEASURES["developer"]][:1] == ["resource_ps_growth"]
+    assert all(m in SC.DESCRIBE for ms in SC.MEASURES.values() for m, _ in ms)
     assert dict(SC.MEASURES["producer"])["share_change_3y"] is False
     assert all(hb for m, hb in SC.MEASURES["producer"] if m != "share_change_3y")
 

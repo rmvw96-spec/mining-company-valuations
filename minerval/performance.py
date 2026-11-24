@@ -15,6 +15,12 @@ Business performance per share at constant metal prices, so the ranking doesn't 
 The annual figures are Yahoo's (cache/fundamentals.json): the last `YEARS` fiscal years with revenue, the cash flow
 and a share count. Fewer than [portfolio_screen.filters] min_history_years is "too little history" (the screen's
 filter).
+
+Production, reserves and resources, and royalties' GEOs sold are research inputs (data/research/operations.csv, from
+filings, never estimated): each year's quantity in gold ounces at the base deck's prices (a copper pound counts
+copper ÷ gold ounces; metals outside the deck are left out; a royalty's reported GEOs are taken as published),
+reserves and resources weighted by category as roadmap 3 (Signals inputs resource_weight_*; M&I exclusive of
+reserves), ÷ the share count of the nearest fiscal year end.
 """
 import json
 
@@ -29,6 +35,12 @@ SERIES = {"revenue": "annualTotalRevenue", "ocf": "annualOperatingCashFlow", "fc
           "shares": "annualOrdinarySharesNumber"}
 MATCH_DAYS = 15                 # a recorded FY sustaining figure matches the annual figures' year end within this
 FCF, OCF_SUS, OCF = "FCF", "OCF − sustaining", "OCF"
+OPERATIONS_COLS = ["ticker", "period_end", "measure", "category", "metal", "amount", "unit", "basis", "document", "url",
+                   "published", "notes"]
+MEASURES_RECORDED = ("production", "resources", "geo_sold")
+UNITS = ("oz", "koz", "Moz", "lb", "Mlb", "Blb", "t", "kt")
+LB_PER_TONNE, OZ_PER_TONNE = 2204.62262, 32150.7466
+SHARES_WITHIN_DAYS = 200        # a quantity is taken per share at the nearest fiscal year end within this
 
 
 def annual(series: dict) -> pd.DataFrame:
@@ -126,6 +138,75 @@ def measures(A: pd.DataFrame, mix: dict, monthly: dict, base: dict, k: float, su
             "margin_min": float(T.margin.min()), "cf_basis": T.basis.iloc[0], "history_years": len(T)}
 
 
+# ---------- research quantities: production, reserves and resources, GEOs ----------
+
+def unit_factor(unit: str, metal: str) -> float:
+    """Multiplier to ounces (gold, silver, GEOs) or pounds (base metals)."""
+    precious = metal in ("gold", "silver", "geo")
+    f = {"oz": 1.0, "koz": 1e3, "Moz": 1e6, "lb": 1.0, "Mlb": 1e6, "Blb": 1e9}.get(unit)
+    if f is None:
+        f = {"t": 1.0, "kt": 1e3}[unit] * (OZ_PER_TONNE if precious else LB_PER_TONNE)
+    return f
+
+
+def weights() -> dict:
+    """Roadmap 3's category weights (Signals inputs): reserves, M&I (exclusive of reserves), inferred."""
+    inp = settings()["signals"]["inputs"]
+    return {k: float(inp[f"resource_weight_{k}"]) for k in ("reserves", "mi", "inferred")}
+
+
+def _gold_ounces(r, base: dict) -> float:
+    if r.metal == "geo":
+        return float(r.amount) * unit_factor(r.unit, "geo")
+    if r.metal not in base:
+        return 0.0
+    return float(r.amount) * unit_factor(r.unit, r.metal) * base[r.metal] / base["gold"]
+
+
+def per_share_units(O: pd.DataFrame, A: pd.DataFrame, base: dict, categories: tuple | None = None) -> pd.Series:
+    """{year end: gold ounces at the base deck per share (millions of shares)} for the last YEARS year ends; with
+    `categories`, the resources rows of those categories at roadmap 3's weights."""
+    if O.empty or A.empty or A.shares.dropna().empty:
+        return pd.Series(dtype=float)
+    if categories:
+        w = weights()
+        O = O[(O.measure == "resources") & O.category.isin(categories)]
+        scale = O.category.map(w).astype(float)
+    else:
+        scale = pd.Series(1.0, index=O.index)
+    vals = {}
+    ends = pd.to_datetime(O.period_end)
+    for end in sorted(set(ends)):
+        part = O[ends == end]
+        oz = sum(_gold_ounces(r, base) * scale[i] for i, r in part.iterrows())
+        S = A.shares.dropna()
+        gap = abs((S.index - end).days)
+        if gap.min() > SHARES_WITHIN_DAYS:
+            continue
+        vals[end] = oz / S.iloc[int(np.argmin(gap))]
+    return pd.Series(vals, dtype=float).sort_index().tail(YEARS)
+
+
+def research_measures(O: pd.DataFrame, A: pd.DataFrame, base: dict, tier: str) -> dict:
+    """The research-input measures for a company's operations rows, by tier."""
+    def g(s):
+        return trend_growth(list(s))
+    if tier == "royalty":
+        return {"geo_ps_growth": g(per_share_units(O[O.measure == "geo_sold"], A, base))}
+    if tier == "developer":
+        return {"resource_ps_growth": g(per_share_units(O, A, base, ("reserves", "mi", "inferred")))}
+    return {"production_ps_growth": g(per_share_units(O[O.measure == "production"], A, base)),
+            "reserves_ps_growth": g(per_share_units(O, A, base, ("reserves", "mi")))}
+
+
+def load_operations(path=None) -> pd.DataFrame:
+    from .config import RESEARCH
+    p = path or RESEARCH / "operations.csv"
+    if not p.exists():
+        return pd.DataFrame(columns=OPERATIONS_COLS)
+    return pd.read_csv(p, keep_default_na=False, dtype={"amount": float})
+
+
 # ---------- loading the inputs for the screen ----------
 
 def load_monthly() -> dict:
@@ -154,7 +235,7 @@ def load_sustaining(path=None) -> dict:
 
 
 def add(U: pd.DataFrame, holdings: dict | None = None, monthly: dict | None = None, sustaining: dict | None = None,
-        base: dict | None = None) -> pd.DataFrame:
+        base: dict | None = None, operations: pd.DataFrame | None = None) -> pd.DataFrame:
     """The universe with each company's performance measures (the keys of `measures`) added; developers get only
     their years of share counts here."""
     from .screen import kind
@@ -166,6 +247,7 @@ def add(U: pd.DataFrame, holdings: dict | None = None, monthly: dict | None = No
     sustaining = load_sustaining() if sustaining is None else sustaining
     base = base or decks()[settings()["valuation"]["base_deck"]]
     k = settings()["price_model"]["cash_flow_share"]
+    O = load_operations() if operations is None else operations
     U, rows = U.copy(), []
     for _, r in U.iterrows():
         h = holdings.get(str(r.get("ticker"))) or holdings.get(str(r.get("ticker_buy"))) or {}
@@ -175,10 +257,12 @@ def add(U: pd.DataFrame, holdings: dict | None = None, monthly: dict | None = No
         curs = set(A.currency.dropna()) if len(A) else set()
         sus = {d: v for (d, cur), v in sustaining.get(str(r.get("ticker")), {}).items() if cur in curs}
         k_ = kind(str(r.get("bucket") or ""))
+        mine = O[O.ticker == str(r.get("ticker"))]
+        extra = research_measures(mine, A, base, k_)
         if k_ == "developer":
-            rows.append({"history_years": int(A.shares.dropna().tail(YEARS).size) if len(A) else 0})
+            rows.append({"history_years": int(A.shares.dropna().tail(YEARS).size) if len(A) else 0, **extra})
             continue
-        rows.append(measures(A, mix, monthly, base, k, sus, royalty=k_ == "royalty"))
+        rows.append({**measures(A, mix, monthly, base, k, sus, royalty=k_ == "royalty"), **extra})
     M = pd.DataFrame(rows, index=U.index)
     for c in M.columns:
         U[c] = M[c]
