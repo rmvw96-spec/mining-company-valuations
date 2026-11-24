@@ -40,7 +40,8 @@ MEASURES = {        # measure, higher is better: business performance per share 
     "producer": [("cf_ps_growth", True), ("production_ps_growth", True), ("reserves_ps_growth", True),
                  ("margin_avg", True), ("margin_min", True), ("share_change_3y", False), ("net_cash_pct", True),
                  ("aisc_margin", True)],
-    "developer": [("resource_ps_growth", True), ("share_change_3y", False)],
+    "developer": [("resource_ps_growth", True), ("study_progress", True), ("explore_dev_share", True),
+                  ("ga_share", False), ("npv_ps_growth", True), ("share_change_3y", False)],
     "royalty": [("ocf_ps_growth", True), ("geo_ps_growth", True), ("margin_avg", True), ("margin_min", True),
                 ("share_change_3y", False)],
 }
@@ -200,8 +201,8 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
     U = pd.DataFrame(rows)
     R = research if research is not None else pd.read_csv(RESEARCH / "pnav_companies.csv", keep_default_na=False,
                                                           na_values=[""])
-    keep = [c for c in ("sheet_row", "ticker", "stage", "us_listing", "canada_listing", "us_otc_symbol", "bucket",
-                        "bucket_note") if c in R.columns]
+    keep = [c for c in ("sheet_row", "ticker", "stage", "study_stage", "us_listing", "canada_listing",
+                        "us_otc_symbol", "bucket", "bucket_note") if c in R.columns]
     U = U.merge(R[keep], on="sheet_row", how="left")
     # Holdings (financials date, price date, by Sprott ticker) and Holdings downside (by ticker)
     H = sheet.read(S["holdings_tab"], f"A2:V{S['last_row']}")
@@ -612,6 +613,10 @@ DESCRIBE = {      # measure: (label, format, after) for Model portfolio U
     "reserves_ps_growth": ("reserves and M&I per share growth", "+.0%", " a year"),
     "geo_ps_growth": ("GEOs sold per share growth", "+.0%", " a year"),
     "resource_ps_growth": ("resources per share growth", "+.0%", " a year"),
+    "study_progress": ("study stages moved in 3 years", ".0f", ""),
+    "explore_dev_share": ("exploration and development", ".0%", " of spending"),
+    "ga_share": ("G&A", ".0%", " of spending"),
+    "npv_ps_growth": ("risk-adjusted NPV per share growth across studies", "+.0%", " a year"),
     "margin_avg": ("cash margin", ".0%", " average"),
     "margin_min": ("lowest year", ".0%", ""),
     "share_change_3y": ("3-year share change", "+.0f", "%"),

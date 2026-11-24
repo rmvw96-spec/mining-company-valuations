@@ -32,7 +32,9 @@ from .price_model import METALS
 
 YEARS = 4                       # Yahoo carries four annual years: three years of change
 SERIES = {"revenue": "annualTotalRevenue", "ocf": "annualOperatingCashFlow", "fcf": "annualFreeCashFlow",
-          "shares": "annualOrdinarySharesNumber"}
+          "shares": "annualOrdinarySharesNumber", "capex": "annualCapitalExpenditure",
+          "ga": "annualGeneralAndAdministrativeExpense", "sga": "annualSellingGeneralAndAdministration"}
+STAGE_RANK = {"none": 0, "PEA": 1, "PFS": 2, "FS": 3, "permitted": 4, "construction": 5}
 MATCH_DAYS = 15                 # a recorded FY sustaining figure matches the annual figures' year end within this
 FCF, OCF_SUS, OCF = "FCF", "OCF − sustaining", "OCF"
 OPERATIONS_COLS = ["ticker", "period_end", "measure", "category", "metal", "amount", "unit", "basis", "document", "url",
@@ -54,7 +56,8 @@ def annual(series: dict) -> pd.DataFrame:
             cur = {pd.Timestamp(p["date"]): p.get("cur", "") for p in pts}
     if not any(len(s) for s in cols.values()):
         return pd.DataFrame(columns=[*SERIES, "currency"])
-    A = pd.DataFrame(cols).sort_index()
+    A = pd.DataFrame({k: s for k, s in cols.items() if len(s)}).reindex(columns=list(SERIES)).sort_index()
+    A.index = pd.DatetimeIndex(A.index)
     A["currency"] = pd.Series(cur, dtype=object).reindex(A.index)
     return A
 
@@ -119,12 +122,15 @@ def constant_price(A: pd.DataFrame, mix: dict, monthly: dict, base: dict, k: flo
     return pd.DataFrame.from_dict(rows, orient="index", columns=cols) if rows else pd.DataFrame(columns=cols)
 
 
-def trend_growth(values) -> float:
-    """Least-squares slope a year ÷ the mean absolute value (NaN for fewer than two years or an all-zero series)."""
-    v = np.asarray([x for x in values if x == x], dtype=float)
+def trend_growth(values, x=None) -> float:
+    """Least-squares slope a year ÷ the mean absolute value (NaN for fewer than two points or an all-zero series).
+    `x`: each value's time in years (default one a year)."""
+    x = list(range(len(values))) if x is None else list(x)
+    pts = [(a, v) for a, v in zip(x, values) if v == v]
+    v = np.asarray([b for _, b in pts], dtype=float)
     if len(v) < 2 or not np.abs(v).mean() > 0:
         return np.nan
-    return float(np.polyfit(np.arange(len(v)), v, 1)[0] / np.abs(v).mean())
+    return float(np.polyfit([a for a, _ in pts], v, 1)[0] / np.abs(v).mean())
 
 
 def measures(A: pd.DataFrame, mix: dict, monthly: dict, base: dict, k: float, sustaining: dict | None = None,
@@ -199,6 +205,71 @@ def research_measures(O: pd.DataFrame, A: pd.DataFrame, base: dict, tier: str) -
             "reserves_ps_growth": g(per_share_units(O, A, base, ("reserves", "mi")))}
 
 
+# ---------- developers: study progress, spending, NPV per share across studies ----------
+
+def study_progress(P: pd.DataFrame, ticker: str, now: str, today, years: int = 3) -> float:
+    """Stages moved in `years`: the stage now (pnav_companies `study_stage`) less the latest study recorded by then
+    (its type, or construction once construction had started; none recorded counts as 0). NaN without a stage now."""
+    if now not in STAGE_RANK:
+        return np.nan
+    then = pd.Timestamp(today) - pd.DateOffset(years=years)
+    R = P[(P.ticker == ticker) & (pd.to_datetime(P.study_date, errors="coerce") <= then)]
+    if R.empty:
+        return float(STAGE_RANK[now])
+    r = R.assign(_d=pd.to_datetime(R.study_date)).sort_values("_d").iloc[-1]
+    cs = pd.to_datetime(r.get("construction_start") or None, errors="coerce")
+    was = "construction" if cs == cs and cs is not None and cs <= then else str(r.study_type)
+    return float(STAGE_RANK[now] - STAGE_RANK.get(was, 0))
+
+
+def spending_shares(A: pd.DataFrame) -> dict:
+    """Over the window: exploration and development ÷ all spending, and G&A (SG&A where G&A isn't reported) ÷ all
+    spending, where all spending = cash used in operations + capital spending."""
+    nan = {"explore_dev_share": np.nan, "ga_share": np.nan}
+    if A.empty:
+        return nan
+    W = A[A.ocf.notna() & A.capex.notna()].tail(YEARS)
+    ga = W.ga if W.ga.notna().any() else W.sga
+    W, ga = W[ga.notna()], ga[ga.notna()]
+    spend = float((-W.ocf).clip(lower=0).sum() + (-W.capex).clip(lower=0).sum())
+    if W.empty or spend <= 0:
+        return nan
+    g = float(ga.sum()) / spend
+    return {"explore_dev_share": 1 - g, "ga_share": g}
+
+
+def study_values(P: pd.DataFrame, C: pd.DataFrame, ticker: str, base: dict, rate: float) -> dict:
+    """{study date: risk-adjusted NPV at `base`, valued as of that date} for every recorded study of the company,
+    superseded ones too (an expansion's increment is left out: it isn't the company's value)."""
+    from . import studies as S
+    out = {}
+    for _, p in P[P.ticker == ticker].iterrows():
+        if str(p.get("baseline", "") or "").strip():
+            continue
+        q = p.copy()
+        q["superseded"] = ""
+        d = pd.Timestamp(p.study_date)
+        v = S.risk_adjusted(q, S.flows(C, q), base, rate, d.date()).get("risk_adjusted")
+        if v is not None and v == v:
+            out[d] = float(v)
+    return dict(sorted(out.items()))
+
+
+def npv_ps_growth(values: dict, A: pd.DataFrame) -> float:
+    """Growth a year of the risk-adjusted NPV per share across successive studies (shares at the nearest year end)."""
+    if len(values) < 2 or A.empty or A.shares.dropna().empty:
+        return np.nan
+    S, pts = A.shares.dropna(), []
+    for d, v in values.items():
+        gap = abs((S.index - d).days)
+        if gap.min() <= SHARES_WITHIN_DAYS:
+            pts.append((d, v / S.iloc[int(np.argmin(gap))]))
+    if len(pts) < 2:
+        return np.nan
+    first = pts[0][0]
+    return trend_growth([v for _, v in pts], [(d - first).days / 365.25 for d, _ in pts])
+
+
 def load_operations(path=None) -> pd.DataFrame:
     from .config import RESEARCH
     p = path or RESEARCH / "operations.csv"
@@ -234,8 +305,19 @@ def load_sustaining(path=None) -> dict:
     return out
 
 
+def _rates() -> dict:
+    """{ticker: discount rate} from the last `valuation` (data/derived/valuation.csv), for the developers' studies."""
+    from .config import DERIVED
+    f = DERIVED / "valuation.csv"
+    if not f.exists():
+        return {}
+    V = pd.read_csv(f)
+    return {t: r for t, r in zip(V.ticker, V.get("discount_rate", [])) if r == r}
+
+
 def add(U: pd.DataFrame, holdings: dict | None = None, monthly: dict | None = None, sustaining: dict | None = None,
-        base: dict | None = None, operations: pd.DataFrame | None = None) -> pd.DataFrame:
+        base: dict | None = None, operations: pd.DataFrame | None = None, studies: tuple | None = None,
+        rates: dict | None = None, today=None) -> pd.DataFrame:
     """The universe with each company's performance measures (the keys of `measures`) added; developers get only
     their years of share counts here."""
     from .screen import kind
@@ -248,6 +330,11 @@ def add(U: pd.DataFrame, holdings: dict | None = None, monthly: dict | None = No
     base = base or decks()[settings()["valuation"]["base_deck"]]
     k = settings()["price_model"]["cash_flow_share"]
     O = load_operations() if operations is None else operations
+    from datetime import date
+    from . import studies as S
+    P, C = S.load() if studies is None else studies
+    rates = _rates() if rates is None else rates
+    today = today or date.today()
     U, rows = U.copy(), []
     for _, r in U.iterrows():
         h = holdings.get(str(r.get("ticker"))) or holdings.get(str(r.get("ticker_buy"))) or {}
@@ -260,7 +347,11 @@ def add(U: pd.DataFrame, holdings: dict | None = None, monthly: dict | None = No
         mine = O[O.ticker == str(r.get("ticker"))]
         extra = research_measures(mine, A, base, k_)
         if k_ == "developer":
-            rows.append({"history_years": int(A.shares.dropna().tail(YEARS).size) if len(A) else 0, **extra})
+            t = str(r.get("ticker"))
+            npv = npv_ps_growth(study_values(P, C, t, base, rates[t]), A) if t in rates else np.nan
+            rows.append({"history_years": int(A.shares.dropna().tail(YEARS).size) if len(A) else 0, **extra,
+                         "study_progress": study_progress(P, t, str(r.get("study_stage") or ""), today),
+                         **spending_shares(A), "npv_ps_growth": npv})
             continue
         rows.append({**measures(A, mix, monthly, base, k, sus, royalty=k_ == "royalty"), **extra})
     M = pd.DataFrame(rows, index=U.index)

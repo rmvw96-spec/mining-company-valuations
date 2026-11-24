@@ -488,6 +488,11 @@ production_ps_growth = 1.0          # producers: production per share growth, go
 reserves_ps_growth = 1.0            # producers: reserves + M&I per share growth at roadmap 3's category weights
 geo_ps_growth = 1.0                 # royalty: attributable GEOs sold per share growth
 resource_ps_growth = 1.0            # developers: reserves + M&I + inferred per share growth, roadmap 3's weights
+study_progress = 1.0                # developers: stages moved in 3 years (PEA 1 ... construction 5; projects.csv)
+explore_dev_share = 1.0             # developers: exploration and development ÷ all spending (higher)
+ga_share = 1.0                      # developers: G&A ÷ all spending (lower; the complement of the one above, so
+                                    # together they weigh double: the user's weighting, spec open question 1)
+npv_ps_growth = 1.0                 # developers: risk-adjusted NPV per share growth across successive studies
 margin_avg = 1.0                    # cash flow ÷ revenue at the base deck, average of the years (higher)
 margin_min = 1.0                    # the same, lowest year: the cycle's worst (higher)
 net_cash_pct = 1.0                  # net cash, % of market value (higher)

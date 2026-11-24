@@ -102,6 +102,10 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
   year's average price − 1) by revenue mix, ÷ that year's share count. OCF − sustaining only when sustaining is
   recorded for every year of the window, else FCF for every year, labelled. Growth is the fitted slope over the
   mean size, a year (it works through a change of sign).
+- **Developers:** study progress = the stage now (`study_stage`) less the latest study recorded by three years ago
+  (none counts as 0); spending = cash used in operations + capital spending, with G&A (SG&A where G&A isn't
+  reported) from Yahoo; the NPV per share across studies values each recorded study (superseded ones too) at the
+  base deck as of its date, at the rate from the last `valuation`.
 - Rank percentiles within the bucket; a measure a company lacks is left out of its average, and the report says how
   many it had.
 - Production, reserves, resources and GEOs per year are research inputs (filings, with sources; never estimated):
@@ -222,7 +226,16 @@ Revision 2 (to build):
 - [x] A20. A year's cash flow and production are re-priced to the base deck and taken per share with that year's
   share count. — `tests/test_performance.py::test_each_year_is_repriced_to_the_base_deck_per_share_with_that_years_shares`,
   `tests/test_performance.py::test_production_is_valued_at_the_base_deck_and_taken_per_share`
-- [ ] A21. Each performance measure, the FCF-basis label and "too little history". — new tests
+- [x] A21. Each performance measure, the FCF-basis label and "too little history". —
+  `tests/test_performance.py::test_measures_for_a_producer_and_a_royalty`,
+  `tests/test_performance.py::test_research_measures_by_tier`,
+  `tests/test_performance.py::test_study_progress_counts_the_stages_moved_in_three_years`,
+  `tests/test_performance.py::test_spending_shares_for_a_developer`,
+  `tests/test_performance.py::test_npv_per_share_across_studies`,
+  `tests/test_performance.py::test_add_fills_the_universe_by_ticker`,
+  `tests/test_screen.py::test_performance_measures_by_bucket`,
+  `tests/test_screen.py::test_aisc_margin_is_the_base_decks_margin_over_the_breakeven`,
+  `tests/test_screen.py::test_the_why_text_labels_the_fcf_basis`, `tests/test_screen.py::test_too_little_history`
 - [x] A22. Selection ignores price: an expensive company with the best score is selected, with no buy status. —
   `tests/test_screen.py::test_selection_ignores_price`
 - [x] A23. The valuation filters and valuation score measures are gone from code and settings. —

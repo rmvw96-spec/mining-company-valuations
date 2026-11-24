@@ -26,7 +26,7 @@ built. **Outstanding**: not started. `tests/test_data_files.py` checks this tabl
 | 4b | Jurisdiction risk | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | Built | A1–A8 | 7 of 8 | the user's review of the comparison before `financials` writes it (user) |
 | 4c | Royalty history | [royalty-history-spec.md](specs/royalty-history-spec.md) | Built | A1–A10 | 10 of 10 | — |
 | 5 | Model portfolio screen, revision 1 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Built | A1–A19 | 18 of 19 | the first `screen --write` (user) |
-| 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | In progress | A20–A28 | 5 of 9 | the developers' measures (A21); production and reserves research (data); the score weighting (user); docs (A28) |
+| 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | In progress | A20–A28 | 6 of 9 | production and reserves research (data); the score weighting (user); docs (A28) |
 | 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | Built | A1–A32 | 30 of 32 | the decks with `pessimistic_cost_increase` (user); NPVs for the last three candidates (data) |
 | 6b | Valuation coverage | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | Built | A1–A7 | 7 of 7 | — |
 | 6c | Our NAV first | [own-nav-first-spec.md](specs/own-nav-first-spec.md) | Built | A1–A7 | 7 of 7 | — |

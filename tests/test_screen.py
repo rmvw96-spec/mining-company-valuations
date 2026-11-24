@@ -124,7 +124,9 @@ def test_performance_measures_by_bucket():
                                                        "aisc_margin"]
     assert [m for m, _ in SC.MEASURES["royalty"]] == ["ocf_ps_growth", "geo_ps_growth", "margin_avg", "margin_min",
                                                       "share_change_3y"]
-    assert [m for m, _ in SC.MEASURES["developer"]][:1] == ["resource_ps_growth"]
+    assert SC.MEASURES["developer"] == [("resource_ps_growth", True), ("study_progress", True),
+                                        ("explore_dev_share", True), ("ga_share", False), ("npv_ps_growth", True),
+                                        ("share_change_3y", False)]
     assert all(m in SC.DESCRIBE for ms in SC.MEASURES.values() for m, _ in ms)
     assert dict(SC.MEASURES["producer"])["share_change_3y"] is False
     assert all(hb for m, hb in SC.MEASURES["producer"] if m != "share_change_3y")

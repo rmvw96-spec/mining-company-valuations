@@ -329,3 +329,10 @@ def test_operations_record_is_well_formed():
     assert not O.duplicated(["ticker", "period_end", "measure", "category", "metal"]).any()
     assert pd.to_datetime(O.period_end, errors="coerce").notna().all()
     assert pd.to_numeric(O.amount, errors="coerce").notna().all()
+
+
+def test_fetch_downloads_the_series_the_screen_measures_read():
+    """Screen revision 2: every annual series minerval/performance.py reads is in fundamentals.TYPES."""
+    from minerval.fundamentals import TYPES
+    from minerval.performance import SERIES
+    assert set(SERIES.values()) <= set(TYPES)

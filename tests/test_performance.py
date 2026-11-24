@@ -177,3 +177,55 @@ def test_research_measures_by_tier():
     assert r["geo_ps_growth"] == pytest.approx(
         PF.trend_growth([a * 1000 / s for a, s in zip([50.0, 55.0, 60.0, 70.0], shares)]))
     assert set(PF.research_measures(O.iloc[:0], A, BASE, "developer")) == {"resource_ps_growth"}
+
+
+def studies(*rows):
+    cols = ["ticker", "project", "study_type", "study_date", "construction_start", "superseded", "permits", "committed"]
+    return pd.DataFrame([dict(zip(cols, r)) for r in rows], columns=cols).fillna("")
+
+
+def test_study_progress_counts_the_stages_moved_in_three_years():
+    """A21 (developers): PEA → PFS → FS → permitted → construction, now (study_stage) against the latest study
+    recorded by three years ago (none counts as 0)."""
+    from datetime import date
+    P = studies(("DEV", "Main", "PEA", "2022-03-01", "", "by FS", "", ""), ("DEV", "Main", "FS", "2025-06-01", "", "", "", ""))
+    today = date(2026, 11, 24)
+    assert PF.study_progress(P, "DEV", "FS", today) == 2                  # PEA in Mar 2022 → FS
+    assert PF.study_progress(P, "DEV", "permitted", today) == 3
+    assert PF.study_progress(P.iloc[1:], "DEV", "FS", today) == 3          # nothing recorded three years ago
+    assert np.isnan(PF.study_progress(P, "DEV", "", today))
+
+
+def test_spending_shares_for_a_developer():
+    """A21 (developers): exploration and development spending ÷ all spending (cash used in operations plus capital
+    spending), and G&A ÷ all spending, over the window."""
+    s = company(annualOperatingCashFlow=dict.fromkeys(YEARS, -30.0), annualCapitalExpenditure=dict.fromkeys(YEARS, -70.0),
+                annualGeneralAndAdministrativeExpense=dict.fromkeys(YEARS, 10.0))
+    m = PF.spending_shares(PF.annual(s))
+    assert m == {"explore_dev_share": pytest.approx(0.9), "ga_share": pytest.approx(0.1)}
+    s2 = company(annualOperatingCashFlow=dict.fromkeys(YEARS, -30.0), annualCapitalExpenditure=dict.fromkeys(YEARS, -70.0),
+                 annualSellingGeneralAndAdministration=dict.fromkeys(YEARS, 20.0))
+    assert PF.spending_shares(PF.annual(s2))["ga_share"] == pytest.approx(0.2)    # SG&A where G&A isn't reported
+    assert np.isnan(PF.spending_shares(PF.annual(company()))["ga_share"])
+
+
+def test_npv_per_share_across_studies(monkeypatch):
+    """A21 (developers): each recorded study (superseded ones too) valued at the base deck as of its date, per share at
+    the nearest year end, and the growth a year across the studies."""
+    from datetime import date
+    from minerval import studies as S
+    seen = []
+
+    def fake(p, F, prices, rate, today, base=None):
+        seen.append((p.study_date, str(p.superseded), prices["gold"], rate, today))
+        return {"risk_adjusted": {"2023-12-15": 500.0, "2025-12-20": 900.0}[p.study_date], "why": ""}
+    monkeypatch.setattr(S, "risk_adjusted", fake)
+    P = studies(("DEV", "Main", "PFS", "2023-12-15", "", "by FS", "", ""), ("DEV", "Main", "FS", "2025-12-20", "", "", "", ""))
+    C = pd.DataFrame({"ticker": [], "project": [], "study_date": [], "year": []})
+    v = PF.study_values(P, C, "DEV", BASE, 0.09)
+    assert v == {pd.Timestamp("2023-12-15"): 500.0, pd.Timestamp("2025-12-20"): 900.0}
+    assert seen[0] == ("2023-12-15", "", 4550.0, 0.09, date(2023, 12, 15))            # as of its own date
+    g = PF.npv_ps_growth(v, PF.annual(company()))
+    x = [0.0, (pd.Timestamp("2025-12-20") - pd.Timestamp("2023-12-15")).days / 365.25]
+    assert g == pytest.approx(PF.trend_growth([500.0 / 100.0, 900.0 / 125.0], x))
+    assert np.isnan(PF.npv_ps_growth({pd.Timestamp("2025-12-20"): 900.0}, PF.annual(company())))
