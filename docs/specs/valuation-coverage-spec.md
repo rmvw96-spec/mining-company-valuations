@@ -81,8 +81,9 @@ tier" section names the record.
 - [x] A6. (data) No `sustaining` row is still `to research`: each producer's split is recorded or marked `not
   published` with its source. — the report's Coverage counts (Nov 23, 2026: 19 `sustaining` rows, 17 `not
   published`, 2 `waiting`, none `to research`)
-- [ ] A7. (data) No `study` or `growth_project` row is still `to research`: each is recorded, `waiting` with a
-  date, or `not published` with its source. — the report's Coverage counts
+- [x] A7. (data) No `study` or `growth_project` row is still `to research`: each is recorded, `waiting` with a
+  date, or `not published` with its source. — the report's Coverage counts (Nov 23, 2026: 8 `study` rows, 4 `not
+  published`, 4 `waiting`; 17 `growth_project` rows, 16 `not published`, 1 `waiting`; none `to research`)
 
 ## Decisions
 

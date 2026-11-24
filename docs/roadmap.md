@@ -28,7 +28,7 @@ built. **Outstanding**: not started. `tests/test_data_files.py` checks this tabl
 | 5 | Model portfolio screen, revision 1 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Built | A1–A19 | 18 of 19 | the first `screen --write` (user) |
 | 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Outstanding | A20–A28 | 0 of 9 | all |
 | 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | Built | A1–A32 | 30 of 32 | the decks with `pessimistic_cost_increase` (user); NPVs for the last three candidates (data) |
-| 6b | Valuation coverage | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | Built | A1–A7 | 6 of 7 | two `study` rows wait for the user's downloads of their technical reports: Diablillos (SEDAR+) and Marimaca (marimaca.com or SEDAR+) (user) |
+| 6b | Valuation coverage | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | Built | A1–A7 | 7 of 7 | — |
 | 6c | Our NAV first | [own-nav-first-spec.md](specs/own-nav-first-spec.md) | Built | A1–A7 | 7 of 7 | — |
 
 ## Principles
