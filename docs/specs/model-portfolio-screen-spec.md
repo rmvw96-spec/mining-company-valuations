@@ -136,8 +136,9 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
 - **Buy-below price:** AA, after Z (placed by `setup-sheet`), US$ per share at S, a formula over PNAV inputs, so it
   moves with financials and decks: the valuation's own price (CQ) at the rule's multiple; a typed multiple
   re-priced the same way (producers and royalties (min(S × base NPV, pessimistic NPV) + net cash − minority) ÷
-  shares; developers the +30% overrun case, spread over the shares after the raise). Every company gets one on
-  PNAV inputs (roadmap 6).
+  shares; developers the +30% overrun case, spread over the shares after the raise). The valuation prices only
+  the companies it can (roadmap 6): where PNAV inputs CQ is blank, AA is blank and T says why (no NPV, with the
+  reason, or the downside test).
 - **Check:** `screen`'s report compares T and AA with the same rule in Python, row by row, and names rows whose B
   doesn't look up on PNAV inputs.
 - **T (formula), in order:** "No NPV: <why>"; "Fails downside test"; "Buy: below US$<price>" (with the price in
