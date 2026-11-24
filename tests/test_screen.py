@@ -311,6 +311,20 @@ def test_sheet_statuses_are_checked_against_python():
     assert "Alpha Gold" in out[1] and "'Hold'" in out[1] and "Buy: below US$41.00" in out[1]
 
 
+def test_sheet_check_names_rows_whose_name_wont_look_up():
+    """The Sheet's T and AA look B up on PNAV inputs by name; a name that differs (found only by its ticker) is
+    reported as a lookup to fix, not as a formula difference."""
+    U = universe(company(holding="Alpha Gold", ticker="ALP", price=40.0, mcap=4000.0, buy_below_value=41.0))
+    row = {"A": "Gold producers", "B": "Alpha Gold (formerly Alfa)", "D": "ALP", "S": 0.6,
+           "T": "No NPV: not valued", "AA": ""}
+    out = SC.sheet_check(U, tab_rows(row))
+    assert out[0] == "Model portfolio T and AA agree with the screen's rule (0 rows)."
+    assert out[1].startswith("Names in B that PNAV inputs doesn't have (T, AA and the other lookups stay blank")
+    assert "Alpha Gold (formerly Alfa)" in out[2] and "Alpha Gold" in out[2]
+    same = {**row, "B": "ALPHA GOLD", "T": "Buy: below US$41.00", "AA": 41.0}        # XLOOKUP ignores case
+    assert SC.sheet_check(U, tab_rows(same)) == ["Model portfolio T and AA agree with the screen's rule (1 rows)."]
+
+
 def test_plan_keeps_physical_scales_weights_and_keeps_typed_levels():
     tab = tab_rows({"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "F": 0.88, "S": ""},
                    {"A": "Gold producers", "B": "beta gold", "D": "BET", "F": 0.1, "S": 0.5, "U": "my reason",

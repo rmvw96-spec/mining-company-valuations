@@ -450,13 +450,16 @@ def sheet_check(U: pd.DataFrame, tab: list[dict]) -> list[str]:
     multiple in S: a difference means the Sheet's formula or a column it reads has changed."""
     C = settings()["sheet"]["portfolio_cols"]
     T, AA, S_ = C["status"], C["buy_below"], C["review_level"]
-    rows, bad = 0, []
+    rows, bad, names = 0, [], []
     for row in tab:
         lvl = num(row.get(S_))
         if not _text(row.get("B")) or lvl != lvl:
             continue
         hit = U[U.holding.map(_text) == resolve(row, U)]
         if hit.empty:
+            continue
+        if _text(hit.holding.iloc[0]).lower() != _text(row["B"]).lower():         # XLOOKUP ignores case
+            names.append(f"  row {row['row']}: '{_text(row['B'])}' (PNAV inputs: '{_text(hit.holding.iloc[0])}')")
             continue
         r, rows = hit.iloc[0], rows + 1
         want_t, want_aa, got_aa = status(r, lvl), buy_below_at(r, lvl), num(row.get(AA))
@@ -466,10 +469,13 @@ def sheet_check(U: pd.DataFrame, tab: list[dict]) -> list[str]:
             aa = "blank" if want_aa is None else f"{want_aa:.4f}"
             bad.append(f"  {_text(row['B'])} (row {row['row']}): Sheet '{_text(row.get(T))}', "
                        f"{_text(row.get(AA)) or 'blank'}; the rule '{want_t}', {aa}")
-    if not bad:
-        return [f"Model portfolio {T} and {AA} agree with the screen's rule ({rows} rows)."]
-    return [f"Model portfolio {T} or {AA} differ from the screen's rule in {len(bad)} rows (a formula or a column "
-            f"it reads changed):"] + bad
+    out = [f"Model portfolio {T} and {AA} agree with the screen's rule ({rows} rows)."] if not bad else [
+        f"Model portfolio {T} or {AA} differ from the screen's rule in {len(bad)} rows (a formula or a column it "
+        f"reads changed):"] + bad
+    if names:
+        out += [f"Names in B that PNAV inputs doesn't have ({T}, {AA} and the other lookups stay blank; type the "
+                f"PNAV inputs name):"] + names
+    return out
 
 
 def resolve(row: dict, U: pd.DataFrame) -> str:

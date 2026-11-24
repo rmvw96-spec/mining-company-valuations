@@ -536,11 +536,11 @@ def portfolio_buy_below_formula() -> str:
     buy = settings()["valuation"]["buy"]
     rule = (f'IF(basis="{STUDY_BASIS}",{buy["developer"]["buy"]},IF(basis="{ROYALTY_BASIS}",{buy["royalty"]["buy"]},'
             f'{buy["producer"]["buy"]}))')
-    typed = (f'IF(basis="{STUDY_BASIS}",IF(ISNUMBER(cq),cq+(lvl-rule)*base/(shares*(1+IF(ISNUMBER(d30),d30,0))),""),'
+    typed = (f'IF(basis="{STUDY_BASIS}",IF(ISNUMBER(cq),cq+(lvl-rule)*base/(shares*(1+IF(ISNUMBER(dil),dil,0))),""),'
              f'IF(ISNUMBER(pess),(IF(lvl*base<pess,lvl*base,pess)+IF(ISNUMBER(nc),nc,0)-IF(ISNUMBER(mi),mi,0))'
              f'/shares,""))')
     return (f'=ARRAYFORMULA(LET(basis,{look("valuation_basis")},base,{look("npv_base")},'
-            f'pess,{look("npv_pessimistic")},nc,{look("net_cash")},mi,{look("minority")},d30,{look("dilution_30")},'
+            f'pess,{look("npv_pessimistic")},nc,{look("net_cash")},mi,{look("minority")},dil,{look("dilution_30")},'
             f'cq,{look("buy_below_value")},shares,{look("mcap")}/{look("price")},lvl,{rng("review_level")},'
             f'rule,{rule},v,IF(ABS(lvl-rule)<0.000001,cq,IF(ISNUMBER(base),IF(base>0,{typed},""),"")),'
             f'IF(({rng("holding")}="")+({rng("review_level")}=""),"",IF(ISNUMBER(v),IF(v>0,v,""),""))))')

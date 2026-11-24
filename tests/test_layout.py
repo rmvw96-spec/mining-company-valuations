@@ -366,3 +366,40 @@ def test_a_status_formula_typed_by_hand_is_left_alone(tmp_path):
     rep = layout.run(sh, out_dir=tmp_path)
     assert any("conflict" in line and "T6" in line for line in rep)
     assert sh.cells["Model portfolio"]["T6"] == '=ARRAYFORMULA(IF(S6:S31="","","mine"))'
+
+
+def _let_names(formula: str) -> list[str]:
+    """The names a formula's LET()s define (each name is followed by a comma at the LET's own depth)."""
+    import re
+    names = []
+    for m in re.finditer(r"LET\(", formula):
+        i, depth, arg, args = m.end(), 0, "", []
+        while i < len(formula):
+            ch = formula[i]
+            if ch == '"':
+                j = formula.index('"', i + 1)
+                arg += formula[i:j + 1]
+                i = j + 1
+                continue
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                if depth == 0:
+                    break
+                depth -= 1
+            if ch == "," and depth == 0:
+                args.append(arg)
+                arg = ""
+            else:
+                arg += ch
+            i += 1
+        names += [a.strip() for a in args[0::2]]
+    return names
+
+
+def test_let_names_are_not_cell_references():
+    """Sheets rejects a LET name that reads as a cell reference ("d30" is D30): #NAME? on the whole column."""
+    import re
+    for f in (layout.portfolio_buy_below_formula(), layout.portfolio_status_formula(), layout.timing_formula()):
+        names = _let_names(f)
+        assert names and not [n for n in names if re.fullmatch(r"[A-Za-z]{1,3}\d+", n)], names

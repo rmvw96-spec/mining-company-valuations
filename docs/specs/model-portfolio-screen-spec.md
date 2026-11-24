@@ -121,10 +121,15 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
 - **Levels:** `[valuation.buy]` by tier (tier-valuation spec, Part 5).
 - **S:** the row's buy multiple from the rule. A level typed by hand is kept (it differs from
   `private/screen_state.json`); `--rule-review-levels` resets typed levels to the rule.
-- **Buy-below price:** a new column after Z (placed by `setup-sheet`), US$ and listing currency, a formula over
-  PNAV inputs, so it moves with financials and decks. Every company gets one on PNAV inputs (roadmap 6).
-- **T (formula), in order:** "No NPV: <why>"; "Fails downside test"; "Buy: below <price>"; "Above fair value:
-  review"; "Hold". Physical metal rows unchanged.
+- **Buy-below price:** AA, after Z (placed by `setup-sheet`), US$ per share at S, a formula over PNAV inputs, so it
+  moves with financials and decks: the valuation's own price (CQ) at the rule's multiple; a typed multiple
+  re-priced the same way (producers and royalties (min(S × base NPV, pessimistic NPV) + net cash − minority) ÷
+  shares; developers the +30% overrun case, spread over the shares after the raise). Every company gets one on
+  PNAV inputs (roadmap 6).
+- **Check:** `screen`'s report compares T and AA with the same rule in Python, row by row, and names rows whose B
+  doesn't look up on PNAV inputs.
+- **T (formula), in order:** "No NPV: <why>"; "Fails downside test"; "Buy: below US$<price>" (with the price in
+  the listing's currency); "Above fair value: review"; "Hold". Physical metal rows (no S) stay blank.
 - **Alerts:** a change in T is emailed privately by `prices` (`alerts.notify_portfolio`).
 - **Review on performance:** a row whose score falls below its bucket's cut is listed by the next `screen` run.
 
@@ -214,9 +219,14 @@ Revision 2 (to build):
 - [x] A23. The valuation filters and valuation score measures are gone from code and settings. —
   `tests/test_screen.py::test_valuation_filters_and_measures_are_gone`,
   `tests/test_screen.py::test_no_filter_on_price_or_valuation`
-- [ ] A24. T's status at each edge (no NPV, downside test, buy, above fair value, hold) and the buy-below price at
-  each binding condition; a typed S is kept. — new tests
-- [ ] A25. `setup-sheet --dry-run` places the buy-below column after Z, and the user has seen it. — command (user)
+- [x] A24. T's status at each edge (no NPV, downside test, buy, above fair value, hold) and the buy-below price at
+  each binding condition; a typed S is kept. — `tests/test_screen.py::test_status_at_each_edge`,
+  `tests/test_screen.py::test_buy_below_at_each_binding_condition`,
+  `tests/test_screen.py::test_a_typed_level_is_kept_and_sets_the_status`,
+  `tests/test_layout.py::test_portfolio_status_and_buy_below_columns`,
+  `tests/test_screen.py::test_sheet_statuses_are_checked_against_python` (Nov 24, 2026: 22 rows on the Sheet agree)
+- [x] A25. `setup-sheet --dry-run` places the buy-below column after Z, and the user has seen it. — command (user;
+  seen and installed Nov 24, 2026, with S reset to the rule's multiples)
 - [ ] A26. Annual production, reserves plus M&I resources, and royalty GEOs for 2022–2025 are recorded with
   sources for every screened company that publishes them. — data-file test
 - [ ] A27. (user) The user has set the score weighting.
