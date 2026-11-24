@@ -266,12 +266,14 @@ timing = "W"
 ev_per_aueq_oz = "X"
 months_of_cash = "Y"
 pnav_after = "Z"                    # P/NAV after an equity raise for the funding gap, or "Fully funded"
-status = "T"                        # Status (Review: above level, ...): emailed when it changes (alerts)
+buy_below = "AA"                    # formula: the buy-below price (US$/share) at S (screen revision 2)
+status = "T"                        # formula: no NPV / fails downside test / buy / above fair value / hold (emailed
+                                    # when it changes, alerts)
 where = "C"                         # inputs written by `screen --write` (A-F, S, U-V)
 ticker = "D"
 weight = "F"
 peer_norm = "K"                     # formula: valuation vs peer norm (1.0 = in line)
-review_level = "S"
+review_level = "S"                  # the buy multiple ([valuation.buy] by tier; a typed value is kept)
 why = "U"
 what_would_change = "V"
 new_money_cell = "B3"
@@ -467,37 +469,36 @@ max_share_change_3y_pct = 30.0      # producers: more than 30% dilution in 3 yea
 # Expanding producers fund construction and mergers with shares, so 30% would exclude most of them (Nov 2026: 5 of 8
 # US/Canadian names); 100% still drops serial diluters.
 max_share_change_3y_pct_by_bucket = { "Growth: expanding producers" = 100.0 }
+min_history_years = 3               # fiscal years of the performance measures (minerval/performance.py), else "too
+                                    # little history" and not ranked (Yahoo carries 4 annual years for most)
 # No filter on the jurisdiction add-on (removed Nov 2026, the user's call): a high-risk country shouldn't exclude a
-# company whose financials are sound. The risk still counts through the discount rate in P/NAV and the score's
-# `addon` and `addon_reliance` measures. Set max_addon_points (points) to bring a filter back.
-max_peer_ev_ratio = 1.5             # developers: EV per weighted unit at most 1.5× the peer median (BW)
-# Royalty companies: valued by the framework's own measures, not the peer norm (the Sheet's typical royalty multiple,
-# 1.5× × 0.94 on Metal prices reference, sits below where the whole group has traded, so every royalty company reads
-# 1.5-1.9× its norm in Nov 2026). Excluded when the framework band (PNAV inputs AS) is one of these, or the company
-# is at or above the own-history "expensive" threshold (Signals royalty_own_pctile_median H, 75).
-royalty_excluded_bands = ["Rich", "no NAV", "negative NAV", "no independent NAV"]
+# company whose financials are sound. The risk counts once, through the discount rate. Set max_addon_points (points)
+# to bring a filter back. No filter on price or valuation either (revision 2, the user, Nov 21, 2026): value sets
+# only the buy signal (S is the buy multiple in [valuation.buy]; T the status), never which names are held.
 
-# Score: rank percentiles within the bucket (1 = best), averaged with these weights. Equal by default; don't tune
-# them to the backtest (most measures have no history, and one period's best fit is noise).
+# Score: business performance per share (revision 2), as rank percentiles within the bucket (1 = best), averaged
+# with these weights. Equal until the user sets the weighting (spec open question 1); don't tune them to the
+# backtest (most measures have no history, and one period's best fit is noise).
 [portfolio_screen.score]
-peer_norm = 1.0                     # valuation vs peer norm (lower)
-pnav_low = 1.0                      # P/NAV at Low prices (lower)
-breakeven_gap = 1.0                 # FCF breakeven ÷ today's metal price − 1 (lower)
+cf_ps_growth = 1.0                  # producers: cash flow per share growth at the base deck, a year (OCF − sustaining
+                                    # where recorded every year, else FCF, labelled; minerval/performance.py)
+ocf_ps_growth = 1.0                 # royalty: operating cash flow per share growth at the base deck, a year
+production_ps_growth = 1.0          # producers: production per share growth, gold oz at the base deck's prices
+                                    # (data/research/operations.csv; left out where not recorded)
+reserves_ps_growth = 1.0            # producers: reserves + M&I per share growth at roadmap 3's category weights
+geo_ps_growth = 1.0                 # royalty: attributable GEOs sold per share growth
+resource_ps_growth = 1.0            # developers: reserves + M&I + inferred per share growth, roadmap 3's weights
+study_progress = 1.0                # developers: stages moved in 3 years (PEA 1 ... construction 5; projects.csv)
+explore_dev_share = 1.0             # developers: exploration and development ÷ all spending (higher)
+ga_share = 1.0                      # developers: G&A ÷ all spending (lower; the complement of the one above, so
+                                    # together they weigh double: the user's weighting, spec open question 1)
+npv_ps_growth = 1.0                 # developers: risk-adjusted NPV per share growth across successive studies
+margin_avg = 1.0                    # cash flow ÷ revenue at the base deck, average of the years (higher)
+margin_min = 1.0                    # the same, lowest year: the cycle's worst (higher)
 net_cash_pct = 1.0                  # net cash, % of market value (higher)
 share_change_3y = 1.0               # (lower)
-addon = 1.0                         # jurisdiction add-on (lower)
-addon_reliance = 1.0                # P/NAV with the add-on raised ÷ P/NAV today, PNAV inputs BX (lower)
-pnav_after = 1.0                    # developers: P/NAV after a raise (lower; funded counts as best)
-peer_ev_ratio = 1.0                 # developers: EV per weighted unit ÷ peer median (lower)
-months_of_cash = 1.0                # developers (higher; cash-generating counts as best)
-pnav_used = 1.0                     # royalty: P/NAV used, PNAV inputs CV (our NAV where valued; lower)
-own_pctile = 1.0                    # royalty: own-history percentile, P/NAV when recorded else P/OCF (lower)
-
-# Review level S = review_multiple × peer norm (T flags K above S). A level typed by hand is kept.
-[portfolio_screen.review]
-review_multiple = 1.3
-by_bucket = { "Growth: developers" = 1.5, "Royalty" = 2.0 }   # developers: study NPVs are rougher. Royalty: see
-                                    # [portfolio_screen.filters] royalty_excluded_bands; their K runs 1.5-1.9 today
+aisc_margin = 1.0                   # (base-deck price − breakeven) ÷ base-deck price: the FCF breakeven until
+                                    # roadmap 4a records AISC (higher)
 
 # Limits from the sizing research (warnings in the report, not hard stops; the user sets the sizes):
 #   Rick Rule: royalties are the best business in mining (margins ~80% vs 15-20% for operators); "70% of resource

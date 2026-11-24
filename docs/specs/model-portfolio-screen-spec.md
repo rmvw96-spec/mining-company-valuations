@@ -1,6 +1,6 @@
 # Model portfolio from a screen
 
-Roadmap 5 and 5b · Status: revision 1 Built Nov 20, 2026; revision 2 Outstanding · Depends on: 6 for revision 2
+Roadmap 5 and 5b · Status: revision 1 Built Nov 20, 2026; revision 2 In progress · Depends on: 6 for revision 2
 ([tier-valuation-spec.md](tier-valuation-spec.md))
 
 Instructions for Claude Code. Follow CLAUDE.md, in particular its rule that Model portfolio content (names, weights,
@@ -97,9 +97,21 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
 | Royalty | OCF per share growth; attributable GEOs sold per share growth; cash margin through the cycle; 3-year share change (lower) |
 | Developers | Resource per share growth by category weight; study progress over 3 years (PEA → PFS → FS → permitted → construction; `projects.csv` dates, `study_stage`); exploration and development spending ÷ all spending, and G&A ÷ all spending (lower); risk-adjusted NPV per share across successive studies at a constant deck; 3-year share change (lower) |
 
+- **Computed** in `minerval/performance.py` from Yahoo's annual figures (up to the last four fiscal years, three
+  years of change) and the monthly COMEX closes: each year's cash flow + cash_flow_share × revenue × (base ÷ that
+  year's average price − 1) by revenue mix, ÷ that year's share count. OCF − sustaining only when sustaining is
+  recorded for every year of the window, else FCF for every year, labelled. Growth is the fitted slope over the
+  mean size, a year (it works through a change of sign).
+- **Developers:** study progress = the stage now (`study_stage`) less the latest study recorded by three years ago
+  (none counts as 0); spending = cash used in operations + capital spending, with G&A (SG&A where G&A isn't
+  reported) from Yahoo; the NPV per share across studies values each recorded study (superseded ones too) at the
+  base deck as of its date, at the rate from the last `valuation`.
 - Rank percentiles within the bucket; a measure a company lacks is left out of its average, and the report says how
   many it had.
-- Production, reserves, resources and GEOs per year are research inputs (filings, with sources; never estimated).
+- Production, reserves, resources and GEOs per year are research inputs (filings, with sources; never estimated):
+  `data/research/operations.csv`, one row per company, year end, measure (`production`, `resources`, `geo_sold`),
+  category (`reserves`, `mi` exclusive of reserves, `inferred`) and metal, in gold ounces at the base deck's prices
+  per share (metals outside the deck are left out; royalties' GEOs as published).
 
 ### Sizes, limits, selection and weights
 
@@ -121,10 +133,16 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
 - **Levels:** `[valuation.buy]` by tier (tier-valuation spec, Part 5).
 - **S:** the row's buy multiple from the rule. A level typed by hand is kept (it differs from
   `private/screen_state.json`); `--rule-review-levels` resets typed levels to the rule.
-- **Buy-below price:** a new column after Z (placed by `setup-sheet`), US$ and listing currency, a formula over
-  PNAV inputs, so it moves with financials and decks. Every company gets one on PNAV inputs (roadmap 6).
-- **T (formula), in order:** "No NPV: <why>"; "Fails downside test"; "Buy: below <price>"; "Above fair value:
-  review"; "Hold". Physical metal rows unchanged.
+- **Buy-below price:** AA, after Z (placed by `setup-sheet`), US$ per share at S, a formula over PNAV inputs, so it
+  moves with financials and decks: the valuation's own price (CQ) at the rule's multiple; a typed multiple
+  re-priced the same way (producers and royalties (min(S × base NPV, pessimistic NPV) + net cash − minority) ÷
+  shares; developers the +30% overrun case, spread over the shares after the raise). The valuation prices only
+  the companies it can (roadmap 6): where PNAV inputs CQ is blank, AA is blank and T says why (no NPV, with the
+  reason, or the downside test).
+- **Check:** `screen`'s report compares T and AA with the same rule in Python, row by row, and names rows whose B
+  doesn't look up on PNAV inputs.
+- **T (formula), in order:** "No NPV: <why>"; "Fails downside test"; "Buy: below US$<price>" (with the price in
+  the listing's currency); "Above fair value: review"; "Hold". Physical metal rows (no S) stay blank.
 - **Alerts:** a change in T is emailed privately by `prices` (`alerts.notify_portfolio`).
 - **Review on performance:** a row whose score falls below its bucket's cut is listed by the next `screen` run.
 
@@ -206,19 +224,36 @@ Revision 1 (built Nov 20, 2026):
 
 Revision 2 (to build):
 
-- [ ] A20. A year's cash flow and production are re-priced to the base deck and taken per share with that year's
-  share count. — new test
-- [ ] A21. Each performance measure, the FCF-basis label and "too little history". — new tests
-- [ ] A22. Selection ignores price: an expensive company with the best score is selected, with no buy status. —
-  new test
-- [ ] A23. The valuation filters and valuation score measures are gone from code and settings. — updated tests
-- [ ] A24. T's status at each edge (no NPV, downside test, buy, above fair value, hold) and the buy-below price at
-  each binding condition; a typed S is kept. — new tests
-- [ ] A25. `setup-sheet --dry-run` places the buy-below column after Z, and the user has seen it. — command (user)
+- [x] A20. A year's cash flow and production are re-priced to the base deck and taken per share with that year's
+  share count. — `tests/test_performance.py::test_each_year_is_repriced_to_the_base_deck_per_share_with_that_years_shares`,
+  `tests/test_performance.py::test_production_is_valued_at_the_base_deck_and_taken_per_share`
+- [x] A21. Each performance measure, the FCF-basis label and "too little history". —
+  `tests/test_performance.py::test_measures_for_a_producer_and_a_royalty`,
+  `tests/test_performance.py::test_research_measures_by_tier`,
+  `tests/test_performance.py::test_study_progress_counts_the_stages_moved_in_three_years`,
+  `tests/test_performance.py::test_spending_shares_for_a_developer`,
+  `tests/test_performance.py::test_npv_per_share_across_studies`,
+  `tests/test_performance.py::test_add_fills_the_universe_by_ticker`,
+  `tests/test_screen.py::test_performance_measures_by_bucket`,
+  `tests/test_screen.py::test_aisc_margin_is_the_base_decks_margin_over_the_breakeven`,
+  `tests/test_screen.py::test_the_why_text_labels_the_fcf_basis`, `tests/test_screen.py::test_too_little_history`
+- [x] A22. Selection ignores price: an expensive company with the best score is selected, with no buy status. —
+  `tests/test_screen.py::test_selection_ignores_price`
+- [x] A23. The valuation filters and valuation score measures are gone from code and settings. —
+  `tests/test_screen.py::test_valuation_filters_and_measures_are_gone`,
+  `tests/test_screen.py::test_no_filter_on_price_or_valuation`
+- [x] A24. T's status at each edge (no NPV, downside test, buy, above fair value, hold) and the buy-below price at
+  each binding condition; a typed S is kept. — `tests/test_screen.py::test_status_at_each_edge`,
+  `tests/test_screen.py::test_buy_below_at_each_binding_condition`,
+  `tests/test_screen.py::test_a_typed_level_is_kept_and_sets_the_status`,
+  `tests/test_layout.py::test_portfolio_status_and_buy_below_columns`,
+  `tests/test_screen.py::test_sheet_statuses_are_checked_against_python` (Nov 24, 2026: 22 rows on the Sheet agree)
+- [x] A25. `setup-sheet --dry-run` places the buy-below column after Z, and the user has seen it. — command (user;
+  seen and installed Nov 24, 2026, with S reset to the rule's multiples)
 - [ ] A26. Annual production, reserves plus M&I resources, and royalty GEOs for 2022–2025 are recorded with
   sources for every screened company that publishes them. — data-file test
 - [ ] A27. (user) The user has set the score weighting.
-- [ ] A28. README and CLAUDE.md describe revision 2; the roadmap marks 5b.
+- [x] A28. README and CLAUDE.md describe revision 2; the roadmap marks 5b. — `grep -n "revision 2" README.md CLAUDE.md`
 
 ## Decisions
 

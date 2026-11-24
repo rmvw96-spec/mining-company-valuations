@@ -168,7 +168,6 @@ def test_screen_settings():
     assert set(C["bucket_order"]) <= timing | {"Royalty"}
     assert set(C["buckets"].values()) <= set(C["bucket_order"])
     assert set(C["speculation"]) <= set(C["bucket_order"])
-    assert set(C["review"]["by_bucket"]) <= set(C["bucket_order"])
     from minerval.screen import MEASURES
     assert {m for ms in MEASURES.values() for m, _ in ms} <= set(C["score"])
     for k in ("financials_max_days", "price_max_days", "min_mcap_m", "min_mcap_developer_m"):
@@ -314,3 +313,26 @@ def test_study_stage_holds_the_six_values_and_agrees_with_the_latest_study():
         mine = P[P.ticker.eq(r.ticker)].sort_values("study_date")
         if len(mine):
             assert r.study_stage == S.stage(mine.iloc[-1]), (r.ticker, r.study_stage, S.stage(mine.iloc[-1]))
+
+
+def test_operations_record_is_well_formed():
+    """Screen revision 2 (A26): annual production, reserves and resources, and royalty GEOs, one row per company, year
+    end, measure, category and metal, with a source; M&I is recorded exclusive of reserves."""
+    from minerval.performance import MEASURES_RECORDED, OPERATIONS_COLS, UNITS
+    O = pd.read_csv(DATA / "research" / "operations.csv", keep_default_na=False)
+    assert list(O.columns) == OPERATIONS_COLS
+    assert set(O.measure) <= set(MEASURES_RECORDED)
+    assert set(O[O.measure == "resources"].category) <= {"reserves", "mi", "inferred"}
+    assert (O[O.measure != "resources"].category == "").all()
+    assert set(O.unit) <= set(UNITS) and set(O.basis) <= {"attributable", "100%"}
+    assert O.url.str.startswith("https://").all() and (O.document != "").all()
+    assert not O.duplicated(["ticker", "period_end", "measure", "category", "metal"]).any()
+    assert pd.to_datetime(O.period_end, errors="coerce").notna().all()
+    assert pd.to_numeric(O.amount, errors="coerce").notna().all()
+
+
+def test_fetch_downloads_the_series_the_screen_measures_read():
+    """Screen revision 2: every annual series minerval/performance.py reads is in fundamentals.TYPES."""
+    from minerval.fundamentals import TYPES
+    from minerval.performance import SERIES
+    assert set(SERIES.values()) <= set(TYPES)

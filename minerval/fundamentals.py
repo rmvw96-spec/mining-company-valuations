@@ -31,6 +31,8 @@ TYPES = [
     "quarterlyShareIssued", "annualShareIssued",
     "quarterlyCurrentAssets", "annualCurrentAssets",
     "quarterlyCurrentLiabilities", "annualCurrentLiabilities",
+    # the screen's developer measures (G&A against all spending; SG&A where G&A isn't reported)
+    "annualGeneralAndAdministrativeExpense", "annualSellingGeneralAndAdministration",
 ]
 STOP = {"ltd", "inc", "corp", "co", "the", "plc", "sa", "sab", "de", "cv", "nl", "pt", "ab", "saa", "corporation",
         "limited", "mining", "resources", "metals", "gold", "silver", "copper", "minerals", "mines", "and", "&", "us"}

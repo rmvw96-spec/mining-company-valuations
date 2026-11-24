@@ -21,7 +21,10 @@ def company(**k):
             "pnav_pctile": "", "pnav_today": 1.0, "pnav_peer": 0.8, "pnav_low": 1.5, "net_cash_pct": 5.0,
             "share_change_3y": 2.0, "breakeven": 2000.0, "breakeven_metal": "gold $/oz",
             "financials_through": "2026-09-30", "price_date": "2026-11-20", "us_listing": "NYSE: ALP",
-            "canada_listing": "", "us_otc_symbol": "", "bucket": "", "sheet_row": 12}
+            "canada_listing": "", "us_otc_symbol": "", "bucket": "", "sheet_row": 12,
+            "price": 50.0, "npv_pess": 4000.0, "npv_base": 6000.0, "net_cash": 500.0, "minority": 0.0,
+            "dilution_30": "", "buy_below_value": 41.0, "fair_value_price": 65.0, "valuation_why": "",
+            "valuation_basis": "OCF − sustaining"}
     base.update(k)
     return base
 
@@ -71,7 +74,7 @@ def test_markets_and_where():
 
 def fail(**k):
     U = universe(company(**k))
-    return SC.failure(U.iloc[0], TODAY, SC.review_level(U.bucket.iloc[0]), all_markets=k.pop("_all", False))
+    return SC.failure(U.iloc[0], TODAY, all_markets=k.pop("_all", False))
 
 
 def test_a_good_company_passes():
@@ -84,7 +87,6 @@ def test_a_good_company_passes():
     ({"price_date": "2026-11-10"}, "price stale"),
     ({"mcap": 299.0}, "market cap under $300M"),
     ({"share_change_3y": 30.5}, "dilution"),
-    ({"pnav_peer": 1.3}, "valuation 1.30× peer norm"),
 ])
 def test_each_filter(k, starts):
     assert fail(**k).startswith(starts)
@@ -94,17 +96,58 @@ def test_no_jurisdiction_filter_unless_configured():
     assert fail(addon=0.08) == ""                                         # 8 points: still eligible, scored lower
     c = SC.cfg()
     c = {**c, "filters": {**c["filters"], "max_addon_points": 2.5}}
-    assert SC.failure(universe(company(addon=0.026)).iloc[0], TODAY, 1.3, c=c).startswith("jurisdiction add-on")
+    assert SC.failure(universe(company(addon=0.026)).iloc[0], TODAY, c=c).startswith("jurisdiction add-on")
 
 
 def test_filter_edges_pass():
     assert fail(share_change_3y=30.0) == "" and fail(addon=0.025) == "" and fail(mcap=300.0) == ""
-    assert fail(pnav_peer=1.29) == "" and fail(financials_through="2026-02-18") == ""
+    assert fail(financials_through="2026-02-18") == ""
 
 
 def test_expanding_producers_have_their_own_dilution_limit():
     assert fail(peer_group="Junior producer", share_change_3y=90.0) == ""
     assert fail(peer_group="Junior producer", share_change_3y=101.0).startswith("dilution")
+
+
+def test_too_little_history():
+    """A21: fewer than min_history_years of the performance measures isn't ranked."""
+    n = settings()["portfolio_screen"]["filters"]["min_history_years"]
+    assert n == 3
+    assert fail(history_years=2) == "too little history (2 of 3 years)"
+    assert fail(history_years=3) == "" and fail() == ""             # not computed (no column): not a failure
+
+
+def test_performance_measures_by_bucket():
+    """A21: the score's measures are business performance per share, never price."""
+    assert [m for m, _ in SC.MEASURES["producer"]] == ["cf_ps_growth", "production_ps_growth", "reserves_ps_growth",
+                                                       "margin_avg", "margin_min", "share_change_3y", "net_cash_pct",
+                                                       "aisc_margin"]
+    assert [m for m, _ in SC.MEASURES["royalty"]] == ["ocf_ps_growth", "geo_ps_growth", "margin_avg", "margin_min",
+                                                      "share_change_3y"]
+    assert SC.MEASURES["developer"] == [("resource_ps_growth", True), ("study_progress", True),
+                                        ("explore_dev_share", True), ("ga_share", False), ("npv_ps_growth", True),
+                                        ("share_change_3y", False)]
+    assert all(m in SC.DESCRIBE for ms in SC.MEASURES.values() for m, _ in ms)
+    assert dict(SC.MEASURES["producer"])["share_change_3y"] is False
+    assert all(hb for m, hb in SC.MEASURES["producer"] if m != "share_change_3y")
+
+
+def test_aisc_margin_is_the_base_decks_margin_over_the_breakeven():
+    """A21: AISC margin at the base deck (the FCF breakeven until roadmap 4a)."""
+    base = settings()["scenarios"][settings()["valuation"]["base_deck"]]
+    r = universe(company(breakeven=base["gold"] / 2, breakeven_metal="gold $/oz")).iloc[0]
+    assert r.aisc_margin == pytest.approx(0.5)
+    c = universe(company(breakeven=base["copper"] * 0.75, breakeven_metal="copper $/lb")).iloc[0]
+    assert c.aisc_margin == pytest.approx(0.25)
+    assert np.isnan(universe(company(breakeven="")).iloc[0].aisc_margin)
+
+
+def test_the_why_text_labels_the_fcf_basis():
+    r = universe(company(cf_ps_growth=0.12, margin_avg=0.3, margin_min=0.1, cf_basis="FCF")).iloc[0]
+    text = SC.why_text(r, "producer", 1, 5)
+    assert text.startswith("Screen: rank 1 of 5") and "cash flow per share growth +12% a year (FCF basis)" in text
+    r = universe(company(cf_ps_growth=0.12, cf_basis="OCF − sustaining")).iloc[0]
+    assert "(FCF basis)" not in SC.why_text(r, "producer", 1, 5)
 
 
 def chart(closes, volumes):
@@ -133,36 +176,44 @@ def test_thin_otc_adrs_are_left_out_unless_all_markets():
     vols = SC.otc_volumes(U, fetch)
     assert sorted(fetched) == ["DPPY", "GNNY", "THNY"]                       # a Canadian listing needs no check
     U2, warn = SC.apply_liquidity(U, vols)
-    fail = {r.ticker: SC.failure(r, TODAY, 1.3) for _, r in U2.iterrows()}
+    fail = {r.ticker: SC.failure(r, TODAY) for _, r in U2.iterrows()}
     assert fail["THIN"].startswith("market (OTC ADR THNY thinly traded: median $500 a day")
     assert fail["DEEP"] == "" and fail["TSX"] == ""
     assert fail["GONE"] == "market (OTC ADR GNNY: trading volume not available)"
     assert len(warn) == 1 and "GNNY" in warn[0]
-    assert SC.failure(U2.iloc[0], TODAY, 1.3, all_markets=True) == ""
+    assert SC.failure(U2.iloc[0], TODAY, all_markets=True) == ""
 
 
 def test_all_markets_lets_foreign_names_in():
     U = universe(company(us_listing=""))
-    assert SC.failure(U.iloc[0], TODAY, 1.3, all_markets=True) == ""
+    assert SC.failure(U.iloc[0], TODAY, all_markets=True) == ""
 
 
 def test_developer_filters():
-    dev = {"peer_group": "Developer", "resource_unit": "oz Au", "mcap": 150.0, "pnav_after_raw": 0.5,
-           "peer_ev_ratio": 1.0, "pnav_peer": 0.5}
+    dev = {"peer_group": "Developer", "resource_unit": "oz Au", "mcap": 150.0}
     assert fail(**dev) == ""
     assert fail(**{**dev, "developer_check": "Short of cash: financing likely"}) == "developer short of cash"
-    assert fail(**{**dev, "pnav_after_raw": ""}).startswith("no P/NAV after a raise")
-    assert fail(**{**dev, "pnav_after_raw": "Fully funded"}) == ""
-    assert fail(**{**dev, "peer_ev_ratio": 1.51}).startswith("EV per unit")
     assert fail(**{**dev, "mcap": 99.0}).startswith("market cap under $100M")
 
 
-def test_royalty_filters_use_the_framework_band_and_own_history():
-    roy = {"peer_group": "Royalty/streaming", "royalty_band": "Normal range", "pocf_pctile": 40.0, "pnav_peer": 1.8}
-    assert fail(**roy) == ""                                       # peer norm doesn't apply to royalties
-    assert fail(**{**roy, "royalty_band": "Rich"}) == "framework band: Rich"
-    assert fail(**{**roy, "pocf_pctile": 75.0}).startswith("expensive for itself")
-    assert fail(**{**roy, "pocf_pctile": 90.0, "pnav_pctile": 30.0}) == ""     # P/NAV percentile wins once recorded
+def test_no_filter_on_price_or_valuation():
+    """Revision 2 (A23): value drives only the buy signal, never eligibility."""
+    assert fail(pnav_peer=5.0, pnav_today=4.0, pnav_low=9.0, price=500.0) == ""
+    assert fail(peer_group="Developer", resource_unit="oz Au", mcap=150.0, pnav_after_raw="",
+                peer_ev_ratio=3.0) == ""
+    assert fail(peer_group="Royalty/streaming", royalty_band="Rich", pocf_pctile=95.0) == ""
+
+
+def test_valuation_filters_and_measures_are_gone():
+    """A23: the valuation filters and score measures are gone from code and settings."""
+    gone = {"peer_norm", "pnav_low", "breakeven_gap", "addon", "addon_reliance", "pnav_after", "peer_ev_ratio",
+            "months_of_cash", "pnav_used", "own_pctile"}
+    C = settings()["portfolio_screen"]
+    assert not gone & {m for ms in SC.MEASURES.values() for m, _ in ms}
+    assert not gone & set(C["score"])
+    assert "review" not in C
+    assert not {"max_peer_ev_ratio", "royalty_excluded_bands"} & set(C["filters"])
+    assert not hasattr(SC, "review_level")
 
 
 def test_rank_pct():
@@ -173,22 +224,13 @@ def test_rank_pct():
 
 
 def test_score_averages_the_measures_each_company_has():
-    U = universe(company(holding="A", pnav_peer=0.5, pnav_low=1.0), company(holding="B", pnav_peer=0.9, pnav_low=""),
-                 company(holding="C", pnav_peer=0.7, pnav_low=2.0))
+    U = universe(company(holding="A", net_cash_pct=20.0, share_change_3y=0.0),
+                 company(holding="B", net_cash_pct="", share_change_3y=5.0),
+                 company(holding="C", net_cash_pct=10.0, share_change_3y=10.0))
     S = SC.score(U, "producer")
     assert list(S.holding)[0] == "A"
-    assert S.set_index("holding").loc["B", "measures_used"] == 6     # no Low-price P/NAV
-
-
-def test_royalty_measure_is_the_pnav_used():
-    """own-nav-first A5: royalties are scored on the P/NAV used (PNAV inputs CV: our NAV where valued), lower better."""
-    assert ("pnav_used", False) in SC.MEASURES["royalty"]
-    assert all(m != "independent_pnav" for m, _ in SC.MEASURES["royalty"])
-    assert settings()["portfolio_screen"]["score"]["pnav_used"] == 1.0
-    U = universe(company(holding="A", peer_group="Royalty/streaming", pnav_used=1.9, pnav_peer=1.0),
-                 company(holding="B", peer_group="Royalty/streaming", pnav_used="1.4", pnav_peer=1.0))
-    assert list(SC.score(U, "royalty").holding)[0] == "B"
-    assert "no NAV" in settings()["portfolio_screen"]["filters"]["royalty_excluded_bands"]
+    full = S.set_index("holding").measures_used
+    assert full["B"] == full["A"] - 1                                 # no net cash figure
 
 
 def test_select_with_the_turnover_buffer():
@@ -213,7 +255,7 @@ def tab_rows(*rows):
     out = []
     for i in range(26):
         r = rows[i] if i < len(rows) else {}
-        out.append({"row": 6 + i, **{k: "" for k in "ABCDEFGHIJKLMNOPQRSTUV"}, **r})
+        out.append({"row": 6 + i, **{k: "" for k in [*"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "AA"]}, **r})
     return out
 
 
@@ -228,34 +270,134 @@ def gold_universe():
                             mcap=200.0, pnav_after_raw="Fully funded", peer_ev_ratio=0.8, pnav_peer=0.4))
 
 
+def test_selection_ignores_price():
+    """A22: the best business is picked even when it's expensive; it just has no buy status."""
+    U = universe(company(holding="Pricey Gold", ticker="PRC", net_cash_pct=30.0, share_change_3y=0.0,
+                         pnav_peer=3.0, pnav_today=4.0, price=120.0),
+                 company(holding="Cheap Gold", ticker="CHP", net_cash_pct=-20.0, share_change_3y=25.0,
+                         pnav_peer=0.3, pnav_today=0.4, price=20.0))
+    P = SC.plan(U, [], {"Gold producers": {"weight": 0.1, "names": 1}}, TODAY, None)
+    assert [r["B"] for r in P["rows"]] == ["Pricey Gold"]
+    assert P["rows"][0]["status"] == "Above fair value: review"
+
+
+@pytest.mark.parametrize("k,want", [
+    ({"npv_base": "", "buy_below_value": "", "fair_value_price": "", "valuation_why": "no cash-flow table recorded"},
+     "No NPV: no cash-flow table recorded"),
+    ({"npv_base": -100.0, "buy_below_value": "", "fair_value_price": "",
+      "valuation_why": "negative NPV at the base deck"}, "No NPV: negative NPV at the base deck"),
+    ({"buy_below_value": "", "valuation_why": "fails the downside test at any price"}, "Fails downside test"),
+    ({"peer_group": "Developer", "valuation_basis": "study (risk-adjusted)", "buy_below_value": "",
+      "valuation_why": "negative value per share after a +30% overrun"}, "Fails downside test"),
+    ({"price": 41.0}, "Buy: below US$41.00"),
+    ({"price": 41.01}, "Hold"),
+    ({"price": 64.99}, "Hold"),
+    ({"price": 65.0}, "Above fair value: review"),
+])
+def test_status_at_each_edge(k, want):
+    """A24: T's statuses in order: no NPV, downside test, buy (at or below), above fair value (at or above), hold."""
+    r = universe(company(**k)).iloc[0]
+    assert SC.status(r, SC.buy_multiple(r)) == want
+
+
+def test_buy_below_at_each_binding_condition():
+    """A24: at the rule's level the valuation's own price (PNAV inputs CQ); a typed level is re-priced the same way:
+    producers and royalties (min(level × base NPV, pessimistic NPV) + net cash − minority) ÷ shares, developers
+    the +30% overrun case with the level's change spread over the shares after the raise."""
+    r = universe(company(price=50.0, mcap=5000.0, npv_base=6000.0, npv_pess=4000.0, net_cash=500.0, minority=100.0,
+                         buy_below_value=40.0)).iloc[0]
+    assert SC.buy_multiple(r) == 0.6
+    assert SC.buy_below_at(r, 0.6) == pytest.approx(40.0)
+    assert SC.buy_below_at(r, 0.5) == pytest.approx((3000 + 500 - 100) / 100)          # the discount binds
+    assert SC.buy_below_at(r, 0.8) == pytest.approx((4000 + 500 - 100) / 100)          # the downside test binds
+    assert SC.status(r, 0.5) == "Hold"                                                  # 50 > 34
+    roy = universe(company(peer_group="Royalty/streaming", valuation_basis="OCF (royalty)", npv_pess=9000.0,
+                           buy_below_value=65.0)).iloc[0]
+    assert SC.buy_multiple(roy) == 1.0 and SC.buy_below_at(roy, 1.0) == 65.0
+    assert SC.buy_below_at(roy, 0.9) == pytest.approx((5400 + 500) / 100)
+    dev = universe(company(peer_group="Developer", resource_unit="oz Au", valuation_basis="study (risk-adjusted)",
+                           price=2.0, mcap=200.0, npv_base=300.0, npv_pess=100.0, net_cash=10.0, dilution_30=0.5,
+                           buy_below_value=1.10)).iloc[0]
+    assert SC.buy_multiple(dev) == 0.6 and SC.buy_below_at(dev, 0.6) == 1.10
+    assert SC.buy_below_at(dev, 0.7) == pytest.approx(1.10 + 0.1 * 300.0 / (100 * 1.5))
+    assert SC.buy_below_at(universe(company(npv_base="", buy_below_value="")).iloc[0], 0.5) is None
+    assert SC.buy_below_at(universe(company(npv_pess=-600.0, buy_below_value="")).iloc[0], 0.5) is None
+
+
+def test_a_typed_level_is_kept_and_sets_the_status():
+    """A24: a level typed in S is kept by the plan and used for the row's buy-below price."""
+    U = universe(company(holding="Beta Gold", ticker="BET", price=36.0, mcap=3600.0, buy_below_value=41.0))
+    tab = tab_rows({"A": "Gold producers", "B": "Beta Gold", "D": "BET", "F": 0.1, "S": 0.5})
+    row = SC.plan(U, tab, {"Gold producers": {"weight": 0.1, "names": 1}}, TODAY, None)["rows"][0]
+    assert row["S"] == 0.5 and row["typed_level"]
+    assert row["buy_below"] == pytest.approx(35.0) and row["status"] == "Hold"
+
+
+def test_a_buy_status_gives_the_listing_currency_price_too():
+    r = universe(company(price=41.0, currency_buy="CAD", fx_buy=0.7)).iloc[0]
+    assert SC.status(r, 0.6) == "Buy: below US$41.00 (CAD 58.57)"
+    assert SC.status(universe(company(price=41.0, currency_buy="USD", fx_buy=1.0)).iloc[0], 0.6) == \
+        "Buy: below US$41.00"
+
+
+def test_sheet_statuses_are_checked_against_python():
+    """A24: the screen's report compares Model portfolio T and AA with the same rule computed in Python."""
+    U = universe(company(holding="Alpha Gold", ticker="ALP", price=40.0, mcap=4000.0, buy_below_value=41.0))
+    row = {"A": "Gold producers", "B": "Alpha Gold", "D": "ALP", "S": 0.6, "T": "Buy: below US$41.00", "AA": 41.0}
+    phys = {"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "S": ""}
+    assert SC.sheet_check(U, tab_rows(phys, row)) == \
+        ["Model portfolio T and AA agree with the screen's rule (1 rows)."]
+    out = SC.sheet_check(U, tab_rows({**row, "T": "Hold", "AA": 41.004}))
+    assert out[0].startswith("Model portfolio T or AA differ from the screen's rule in 1 rows")
+    assert "Alpha Gold" in out[1] and "'Hold'" in out[1] and "Buy: below US$41.00" in out[1]
+
+
+def test_sheet_check_names_rows_whose_name_wont_look_up():
+    """The Sheet's T and AA look B up on PNAV inputs by name; a name that differs (found only by its ticker) is
+    reported as a lookup to fix, not as a formula difference."""
+    U = universe(company(holding="Alpha Gold", ticker="ALP", price=40.0, mcap=4000.0, buy_below_value=41.0))
+    row = {"A": "Gold producers", "B": "Alpha Gold (formerly Alfa)", "D": "ALP", "S": 0.6,
+           "T": "No NPV: not valued", "AA": ""}
+    out = SC.sheet_check(U, tab_rows(row))
+    assert out[0] == "Model portfolio T and AA agree with the screen's rule (0 rows)."
+    assert out[1].startswith("Names in B that PNAV inputs doesn't have (T, AA and the other lookups stay blank")
+    assert "Alpha Gold (formerly Alfa)" in out[2] and "Alpha Gold" in out[2]
+    same = {**row, "B": "ALPHA GOLD", "T": "Buy: below US$41.00", "AA": 41.0}        # XLOOKUP ignores case
+    assert SC.sheet_check(U, tab_rows(same)) == ["Model portfolio T and AA agree with the screen's rule (1 rows)."]
+
+
 def test_plan_keeps_physical_scales_weights_and_keeps_typed_levels():
     tab = tab_rows({"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "F": 0.88, "S": ""},
-                   {"A": "Gold producers", "B": "beta gold", "D": "BET", "F": 0.1, "S": 1.6, "U": "my reason",
+                   {"A": "Gold producers", "B": "beta gold", "D": "BET", "F": 0.1, "S": 0.5, "U": "my reason",
                     "V": "my view"},
-                   {"A": "Gold producers", "B": "Old Gold", "D": "OLD", "F": 0.1, "S": 1.3})
+                   {"A": "Gold producers", "B": "Old Gold", "D": "OLD", "F": 0.1, "S": 0.6})
     P = SC.plan(gold_universe(), tab, SIZES, TODAY, state=None)
     rows = {r["B"]: r for r in P["rows"]}
     assert set(rows) == {"Alpha Gold", "Beta Gold", "Delta Dev"}
     assert sum(r["F"] for r in P["rows"]) == pytest.approx(0.12)      # 12% left after physical: 7.5% scaled ×1.6
     assert any("scaled ×1.600" in n for n in P["notes"])
     beta = rows["Beta Gold"]
-    assert beta["D"] == "BET" and beta["S"] == 1.6 and beta["typed_level"] and not beta["new"]
+    assert beta["D"] == "BET" and beta["S"] == 0.5 and beta["typed_level"] and not beta["new"]
     assert beta["U"] == "my reason" and beta["V"] == "my view"
     alpha = rows["Alpha Gold"]
-    assert alpha["S"] == 1.3 and alpha["new"] and alpha["U"].startswith("Screen: rank 1 of 3")
-    assert rows["Delta Dev"]["S"] == 1.5                               # the developers' level
+    assert alpha["S"] == 0.6 and alpha["new"] and alpha["U"].startswith("Screen: rank ")
+    assert alpha["V"] == "Screen: review above fair value, or if it fails a filter"
+    assert rows["Delta Dev"]["S"] == 0.6                               # the developers' buy multiple
+    roy = SC.plan(universe(company(holding="Roy", peer_group="Royalty/streaming", valuation_basis="OCF (royalty)")), [],
+                  {"Royalty": {"weight": 0.05, "names": 1}}, TODAY, None)["rows"][0]
+    assert roy["S"] == 1.0
     assert [d[1] for d in P["drops"]] == ["Old Gold"]
     assert P["physical"][0]["B"] == "Gold trust"
 
 
 def test_a_level_written_by_the_screen_follows_the_rule_and_rule_levels_resets_typed_ones():
-    tab = tab_rows({"A": "Gold producers", "B": "Beta Gold", "D": "BET", "F": 0.1, "S": 1.25})
-    P = SC.plan(gold_universe(), tab, SIZES, TODAY, state={"review": {"BET": 1.25}})
-    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 1.3          # recorded: the screen's own
-    P = SC.plan(gold_universe(), tab, SIZES, TODAY, state={"review": {"BET": 1.2}})
-    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 1.25         # changed since: typed
+    tab = tab_rows({"A": "Gold producers", "B": "Beta Gold", "D": "BET", "F": 0.1, "S": 0.55})
+    P = SC.plan(gold_universe(), tab, SIZES, TODAY, state={"review": {"BET": 0.55}})
+    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 0.6          # recorded: the screen's own
+    P = SC.plan(gold_universe(), tab, SIZES, TODAY, state={"review": {"BET": 0.5}})
+    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 0.55         # changed since: typed
     P = SC.plan(gold_universe(), tab, SIZES, TODAY, state=None, rule_levels=True)
-    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 1.3
+    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 0.6
 
 
 def test_plan_warnings():
@@ -293,6 +435,8 @@ def test_write_stops_when_a_name_or_ticker_wouldnt_look_up(tmp_path, monkeypatch
     monkeypatch.setattr(SC, "load_sizes", lambda path=None: SIZES)
     monkeypatch.setattr(SC, "read_universe", lambda sh, research=None: (gold_universe(), {}))
     monkeypatch.setattr(SC, "otc_volumes", lambda U, fetch=None: {})
+    from minerval import performance
+    monkeypatch.setattr(performance, "add", lambda U, *a, **k: U)          # offline: no cache/fundamentals.json
     monkeypatch.setattr(SC, "read_tab", lambda sh: tab_rows())
     monkeypatch.setattr(SC, "load_state", lambda path=None: None)
     monkeypatch.setattr(SC, "STATE", tmp_path / "screen_state.json")     # never the real private/ files,
@@ -339,14 +483,14 @@ def test_init_sizes_from_the_tab(tmp_path, monkeypatch):
 
 
 def test_ranking_table_shows_each_measures_rank():
-    U = universe(company(holding="A", ticker="A", pnav_peer=0.5), company(holding="B", ticker="B", pnav_peer=0.9),
-                 company(holding="C", ticker="C", pnav_peer=2.0))
+    U = universe(company(holding="A", ticker="A", net_cash_pct=20.0), company(holding="B", ticker="B", net_cash_pct=5.0),
+                 company(holding="C", ticker="C", mcap=100.0))
     U["bucket"] = "Gold producers"
     P = SC.plan(U, [], {"Gold producers": {"weight": 1.0, "names": 1}}, TODAY, None)
     T = SC.ranking_table(P).set_index("holding")
-    assert T.loc["A", "picked"] and T.loc["A", "rank"] == 1 and T.loc["A", "p_peer_norm"] == 1.0
-    assert T.loc["B", "p_peer_norm"] == 0.0 and not T.loc["B", "picked"]
-    assert T.loc["C", "excluded"].startswith("valuation") and np.isnan(T.loc["C", "score"])
+    assert T.loc["A", "picked"] and T.loc["A", "rank"] == 1 and T.loc["A", "p_net_cash_pct"] == 1.0
+    assert T.loc["B", "p_net_cash_pct"] == 0.0 and not T.loc["B", "picked"]
+    assert T.loc["C", "excluded"].startswith("market cap") and np.isnan(T.loc["C", "score"])
 
 
 def test_report_names_candidates_without_an_npv_at_every_deck():

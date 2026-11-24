@@ -329,3 +329,77 @@ def test_valuation_headers_describe_each_tier():
     h = layout.valuation_headers()
     assert "producers: 10 years, no terminal value; royalties: a perpetuity; developers: risk-adjusted" in h["npv_base"]
     assert "developers: value per share after a +30% overrun's financing" in h["buy_below_value"]
+
+
+def test_portfolio_status_and_buy_below_columns(tmp_path):
+    """Screen revision 2 (A24, A25): S's header names the buy multiple, T is the status formula (replacing the
+    hand-built "Review: above level" one) and AA, after Z, the buy-below price at S. Both read PNAV inputs."""
+    from minerval import screen as SC
+    sh = existing_sheet(**{"Model portfolio": {"S5": layout.PORTFOLIO_HEADERS_V1["review_level"], "T5": "Status",
+                                               "T6": layout.PORTFOLIO_STATUS_V1}})
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert "conflict" not in "\n".join(rep)
+    mp = sh.cells["Model portfolio"]
+    assert sh.sizes["Model portfolio"][1] == col_to_num("AA")
+    assert mp["S5"] == layout.PORTFOLIO_HEADERS["review_level"] and "buy multiple" in mp["S5"].lower()
+    assert mp["T6"] == layout.portfolio_status_formula() and mp["AA6"] == layout.portfolio_buy_below_formula()
+    assert mp["AA5"].startswith("Buy below US$/share")
+    f = layout.portfolio_status_formula()
+    i = {s: f.index(s) for s in ("No NPV: ", "Fails downside test", "Buy: below US$", "Above fair value: review")}
+    assert max(i["No NPV: "], i["Fails downside test"]) < i["Buy: below US$"] < i["Above fair value: review"] \
+        < f.rindex('"Hold"')                                         # the precedence of screen.status
+    assert all(f'"{why}"' in f for why in SC.DOWNSIDE_FAILS) and "AA6:AA31" in f
+    g = layout.portfolio_buy_below_formula()
+    P = S["pnav_inputs"]
+    for name in ("valuation_basis", "npv_pessimistic", "npv_base", "net_cash", "minority", "dilution_30",
+                 "buy_below_value", "price", "mcap"):
+        assert f"'PNAV inputs'!${P[name]}${A}:${P[name]}${B}" in g
+    buy = settings()["valuation"]["buy"]
+    assert all(f"{buy[k]['buy']}" in g for k in buy) and "S6:S31" in g
+    n = len(sh.blocks)
+    layout.run(sh, out_dir=tmp_path)
+    assert len(sh.blocks) == n                                       # idempotent
+
+
+def test_a_status_formula_typed_by_hand_is_left_alone(tmp_path):
+    sh = existing_sheet(**{"Model portfolio": {"T6": '=ARRAYFORMULA(IF(S6:S31="","","mine"))'}})
+    rep = layout.run(sh, out_dir=tmp_path)
+    assert any("conflict" in line and "T6" in line for line in rep)
+    assert sh.cells["Model portfolio"]["T6"] == '=ARRAYFORMULA(IF(S6:S31="","","mine"))'
+
+
+def _let_names(formula: str) -> list[str]:
+    """The names a formula's LET()s define (each name is followed by a comma at the LET's own depth)."""
+    import re
+    names = []
+    for m in re.finditer(r"LET\(", formula):
+        i, depth, arg, args = m.end(), 0, "", []
+        while i < len(formula):
+            ch = formula[i]
+            if ch == '"':
+                j = formula.index('"', i + 1)
+                arg += formula[i:j + 1]
+                i = j + 1
+                continue
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                if depth == 0:
+                    break
+                depth -= 1
+            if ch == "," and depth == 0:
+                args.append(arg)
+                arg = ""
+            else:
+                arg += ch
+            i += 1
+        names += [a.strip() for a in args[0::2]]
+    return names
+
+
+def test_let_names_are_not_cell_references():
+    """Sheets rejects a LET name that reads as a cell reference ("d30" is D30): #NAME? on the whole column."""
+    import re
+    for f in (layout.portfolio_buy_below_formula(), layout.portfolio_status_formula(), layout.timing_formula()):
+        names = _let_names(f)
+        assert names and not [n for n in names if re.fullmatch(r"[A-Za-z]{1,3}\d+", n)], names
