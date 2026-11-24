@@ -44,7 +44,11 @@ High = { gold = 4500, silver = 70, copper = 7.0 }
 # (gold $3,200-4,265 / $4,250-4,850 / $5,250-6,300 an oz; silver $35-50 / $63-66.75 / $80-100+; copper $4.55-5.65 /
 # $5.90-7.08 / $7.70-9.50 a lb, i.e. $10,000-12,500 / $13,000-15,600 / $17,000-20,900 a tonne). Each metal is set on its
 # own. The single reference values given beside them: gold ~$3,515, silver ~$41.56, copper ~$5.57 ($12,280/t).
-Pessimistic = { gold = 3732.5, silver = 42.5, copper = 5.10 }
+# Pessimistic, Nov 24, 2026 (the user): 12.5% below the Nov 23, 2026 COMEX closes (gold 3,634.40, silver 42.99, copper
+# 5.612; the Sheet's Today), the midpoint of 10-15% below spot, so the downside test sits below today's prices. The
+# midpoint deck (3,732.5 / 42.5 / 5.10) was at or above spot for gold and silver. For reference, Nov 20-23, 2026: Dec
+# 2027 COMEX futures 3,820 / 45.22 / 5.89; 3-year averages of front-month closes 3,310 / 42.69 / 4.98.
+Pessimistic = { gold = 3180.0, silver = 37.60, copper = 4.91 }
 Base = { gold = 4550.0, silver = 64.875, copper = 6.49 }
 Optimistic = { gold = 5775.0, silver = 90.0, copper = 8.60 }
 
