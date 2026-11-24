@@ -37,7 +37,7 @@ and update the item's row in the status table at the top of `docs/roadmap.md` (a
 | After `refresh` and `valuation` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, CT, P for country-table rows, and CC:CG, CM:CO, CQ:CS (valuation; skipped while valuation.csv is older than pnav.csv) |
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
-| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CV; P/NAV U:W; Holdings downside K2, R; Model portfolio W:Z |
+| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CV; P/NAV U:W; Holdings downside K2, R; Model portfolio S5, T, W:AA |
 | After `financials`, before buying | `screen` (report only; show the user out/screen/report.txt), then `screen --write` (`--email` for a private summary) | Model portfolio A–F, S, U–V; private/portfolio.csv, private/screen_state.json |
 | After editing the Model portfolio by hand | `portfolio-file` | private/portfolio.csv (for `backtest` and `project`) |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
@@ -124,10 +124,11 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
 - P/NAV (tab `P_NAV`): U2:W2 (to row 144). Never write into U3:W162.
 - Model portfolio: G6 (buy with new money: B3 split over the F weights after the silver in C4 fills PSLV, then
   the silver stocks) and H6:J6, L6:R6, T6 (to row 31). K has its own formula in each row. Never write into
-  G7:J31, L7:R31 or T7:T31. W6:Z6 (timing signal, EV per ounce, months of funding, P/NAV after a raise) spill
-  to row 31 too: never write into W7:Z31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
+  G7:J31, L7:R31 or T7:T31. T is the buy status (no NPV, fails downside test, buy, above fair value, hold; screen
+  revision 2). W6:AA6 (timing signal, EV per ounce, months of funding, P/NAV after a raise, the buy-below price at S)
+  spill to row 31 too: never write into W7:AA31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
   a row added below 31 is outside every range. A–F, S and U–V are inputs that `screen --write` rewrites (physical
-  metal rows, review levels typed by hand, and notes typed by hand are kept); its output (names, weights) never goes
+  metal rows, buy multiples typed by hand in S, and notes typed by hand are kept); its output (names, weights) never goes
   into the repo, an issue, a log or the step summary, and it never runs on GitHub. When a company is added to
   `pnav_companies.csv`, fill its listing columns (`us_listing`, `canada_listing`, `us_otc_symbol`, `listing_source`):
   the screen proposes only US- and Canadian-listed names by default.

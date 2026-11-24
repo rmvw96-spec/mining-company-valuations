@@ -209,7 +209,7 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
             by_name.setdefault(_text(r[1]), []).append(t)
         if t and t not in hold:
             hold[t] = {"financials_through": _text(r[13]), "price_date": _text(r[19]), "currency": _text(r[18]),
-                       "yahoo_h": _text(r[15])}
+                       "yahoo_h": _text(r[15]), "fx": r[21]}
     DG = sheet.read(S["downside_tab"], f"A{S['downside_first_row']}:{D['ticker']}{S['downside_last_row']}")
     down = {}
     for r in DG:
@@ -226,6 +226,8 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
     # Kinross, whose PNAV inputs row is K CN), else the PNAV inputs one
     U["ticker_buy"] = [next((x for x in by_name.get(_text(h), []) if " " not in x and x in down), _text(t))
                        for h, t in zip(U.holding, U.ticker)]
+    U["currency_buy"] = [hold.get(t, {}).get("currency", "") for t in U.ticker_buy]   # T's listing-currency price
+    U["fx_buy"] = [hold.get(t, {}).get("fx", "") for t in U.ticker_buy]
     # One row per company (Wheaton is held in two funds): prefer the US listing's Sprott ticker
     U["_us"] = U.ticker.map(lambda t: " " not in _text(t))
     U = U.sort_values(["_us", "sheet_row"], ascending=[False, True]).drop_duplicates("holding").drop(columns="_us")
@@ -238,7 +240,7 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
 def add_measures(U: pd.DataFrame, metals: dict | None = None) -> pd.DataFrame:
     U = U.copy()
     for c in ("mcap", "net_cash_pct", "share_change_3y", "breakeven", "price", "net_cash", "npv_pess", "npv_base",
-              "dilution_30", "buy_below_value", "fair_value_price", "minority"):
+              "dilution_30", "buy_below_value", "fair_value_price", "minority", "fx_buy"):
         U[c] = U[c].map(num) if c in U else np.nan
     U["addon"] = U["addon"].map(num) * 100 if "addon" in U else np.nan     # P is a fraction (0.01 = 1 point)
     U["shares"] = U.mcap / U.price.where(U.price > 0)
@@ -302,7 +304,9 @@ def status(r, level: float) -> str:
         return "Fails downside test" if why in DOWNSIDE_FAILS else f"No NPV: {why or 'not valued'}"
     price, fair = num(r.get("price")), num(r.get("fair_value_price"))
     if price == price and price <= bb:
-        return f"Buy: below US${bb:,.2f}"
+        cur, fx = _text(r.get("currency_buy")), num(r.get("fx_buy"))
+        local = f" ({cur} {bb / fx:,.2f})" if cur and cur != "USD" and fx == fx and fx > 0 else ""
+        return f"Buy: below US${bb:,.2f}{local}"
     if price == price and fair == fair and price >= fair:
         return "Above fair value: review"
     return "Hold"
@@ -428,16 +432,44 @@ def load_state(path=None) -> dict | None:
 # ---------- the tab ----------
 
 def read_tab(sheet) -> list[dict]:
-    """Model portfolio rows 6-31 as dicts of A-V (values), with their row number."""
+    """Model portfolio rows 6-31 as dicts of A to the buy-below column (values), with their row number."""
     S = settings()["sheet"]
     a, b = S["portfolio_first_row"], S["portfolio_last_row"]
-    grid = sheet.read(S["portfolio_tab"], f"A{a}:V{b}")
+    n = col_to_num(S["portfolio_cols"]["buy_below"])
+    grid = sheet.read(S["portfolio_tab"], f"A{a}:{num_to_col(n)}{b}")
     out = []
     for i in range(b - a + 1):
         r = list(grid[i]) if i < len(grid) else []
-        r += [""] * (22 - len(r))
-        out.append({"row": a + i, **{num_to_col(j + 1): r[j] for j in range(22)}})
+        r += [""] * (n - len(r))
+        out.append({"row": a + i, **{num_to_col(j + 1): r[j] for j in range(n)}})
     return out
+
+
+def sheet_check(U: pd.DataFrame, tab: list[dict]) -> list[str]:
+    """Model portfolio T (status) and AA (buy-below at S) against the same rule in Python, for the rows with a buy
+    multiple in S: a difference means the Sheet's formula or a column it reads has changed."""
+    C = settings()["sheet"]["portfolio_cols"]
+    T, AA, S_ = C["status"], C["buy_below"], C["review_level"]
+    rows, bad = 0, []
+    for row in tab:
+        lvl = num(row.get(S_))
+        if not _text(row.get("B")) or lvl != lvl:
+            continue
+        hit = U[U.holding.map(_text) == resolve(row, U)]
+        if hit.empty:
+            continue
+        r, rows = hit.iloc[0], rows + 1
+        want_t, want_aa, got_aa = status(r, lvl), buy_below_at(r, lvl), num(row.get(AA))
+        same_aa = (want_aa is None and got_aa != got_aa) or (want_aa is not None and got_aa == got_aa
+                                                             and abs(got_aa - want_aa) <= 0.005 + 1e-6 * abs(want_aa))
+        if _text(row.get(T)) != want_t or not same_aa:
+            aa = "blank" if want_aa is None else f"{want_aa:.4f}"
+            bad.append(f"  {_text(row['B'])} (row {row['row']}): Sheet '{_text(row.get(T))}', "
+                       f"{_text(row.get(AA)) or 'blank'}; the rule '{want_t}', {aa}")
+    if not bad:
+        return [f"Model portfolio {T} and {AA} agree with the screen's rule ({rows} rows)."]
+    return [f"Model portfolio {T} or {AA} differ from the screen's rule in {len(bad)} rows (a formula or a column "
+            f"it reads changed):"] + bad
 
 
 def resolve(row: dict, U: pd.DataFrame) -> str:
@@ -705,6 +737,7 @@ def run(sheet, write: bool = False, all_markets: bool = False, email: bool = Fal
     P["warnings"] = liq_warn + P["warnings"]
     vpath = DERIVED / "valuation.csv"
     rep = report(P, all_markets, pd.read_csv(vpath) if vpath.exists() else None)
+    rep += [""] + sheet_check(U, tab)
     pd.DataFrame(P["rows"]).to_csv(out_dir / "proposal.csv", index=False)
     ranking_table(P).round(4).to_csv(out_dir / "ranking.csv", index=False)
     lines = [f"Screen: {len(P['rows'])} screened rows proposed, {len(P['drops'])} dropped, "

@@ -266,12 +266,14 @@ timing = "W"
 ev_per_aueq_oz = "X"
 months_of_cash = "Y"
 pnav_after = "Z"                    # P/NAV after an equity raise for the funding gap, or "Fully funded"
-status = "T"                        # Status (Review: above level, ...): emailed when it changes (alerts)
+buy_below = "AA"                    # formula: the buy-below price (US$/share) at S (screen revision 2)
+status = "T"                        # formula: no NPV / fails downside test / buy / above fair value / hold (emailed
+                                    # when it changes, alerts)
 where = "C"                         # inputs written by `screen --write` (A-F, S, U-V)
 ticker = "D"
 weight = "F"
 peer_norm = "K"                     # formula: valuation vs peer norm (1.0 = in line)
-review_level = "S"
+review_level = "S"                  # the buy multiple ([valuation.buy] by tier; a typed value is kept)
 why = "U"
 what_would_change = "V"
 new_money_cell = "B3"

@@ -146,7 +146,14 @@ PORTFOLIO_HEADERS = {"timing": "Timing signal (framework)",
                      "ev_per_aueq_oz": "EV per gold-equivalent oz (developers)",
                      "months_of_cash": "Months of funding (developers; cash + committed)",
                      "pnav_after": "P/NAV after an equity raise for the funding gap (developers)"}
-PORTFOLIO_HEADERS_V1 = {"months_of_cash": "Months of cash (developers)"}
+PORTFOLIO_HEADERS_V1 = {"months_of_cash": "Months of cash (developers)", "review_level": "Review if valuation above"}
+PORTFOLIO_HEADERS["review_level"] = ("Buy multiple: buy below this × the base-deck NPV ([valuation.buy]: producers and "
+                                     "developers 0.6, royalties 1.0); a typed value is kept")
+PORTFOLIO_HEADERS["buy_below"] = ("Buy below US$/share at S (producers and royalties: (min(S × base NPV, pessimistic "
+                                  "NPV) + net cash − minority) ÷ shares; developers: after a +30% overrun's financing)")
+# The status formula typed on the Sheet before revision 2 (valuation vs peer norm against S), which setup-sheet replaces
+PORTFOLIO_STATUS_V1 = ('=ARRAY_CONSTRAIN(ARRAYFORMULA(IF(S6:S31="","",IF(ISNUMBER(K6:K31),IF(K6:K31>S6:S31,'
+                       '"Review: above level","OK"),"Check by hand"))), 26, 1)')
 SIGNALS_HEADERS = ["Key (code uses it to find rows; can be hidden)", "Tier", "Signal", "Unit", "Value", "As of",
                    "Threshold 1", "Threshold 2", "Status", "What the framework says", "Source"]
 INPUTS = [  # key, label, default (None = left blank), number format
@@ -506,6 +513,59 @@ def portfolio_lookup(name) -> str:
             f'XLOOKUP({B},{pcol("holding")},{pcol(name)},""),"")))')
 
 
+def _portfolio_refs():
+    S = _S()
+    a, b, C, P = S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"], S["pnav_inputs"]
+    tab, pa, pb = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"]
+
+    def rng(k):
+        return f"{C[k]}{a}:{C[k]}{b}"
+
+    def look(name):
+        return f"XLOOKUP({rng('holding')},'{tab}'!${P['holding']}${pa}:${P['holding']}${pb},'{tab}'!${P[name]}${pa}:" \
+               f"${P[name]}${pb},\"\")"
+    return rng, look
+
+
+def portfolio_buy_below_formula() -> str:
+    """Model portfolio AA: the buy-below price (US$/share) at the row's buy multiple S, as screen.buy_below_at: the
+    valuation's own price (PNAV inputs CQ) at the rule's multiple; a typed multiple re-priced from CC:CE, E, CT and
+    CN (shares = market cap ÷ price). Blank without an NPV, a price or a positive value."""
+    from .screen import ROYALTY_BASIS, STUDY_BASIS
+    rng, look = _portfolio_refs()
+    buy = settings()["valuation"]["buy"]
+    rule = (f'IF(basis="{STUDY_BASIS}",{buy["developer"]["buy"]},IF(basis="{ROYALTY_BASIS}",{buy["royalty"]["buy"]},'
+            f'{buy["producer"]["buy"]}))')
+    typed = (f'IF(basis="{STUDY_BASIS}",IF(ISNUMBER(cq),cq+(lvl-rule)*base/(shares*(1+IF(ISNUMBER(d30),d30,0))),""),'
+             f'IF(ISNUMBER(pess),(IF(lvl*base<pess,lvl*base,pess)+IF(ISNUMBER(nc),nc,0)-IF(ISNUMBER(mi),mi,0))'
+             f'/shares,""))')
+    return (f'=ARRAYFORMULA(LET(basis,{look("valuation_basis")},base,{look("npv_base")},'
+            f'pess,{look("npv_pessimistic")},nc,{look("net_cash")},mi,{look("minority")},d30,{look("dilution_30")},'
+            f'cq,{look("buy_below_value")},shares,{look("mcap")}/{look("price")},lvl,{rng("review_level")},'
+            f'rule,{rule},v,IF(ABS(lvl-rule)<0.000001,cq,IF(ISNUMBER(base),IF(base>0,{typed},""),"")),'
+            f'IF(({rng("holding")}="")+({rng("review_level")}=""),"",IF(ISNUMBER(v),IF(v>0,v,""),""))))')
+
+
+def portfolio_status_formula() -> str:
+    """Model portfolio T, as screen.status: "No NPV: <why>"; "Fails downside test"; "Buy: below US$<AA>" (with the
+    listing currency's price from Holdings S and V); "Above fair value: review"; "Hold". Blank where S is blank
+    (physical metal rows)."""
+    from .screen import DOWNSIDE_FAILS
+    S = _S()
+    rng, look = _portfolio_refs()
+    a, b, C = S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"]
+    h, last = S["holdings_tab"], S["last_row"]
+    D = rng("ticker")
+    fails = "+".join(f'(why="{w}")' for w in DOWNSIDE_FAILS)
+    return (f'=ARRAYFORMULA(LET(px,{look("price")},fair,{look("fair_value_price")},why,{look("valuation_why")},'
+            f'bb,{C["buy_below"]}{a}:{C["buy_below"]}{b},cur,XLOOKUP({D},{h}!$O$2:$O${last},{h}!$S$2:$S${last},""),'
+            f'fx,XLOOKUP({D},{h}!$O$2:$O${last},{h}!$V$2:$V${last},""),'
+            f'IF({rng("review_level")}="","",IF(NOT(ISNUMBER(bb)),IF({fails}>0,"Fails downside test",'
+            f'"No NPV: "&IF(why="","not valued",why)),IF(NOT(ISNUMBER(px)),"Hold",IF(px<=bb,"Buy: below US$"&'
+            f'TEXT(bb,"#,##0.00")&IF((cur<>"")*(cur<>"USD")*ISNUMBER(fx)," ("&cur&" "&TEXT(bb/fx,"#,##0.00")&")",""),'
+            f'IF(ISNUMBER(fair)*(px>=fair),"Above fair value: review","Hold")))))))')
+
+
 # ---------- the steps ----------
 
 def fresh_rows() -> dict:
@@ -843,6 +903,22 @@ def step_portfolio() -> Step:
     return st
 
 
+def step_portfolio_status() -> Step:
+    """Screen revision 2: S's header (the buy multiple), T the status and AA the buy-below price at S."""
+    S = _S()
+    tab, a, b, C = S["portfolio_tab"], S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"]
+    st = Step(f"{tab}: {C['review_level']} buy multiple, {C['status']} status, {C['buy_below']} buy-below price")
+    st.add(tab, f"{C['review_level']}{a - 1}", PORTFOLIO_HEADERS["review_level"], "upgrade",
+           PORTFOLIO_HEADERS_V1["review_level"])
+    _spill(st, tab, C["status"], a, b, portfolio_status_formula())
+    st.cells[-(b - a + 1)] = Cell(tab, f"{C['status']}{a}", portfolio_status_formula(), "upgrade",
+                                  PORTFOLIO_STATUS_V1)
+    st.add(tab, f"{C['buy_below']}{a - 1}", PORTFOLIO_HEADERS["buy_below"])
+    _spill(st, tab, C["buy_below"], a, b, portfolio_buy_below_formula())
+    st.formats.append((tab, f"{C['buy_below']}{a}:{C['buy_below']}{b}", "0.00"))
+    return st
+
+
 def step_portfolio_after() -> Step:
     S = _S()
     tab, a, b, C = S["portfolio_tab"], S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"]
@@ -910,7 +986,7 @@ def _short(v, n=70):
 def steps(sheet) -> list[Step]:
     return [step_signals(sheet), step_pnav(sheet), step_financing(), step_cash_flow_change(), step_pnav_tab(),
             step_sensitivity(), step_own_history(), step_valuation(), step_minority(), step_nav_used(), step_downside(), step_portfolio(),
-            step_portfolio_after()]
+            step_portfolio_after(), step_portfolio_status()]
 
 
 def run(sheet, dry_run=False, out_dir=None) -> list[str]:
@@ -966,6 +1042,15 @@ def run(sheet, dry_run=False, out_dir=None) -> list[str]:
         else:
             sheet.ensure_cols(pnav_tab, need_cols)
             rep.append(f"Added {n} columns to {pnav_tab}.")
+    ptab, plast = S["portfolio_tab"], max(S["portfolio_cols"].values(), key=lambda c: col_to_num(c) if c.isalpha()
+                                                                         else 0)
+    if sheet.has_tab(ptab) and sheet.col_count(ptab) < col_to_num(plast):
+        n = col_to_num(plast) - sheet.col_count(ptab)
+        if dry_run:
+            rep.append(f"Would add {n} columns to {ptab} (to {plast}).")
+        else:
+            sheet.ensure_cols(ptab, col_to_num(plast))
+            rep.append(f"Added {n} columns to {ptab}.")
 
     # 2-7. The steps, in order
     total = 0

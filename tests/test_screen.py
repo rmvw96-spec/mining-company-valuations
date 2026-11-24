@@ -214,7 +214,7 @@ def tab_rows(*rows):
     out = []
     for i in range(26):
         r = rows[i] if i < len(rows) else {}
-        out.append({"row": 6 + i, **{k: "" for k in "ABCDEFGHIJKLMNOPQRSTUV"}, **r})
+        out.append({"row": 6 + i, **{k: "" for k in [*"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "AA"]}, **r})
     return out
 
 
@@ -290,6 +290,25 @@ def test_a_typed_level_is_kept_and_sets_the_status():
     row = SC.plan(U, tab, {"Gold producers": {"weight": 0.1, "names": 1}}, TODAY, None)["rows"][0]
     assert row["S"] == 0.5 and row["typed_level"]
     assert row["buy_below"] == pytest.approx(35.0) and row["status"] == "Hold"
+
+
+def test_a_buy_status_gives_the_listing_currency_price_too():
+    r = universe(company(price=41.0, currency_buy="CAD", fx_buy=0.7)).iloc[0]
+    assert SC.status(r, 0.6) == "Buy: below US$41.00 (CAD 58.57)"
+    assert SC.status(universe(company(price=41.0, currency_buy="USD", fx_buy=1.0)).iloc[0], 0.6) == \
+        "Buy: below US$41.00"
+
+
+def test_sheet_statuses_are_checked_against_python():
+    """A24: the screen's report compares Model portfolio T and AA with the same rule computed in Python."""
+    U = universe(company(holding="Alpha Gold", ticker="ALP", price=40.0, mcap=4000.0, buy_below_value=41.0))
+    row = {"A": "Gold producers", "B": "Alpha Gold", "D": "ALP", "S": 0.6, "T": "Buy: below US$41.00", "AA": 41.0}
+    phys = {"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "S": ""}
+    assert SC.sheet_check(U, tab_rows(phys, row)) == \
+        ["Model portfolio T and AA agree with the screen's rule (1 rows)."]
+    out = SC.sheet_check(U, tab_rows({**row, "T": "Hold", "AA": 41.004}))
+    assert out[0].startswith("Model portfolio T or AA differ from the screen's rule in 1 rows")
+    assert "Alpha Gold" in out[1] and "'Hold'" in out[1] and "Buy: below US$41.00" in out[1]
 
 
 def test_plan_keeps_physical_scales_weights_and_keeps_typed_levels():
