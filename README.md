@@ -396,8 +396,7 @@ cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `
 - **Our NAV first** (spec: `docs/specs/own-nav-first-spec.md`): our valuation takes precedence over an independent
   value. PNAV inputs CU is the NAV per share used, ours ((base-deck NPV + net cash − minority interest) ÷ shares)
   wherever the valuation has one, else the independent NAV typed in R; CV is the P/NAV on it. The royalty buy-below
-  price and band, a developer's P/NAV after a raise, the Signals royalty median and the screen's royalty measure use
-  them. R and its P/NAV in AJ stay as the outside reference: the validation check compares against R, and Company
+  price and band, a developer's P/NAV after a raise and the Signals royalty median use them. R and its P/NAV in AJ stay as the outside reference: the validation check compares against R, and Company
   history keeps recording AJ, so own-history percentiles compare like with like.
 - **Coverage** (`data/research/coverage.csv`; spec: `docs/specs/valuation-coverage-spec.md`): one row for each
   company the valuation doesn't fully cover, by gap (`sustaining` for a producer on the free-cash-flow fallback,
@@ -409,11 +408,13 @@ cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `
 
 ## Model portfolio from a screen
 
-`python -m minerval screen` proposes the Model portfolio's holdings, target weights, review levels and notes
-(A–F, S, U–V) from the framework's own numbers. Physical metal rows are yours and are kept as typed. Run it after
-`refresh` and `financials`: `screen` writes a ranked, explained proposal to `out/screen/report.txt`; read it, then
-`screen --write` (add `--email` for a private summary of the changes). After `valuation`, the report also says how
-many candidates have an NPV at all three decks and names the rest, with the reason.
+`python -m minerval screen` proposes the Model portfolio's holdings, target weights, buy multiples and notes
+(A–F, S, U–V). It picks each bucket's best businesses by performance per share at constant metal prices, never by
+price; value only sets each row's buy signal (revision 2, spec: `docs/specs/model-portfolio-screen-spec.md`).
+Physical metal rows are yours and are kept as typed. Run it after `refresh`, `valuation` and `financials`: `screen`
+writes a ranked, explained proposal to `out/screen/report.txt`; read it, then `screen --write` (add `--email` for a
+private summary of the changes). The report also says how many candidates have an NPV at all three decks, and checks
+the Sheet's T and AA against the same rule in Python, naming any row whose name won't look up.
 
 - **Buckets**: Royalty (royalty and streaming companies), Gold producers, Growth: expanding producers, Copper
   producers, Silver and polymetallic producers, Growth: developers, by peer group and main metal. A wrong call can be
@@ -424,19 +425,26 @@ many candidates have an NPV at all three decks and names the rest, with the reas
   amounts when names are cheap. `--all-markets` adds them, marked with the fee. The fee table, with its source, is in
   `[portfolio_screen.markets]`.
 - **Filters**: fresh financials and price; a market-cap floor; at most 30% dilution in 3 years for producers (100%
-  for expanding producers, which build with equity); jurisdiction add-on at most 2.5 points; developers not short of
-  cash, with a P/NAV after a raise and EV per unit at most 1.5× their peers; valuation below the review level.
-  Royalty companies are judged by the framework's measures instead: not "Rich", and not expensive for themselves.
-- **Score**: rank percentiles within the bucket on valuation against peers, P/NAV at Low prices, breakeven margin,
-  net cash, dilution, the add-on and how much the valuation leans on it (producers); P/NAV after a raise, EV per unit
-  against peers, months of funding and the add-on (developers); independent P/NAV, the own-history percentile,
-  valuation against peers and the add-on (royalty). Equal weights; they aren't tuned to the backtest.
+  for expanding producers, which build with equity); at least 3 fiscal years of the performance measures; developers
+  not short of cash. No filter on price, valuation or jurisdiction (country risk counts once, in the discount rate).
+- **Score** (`minerval/performance.py`): rank percentiles within the bucket on business performance per share, each
+  year re-priced to the base deck and taken with that year's share count. Producers: cash flow per share growth
+  (OCF − sustaining where recorded every year, else FCF, labelled), production and reserves plus M&I per share
+  growth, the cash margin's average and lowest year, dilution, net cash and the margin over the breakeven at the base
+  deck. Royalty: OCF and GEOs per share growth, margins and dilution. Developers: resources per share growth, study
+  progress over 3 years, exploration and G&A shares of spending, risk-adjusted NPV per share across studies and
+  dilution. Production, reserves, resources and GEOs come from `data/research/operations.csv` (filings, never
+  estimated); a measure a company lacks is left out of its average. Equal weights until you set them; they aren't
+  tuned to the backtest.
 - **Sizes**: each bucket's weight and number of names are private (`private/screen.toml`; `screen --init` writes it
   from the tab). Names are equal-weighted, at most 6% each (3% for developers and expanding producers). A holding on
   the tab stays while it ranks within the names + 2. The report warns when speculation (developers and expanding
   producers) is above 25%, developers are fewer than 6 or more than 15, or royalty names are outside 2–4: limits from
   Rick Rule's, Doug Casey's and newsletter sizing, noted in `[portfolio_screen.limits]`.
-- **Review levels**: S is 1.3× the peer norm (1.5 for developers, 2.0 for royalty). A level you type is kept:
+- **Buy signal**: S is the buy multiple from `[valuation.buy]` (0.6 for producers and developers, 1.0 for royalty).
+  AA is the buy-below price at S (PNAV inputs CQ at the rule's multiple, re-priced for a typed one), and T the status:
+  "No NPV: why", "Fails downside test", "Buy: below US$…" (with the listing currency's price), "Above fair value:
+  review" or "Hold"; a change is emailed privately by `prices`. A multiple you type is kept:
   `private/screen_state.json` records the ones the screen wrote. `--rule-review-levels` resets them all to the rule.
 - **Backtest file**: `--write` ends by writing `private/portfolio.csv` from the tab (`portfolio-file` does it on
   its own), so `backtest` and `project` test what the Sheet shows. The old file is kept with a date.

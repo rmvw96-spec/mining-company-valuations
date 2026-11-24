@@ -38,7 +38,7 @@ and update the item's row in the status table at the top of `docs/roadmap.md` (a
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
 | Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CV; P/NAV U:W; Holdings downside K2, R; Model portfolio S5, T, W:AA |
-| After `financials`, before buying | `screen` (report only; show the user out/screen/report.txt), then `screen --write` (`--email` for a private summary) | Model portfolio A–F, S, U–V; private/portfolio.csv, private/screen_state.json |
+| After `valuation` and `financials`, before buying | `screen` (report only; show the user out/screen/report.txt: the proposal, and whether the Sheet's T and AA agree with Python), then `screen --write` (`--email` for a private summary) | Model portfolio A–F, S (buy multiples), U–V; private/portfolio.csv, private/screen_state.json |
 | After editing the Model portfolio by hand | `portfolio-file` | private/portfolio.csv (for `backtest` and `project`) |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |

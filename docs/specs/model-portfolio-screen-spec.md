@@ -252,7 +252,7 @@ Revision 2 (to build):
 - [ ] A26. Annual production, reserves plus M&I resources, and royalty GEOs for 2022–2025 are recorded with
   sources for every screened company that publishes them. — data-file test
 - [ ] A27. (user) The user has set the score weighting.
-- [ ] A28. README and CLAUDE.md describe revision 2; the roadmap marks 5b.
+- [x] A28. README and CLAUDE.md describe revision 2; the roadmap marks 5b. — `grep -n "revision 2" README.md CLAUDE.md`
 
 ## Decisions
 
