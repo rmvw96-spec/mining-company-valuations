@@ -109,6 +109,41 @@ def test_expanding_producers_have_their_own_dilution_limit():
     assert fail(peer_group="Junior producer", share_change_3y=101.0).startswith("dilution")
 
 
+def test_too_little_history():
+    """A21: fewer than min_history_years of the performance measures isn't ranked."""
+    n = settings()["portfolio_screen"]["filters"]["min_history_years"]
+    assert n == 3
+    assert fail(history_years=2) == "too little history (2 of 3 years)"
+    assert fail(history_years=3) == "" and fail() == ""             # not computed (no column): not a failure
+
+
+def test_performance_measures_by_bucket():
+    """A21: the score's measures are business performance per share, never price."""
+    assert [m for m, _ in SC.MEASURES["producer"]] == ["cf_ps_growth", "margin_avg", "margin_min", "share_change_3y",
+                                                       "net_cash_pct", "aisc_margin"]
+    assert [m for m, _ in SC.MEASURES["royalty"]] == ["ocf_ps_growth", "margin_avg", "margin_min", "share_change_3y"]
+    assert dict(SC.MEASURES["producer"])["share_change_3y"] is False
+    assert all(hb for m, hb in SC.MEASURES["producer"] if m != "share_change_3y")
+
+
+def test_aisc_margin_is_the_base_decks_margin_over_the_breakeven():
+    """A21: AISC margin at the base deck (the FCF breakeven until roadmap 4a)."""
+    base = settings()["scenarios"][settings()["valuation"]["base_deck"]]
+    r = universe(company(breakeven=base["gold"] / 2, breakeven_metal="gold $/oz")).iloc[0]
+    assert r.aisc_margin == pytest.approx(0.5)
+    c = universe(company(breakeven=base["copper"] * 0.75, breakeven_metal="copper $/lb")).iloc[0]
+    assert c.aisc_margin == pytest.approx(0.25)
+    assert np.isnan(universe(company(breakeven="")).iloc[0].aisc_margin)
+
+
+def test_the_why_text_labels_the_fcf_basis():
+    r = universe(company(cf_ps_growth=0.12, margin_avg=0.3, margin_min=0.1, cf_basis="FCF")).iloc[0]
+    text = SC.why_text(r, "producer", 1, 5)
+    assert text.startswith("Screen: rank 1 of 5") and "cash flow per share growth +12% a year (FCF basis)" in text
+    r = universe(company(cf_ps_growth=0.12, cf_basis="OCF − sustaining")).iloc[0]
+    assert "(FCF basis)" not in SC.why_text(r, "producer", 1, 5)
+
+
 def chart(closes, volumes):
     return {"chart": {"result": [{"indicators": {"quote": [{"close": closes, "volume": volumes}]}}]}}
 
@@ -394,6 +429,8 @@ def test_write_stops_when_a_name_or_ticker_wouldnt_look_up(tmp_path, monkeypatch
     monkeypatch.setattr(SC, "load_sizes", lambda path=None: SIZES)
     monkeypatch.setattr(SC, "read_universe", lambda sh, research=None: (gold_universe(), {}))
     monkeypatch.setattr(SC, "otc_volumes", lambda U, fetch=None: {})
+    from minerval import performance
+    monkeypatch.setattr(performance, "add", lambda U, *a, **k: U)          # offline: no cache/fundamentals.json
     monkeypatch.setattr(SC, "read_tab", lambda sh: tab_rows())
     monkeypatch.setattr(SC, "load_state", lambda path=None: None)
     monkeypatch.setattr(SC, "STATE", tmp_path / "screen_state.json")     # never the real private/ files,

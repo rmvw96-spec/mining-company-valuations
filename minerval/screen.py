@@ -36,11 +36,13 @@ PORTFOLIO_FILE = PRIVATE / "portfolio.csv"
 PHYSICAL = "Physical metal"
 ROYALTY = "Royalty"
 DEVELOPERS = "Growth: developers"
-MEASURES = {        # measure, higher is better: business performance per share, never price
-    "producer": [("net_cash_pct", True), ("share_change_3y", False)],
+MEASURES = {        # measure, higher is better: business performance per share at constant prices, never price
+    "producer": [("cf_ps_growth", True), ("margin_avg", True), ("margin_min", True), ("share_change_3y", False),
+                 ("net_cash_pct", True), ("aisc_margin", True)],
     "developer": [("share_change_3y", False)],
-    "royalty": [("share_change_3y", False)],
+    "royalty": [("ocf_ps_growth", True), ("margin_avg", True), ("margin_min", True), ("share_change_3y", False)],
 }
+ALL_MEASURES = sorted({m for ms in MEASURES.values() for m, _ in ms})
 STUDY_BASIS, ROYALTY_BASIS = "study (risk-adjusted)", "OCF (royalty)"     # valuation.py's labels (PNAV inputs CC)
 DOWNSIDE_FAILS = ("fails the downside test at any price", "negative value per share after a +30% overrun")
 HOME = {".AX": "ASX", ".L": "LSE", ".JO": "JSE", ".HK": "HKEX", ".IS": "Borsa Istanbul", ".WA": "Warsaw",
@@ -240,8 +242,14 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
 def add_measures(U: pd.DataFrame, metals: dict | None = None) -> pd.DataFrame:
     U = U.copy()
     for c in ("mcap", "net_cash_pct", "share_change_3y", "breakeven", "price", "net_cash", "npv_pess", "npv_base",
-              "dilution_30", "buy_below_value", "fair_value_price", "minority", "fx_buy"):
+              "dilution_30", "buy_below_value", "fair_value_price", "minority", "fx_buy", "history_years",
+              *ALL_MEASURES):
         U[c] = U[c].map(num) if c in U else np.nan
+    # AISC margin at the base deck: the FCF breakeven (Holdings downside I, J) until roadmap 4a records AISC
+    base = settings()["scenarios"][settings()["valuation"]["base_deck"]]
+    px = [base.get(_text(m).split(" ")[0].lower(), np.nan) for m in U.get("breakeven_metal", [""] * len(U))]
+    px = pd.Series(px, index=U.index, dtype=float)
+    U["aisc_margin"] = (px - U.breakeven) / px
     U["addon"] = U["addon"].map(num) * 100 if "addon" in U else np.nan     # P is a fraction (0.01 = 1 point)
     U["shares"] = U.mcap / U.price.where(U.price > 0)
     U["metal"] = [main_metal(r) for _, r in U.iterrows()]
@@ -338,6 +346,9 @@ def failure(r, today: date, all_markets: bool = False, c: dict | None = None) ->
     dil = F.get("max_share_change_3y_pct_by_bucket", {}).get(r["bucket"], F["max_share_change_3y_pct"])
     if k == "producer" and r["share_change_3y"] > dil:
         return f"dilution {r['share_change_3y']:.0f}% in 3 years"
+    hy, need = num(r.get("history_years")), F["min_history_years"]
+    if hy == hy and hy < need:
+        return f"too little history ({hy:.0f} of {need} years)"
     if F.get("max_addon_points") is not None and r["addon"] > F["max_addon_points"]:
         return f"jurisdiction add-on {r['addon']:.2f} points"
     if k == "developer" and _text(r.get("developer_check")).startswith("Short of cash"):
@@ -581,13 +592,26 @@ def why_text(r, k: str, rank: int, of: int) -> str:
     def f(v, fmt):
         v = num(v)
         return format(v, fmt) if v == v else "—"
-    parts = [f"{LABELS.get(m, m)} {f(r.get(m), FORMATS.get(m, '.2f'))}" for m, _ in MEASURES[k]]
-    return (f"Screen: rank {rank} of {of} (score {f(r.get('score'), '.2f')}, {int(num(r.get('measures_used')) or 0)} "
+    parts = []
+    for m, _ in MEASURES[k]:
+        label, fmt, after = DESCRIBE.get(m, (m, ".2f", ""))
+        if m in ("cf_ps_growth",) and _text(r.get("cf_basis")) == "FCF":
+            after += " (FCF basis)"
+        parts.append(f"{label} {f(r.get(m), fmt)}{after}")
+    used = num(r.get("measures_used"))
+    return (f"Screen: rank {rank} of {of} (score {f(r.get('score'), '.2f')}, {int(used) if used == used else 0} "
             f"of {len(MEASURES[k])} measures); " + "; ".join(parts))
 
 
-LABELS = {"net_cash_pct": "net cash % of market value", "share_change_3y": "3-year share change %"}
-FORMATS = {"net_cash_pct": ".0f", "share_change_3y": ".0f"}
+DESCRIBE = {      # measure: (label, format, after) for Model portfolio U
+    "cf_ps_growth": ("cash flow per share growth", "+.0%", " a year"),
+    "ocf_ps_growth": ("OCF per share growth", "+.0%", " a year"),
+    "margin_avg": ("cash margin", ".0%", " average"),
+    "margin_min": ("lowest year", ".0%", ""),
+    "share_change_3y": ("3-year share change", "+.0f", "%"),
+    "net_cash_pct": ("net cash", ".0f", "% of market value"),
+    "aisc_margin": ("margin at the base deck over the breakeven", ".0%", ""),
+}
 
 
 # ---------- report and write ----------
@@ -655,7 +679,8 @@ def ranking_table(P: dict) -> pd.DataFrame:
         cols = [m for m, _ in MEASURES[kind(b)]]
         T = pd.DataFrame({"bucket": b, "holding": B.holding.map(_text), "ticker": B.ticker,
                           "picked": B.get("picked", False), "rank": B.get("rank"), "score": B.score,
-                          "measures_used": B.measures_used, "excluded": B.fail})
+                          "measures_used": B.measures_used, "excluded": B.fail,
+                          "cf_basis": B.get("cf_basis", ""), "history_years": B.get("history_years")})
         for m in cols:
             T[m] = B[m]
             T[f"p_{m}"] = B.get(f"p_{m}")
@@ -735,7 +760,9 @@ def run(sheet, write: bool = False, all_markets: bool = False, email: bool = Fal
     sizes = load_sizes()
     if not sizes:
         return [f"No {PRIVATE_CFG}: run `screen --init` (writes it from the tab), then set the sizes."]
+    from . import performance
     U, _ = read_universe(sheet)
+    U = add_measures(performance.add(U))
     U, liq_warn = apply_liquidity(U, otc_volumes(U, fetch_volume))
     tab = read_tab(sheet)
     state = load_state()

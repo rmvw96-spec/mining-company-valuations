@@ -469,6 +469,8 @@ max_share_change_3y_pct = 30.0      # producers: more than 30% dilution in 3 yea
 # Expanding producers fund construction and mergers with shares, so 30% would exclude most of them (Nov 2026: 5 of 8
 # US/Canadian names); 100% still drops serial diluters.
 max_share_change_3y_pct_by_bucket = { "Growth: expanding producers" = 100.0 }
+min_history_years = 3               # fiscal years of the performance measures (minerval/performance.py), else "too
+                                    # little history" and not ranked (Yahoo carries 4 annual years for most)
 # No filter on the jurisdiction add-on (removed Nov 2026, the user's call): a high-risk country shouldn't exclude a
 # company whose financials are sound. The risk counts once, through the discount rate. Set max_addon_points (points)
 # to bring a filter back. No filter on price or valuation either (revision 2, the user, Nov 21, 2026): value sets
@@ -478,8 +480,15 @@ max_share_change_3y_pct_by_bucket = { "Growth: expanding producers" = 100.0 }
 # with these weights. Equal until the user sets the weighting (spec open question 1); don't tune them to the
 # backtest (most measures have no history, and one period's best fit is noise).
 [portfolio_screen.score]
+cf_ps_growth = 1.0                  # producers: cash flow per share growth at the base deck, a year (OCF − sustaining
+                                    # where recorded every year, else FCF, labelled; minerval/performance.py)
+ocf_ps_growth = 1.0                 # royalty: operating cash flow per share growth at the base deck, a year
+margin_avg = 1.0                    # cash flow ÷ revenue at the base deck, average of the years (higher)
+margin_min = 1.0                    # the same, lowest year: the cycle's worst (higher)
 net_cash_pct = 1.0                  # net cash, % of market value (higher)
 share_change_3y = 1.0               # (lower)
+aisc_margin = 1.0                   # (base-deck price − breakeven) ÷ base-deck price: the FCF breakeven until
+                                    # roadmap 4a records AISC (higher)
 
 # Limits from the sizing research (warnings in the report, not hard stops; the user sets the sizes):
 #   Rick Rule: royalties are the best business in mining (margins ~80% vs 15-20% for operators); "70% of resource

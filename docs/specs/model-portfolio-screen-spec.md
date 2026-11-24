@@ -97,6 +97,11 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
 | Royalty | OCF per share growth; attributable GEOs sold per share growth; cash margin through the cycle; 3-year share change (lower) |
 | Developers | Resource per share growth by category weight; study progress over 3 years (PEA → PFS → FS → permitted → construction; `projects.csv` dates, `study_stage`); exploration and development spending ÷ all spending, and G&A ÷ all spending (lower); risk-adjusted NPV per share across successive studies at a constant deck; 3-year share change (lower) |
 
+- **Computed** in `minerval/performance.py` from Yahoo's annual figures (up to the last four fiscal years, three
+  years of change) and the monthly COMEX closes: each year's cash flow + cash_flow_share × revenue × (base ÷ that
+  year's average price − 1) by revenue mix, ÷ that year's share count. OCF − sustaining only when sustaining is
+  recorded for every year of the window, else FCF for every year, labelled. Growth is the fitted slope over the
+  mean size, a year (it works through a change of sign).
 - Rank percentiles within the bucket; a measure a company lacks is left out of its average, and the report says how
   many it had.
 - Production, reserves, resources and GEOs per year are research inputs (filings, with sources; never estimated).
