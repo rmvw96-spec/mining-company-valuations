@@ -286,6 +286,11 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
     `displayAnnouncement.do?display=pdf&idsId=<id>` page names its `announcements.asx.com.au/asxpdf/...pdf`.
 - **A press release that supersedes a study** (new economics, no new technical report) is not used for an NPV
   (Perpetua, March 2026).
+- **An expansion of an operating mine** whose study covers the whole operation is recorded with the published base
+  case of the same operation: the expansion's row names it in `baseline` and both carry `first_year` (the calendar
+  year of study year 1); the base case's row is `superseded` "by ... (its baseline)". Only the increment is valued
+  (tier-valuation spec, Part 2). A study whose deck changes by year records each year's prices in
+  `project_cashflows.csv` `study_prices`. Without a published base case, the `growth_project` row is `not published`.
 - **Juniors** split sustaining from growth less often and publish reserves less often; their MD&As may be on
   SEDAR+ only. Where a figure isn't published, leave it blank: never estimate.
 - **Fetching:** SEC EDGAR HTML reads directly. PDFs (MD&As, 10-K PDFs, technical reports) come back as raw bytes:

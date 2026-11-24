@@ -332,6 +332,7 @@ def edgar_cik(symbol: str, get=None) -> int | None:
 
 def edgar_filings(cik: int, since: str, get=None, min_size: int = 100_000) -> list[dict]:
     """Filings since a date, each with its larger .htm documents (the MD&A and statements are exhibits of a 6-K)."""
+    import requests
     j = _edgar_json(f"https://data.sec.gov/submissions/CIK{cik:010d}.json", get)
     r = j["filings"]["recent"]
     out = []
@@ -340,7 +341,12 @@ def edgar_filings(cik: int, since: str, get=None, min_size: int = 100_000) -> li
             continue
         acc = r["accessionNumber"][i].replace("-", "")
         base = f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/"
-        idx = _edgar_json(base + "index.json", get)
+        try:
+            idx = _edgar_json(base + "index.json", get)
+        except requests.HTTPError as e:              # some filings have no index.json (404): skip that one
+            if e.response is None or e.response.status_code != 404:
+                raise
+            continue
         docs = [base + x["name"] for x in idx["directory"]["item"]
                 if x["name"].endswith(".htm") and str(x.get("size") or "0").isdigit() and int(x["size"]) >= min_size]
         if docs:

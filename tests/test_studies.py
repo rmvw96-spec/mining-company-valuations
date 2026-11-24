@@ -166,3 +166,89 @@ def test_stage_and_assumed_time_to_construction(monkeypatch):
     assert abs(x["risk_adjusted"] - x["npv"] / 1.09 ** 3 * 0.5) < 1 and x["why"].startswith("assumed 3 years")
     g = S.risk_adjusted(silver_sand(construction_start="2025-01-01")[0], F, {"silver": 30}, 0.09, date(2026, 11, 21))
     assert g["years"] == 0.0 and g["why"] == ""                                     # a guided date in the past: no wait
+
+
+def test_study_prices_can_vary_by_year():
+    """A study whose deck changes by year (Island Gold: gold $4,000 in 2026-27, $3,200 from 2030) records each year's
+    price in `study_prices`; blank years use the row's `study_price`. Each year is re-priced from its own price, and
+    the rebuild at the study's prices is the table's own after-tax cash flow, discounted."""
+    p, F = silver_sand(sensitivity="")
+    F["study_prices"] = ["silver 30"] * 8 + [""] * (len(F) - 8)        # years 1-8 at $30, then the row's $24
+    c = S.rebuild(p, F)
+    plain = S.npv(F, 0.05, {}, {}, c["tax_share"], c["rev_share"])
+    assert abs(c["rebuilt_at_study"] - plain) < 1e-9 and c["ok"]        # no re-pricing at the study's own prices
+    got = S.npv(F, 0.09, {"silver": 36}, c["study_prices"], c["tax_share"], c["rev_share"])
+    want = sum((r.post_tax_fcf_usd_m + c["tax_share"] * c["rev_share"] * r.payable_silver_koz * 1e3
+                * (36 - (30 if r.year <= 8 else 24)) / 1e6) / 1.09 ** (r.year - 0.5) for _, r in F.iterrows())
+    assert abs(got - want) < 1e-9
+    rel = S.npv(F, 0.09, {}, c["study_prices"], c["tax_share"], c["rev_share"], rel=0.9)   # "all -10%" rows
+    want = sum((r.post_tax_fcf_usd_m - 0.1 * c["tax_share"] * c["rev_share"] * r.payable_silver_koz * 1e3
+                * (30 if r.year <= 8 else 24) / 1e6) / 1.09 ** (r.year - 0.5) for _, r in F.iterrows())
+    assert abs(rel - want) < 1e-9
+
+
+def expansion_pair(**k):
+    """A base-case study (2025-2041) and an expansion study of the same operation (2026-2042), as Alamos's Island
+    Gold District 2025 Base Case and 2026 Expansion Study."""
+    b, Fb = silver_sand(project="District", study_date="2025-08-06", study_npv_usd_m="", sensitivity="",
+                        committed="yes", first_year="2025", superseded="by the 2026 Expansion Study (its baseline)")
+    e, Fe = silver_sand(project="District", study_date="2026-03-20", study_npv_usd_m="", sensitivity="",
+                        committed="yes", first_year="2026", baseline="2025-08-06", **k)
+    for F, d in ((Fb, "2025-08-06"), (Fe, "2026-03-20")):
+        F["project"], F["study_date"] = "District", d
+    Fe["post_tax_fcf_usd_m"] = Fe.post_tax_fcf_usd_m * 1.5 + 20
+    Fe["payable_silver_koz"] = Fe.payable_silver_koz * 1.4
+    return b, Fb, e, Fe
+
+
+def test_an_expansion_is_valued_as_its_increment_over_the_base_case(monkeypatch):
+    """The expansion study covers the whole operation, already in trailing cash flow: only expansion - base case
+    counts, by calendar year (`first_year`), from today (the current year in proportion to what's left of it),
+    discounted from today in the study's convention, x the construction probability x share."""
+    monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {"construction": 0.9}, "years_to_start": {}})
+    b, Fb, e, Fe = expansion_pair(attributable_pct="80")
+    today, rate, px = date(2026, 7, 2), 0.09, {"silver": 30}
+    x = S.risk_adjusted(e, Fe, px, rate, today, base=(b, Fb))
+    cb, ce = S.rebuild(b, Fb), S.rebuild(e, Fe)
+
+    def cal(F, chk, first):
+        out = {}
+        for _, r in F.iterrows():
+            out[first + int(r.year) - 1] = (r.post_tax_fcf_usd_m + chk["tax_share"] * chk["rev_share"]
+                                            * r.payable_silver_koz * 1e3 * (30 - 24) / 1e6)
+        return out
+    E, B = cal(Fe, ce, 2026), cal(Fb, cb, 2025)
+    now = 2026 + (today - date(2026, 1, 1)).days / 365
+    inc = 0.0
+    for y in sorted(set(E) | set(B)):
+        if y < 2026:
+            continue                                                    # 2025 is past
+        w = (date(2027, 1, 1) - today).days / 365 if y == 2026 else 1.0
+        inc += (E.get(y, 0.0) - B.get(y, 0.0)) * w / (1 + rate) ** max(y + 0.5 - now, 0.0)
+    assert abs(x["npv"] - inc) < 0.01 and x["stage"] == "construction"
+    assert abs(x["risk_adjusted"] - inc * 0.9 * 0.8) < 0.01 and x["why"] == ""
+    assert S.risk_adjusted(b, Fb, px, rate, today)["why"].startswith("superseded")    # not valued on its own
+
+
+def test_an_expansion_needs_its_base_case_and_calendar_years(monkeypatch):
+    monkeypatch.setattr(S, "cfg", lambda: {"stage_probability": {"construction": 0.9}, "years_to_start": {}})
+    b, Fb, e, Fe = expansion_pair()
+    x = S.risk_adjusted(e, Fe, {"silver": 30}, 0.09, date(2026, 7, 2))
+    assert x["risk_adjusted"] is None and "base-case study" in x["why"]
+    b2 = b.copy()
+    b2["first_year"] = ""
+    y = S.risk_adjusted(e, Fe, {"silver": 30}, 0.09, date(2026, 7, 2), base=(b2, Fb))
+    assert y["risk_adjusted"] is None and "first_year" in y["why"]
+    b3 = b.copy()
+    b3["study_npv_usd_m"] = "9999"                                      # the base case doesn't rebuild
+    z = S.risk_adjusted(e, Fe, {"silver": 30}, 0.09, date(2026, 7, 2), base=(b3, Fb))
+    assert z["risk_adjusted"] is None and z["why"].startswith("base case:")
+
+
+def test_baseline_lookup_finds_the_base_case_row():
+    b, Fb, e, Fe = expansion_pair()
+    P = pd.DataFrame([b, e])
+    C = pd.concat([Fb, Fe], ignore_index=True)
+    found = S.baseline(P, C, e)
+    assert found is not None and found[0].study_date == "2025-08-06" and len(found[1]) == len(Fb)
+    assert S.baseline(P, C, b) is None
