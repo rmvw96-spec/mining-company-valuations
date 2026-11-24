@@ -175,8 +175,8 @@ def where(r) -> str:
     return f"{home} only" + (f" (US OTC: {otc})" if otc else "") + ": about $50 a trade in an IRA"
 
 
-def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataFrame, dict]:
-    """Every PNAV inputs company with the screen's raw fields and measures, and today's metal prices."""
+def read_universe(sheet, research: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Every PNAV inputs company with the screen's raw fields and measures."""
     S = settings()["sheet"]
     P, a, b, tab = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs_tab"]
     D = S["downside_cols"]
@@ -237,12 +237,10 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
     U["_us"] = U.ticker.map(lambda t: " " not in _text(t))
     U = U.sort_values(["_us", "sheet_row"], ascending=[False, True]).drop_duplicates("holding").drop(columns="_us")
     U = U.sort_values("sheet_row").reset_index(drop=True)
-    mc = S["metal_cells"]
-    metals = {m: num((sheet.read(S["metals_tab"], cell) or [[""]])[0][0]) for m, cell in mc.items()}
-    return add_measures(U, metals), metals
+    return add_measures(U)
 
 
-def add_measures(U: pd.DataFrame, metals: dict | None = None) -> pd.DataFrame:
+def add_measures(U: pd.DataFrame) -> pd.DataFrame:
     U = U.copy()
     for c in ("mcap", "net_cash_pct", "share_change_3y", "breakeven", "price", "net_cash", "npv_pess", "npv_base",
               "dilution_30", "buy_below_value", "fair_value_price", "minority", "fx_buy", "history_years",
@@ -772,7 +770,7 @@ def run(sheet, write: bool = False, all_markets: bool = False, email: bool = Fal
     if not sizes:
         return [f"No {PRIVATE_CFG}: run `screen --init` (writes it from the tab), then set the sizes."]
     from . import performance
-    U, _ = read_universe(sheet)
+    U = read_universe(sheet)
     U = add_measures(performance.add(U))
     U, liq_warn = apply_liquidity(U, otc_volumes(U, fetch_volume))
     tab = read_tab(sheet)

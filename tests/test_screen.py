@@ -16,9 +16,7 @@ TODAY = date(2026, 11, 20)
 def company(**k):
     base = {"holding": "Alpha Gold", "ticker": "ALP", "ticker_buy": "ALP", "yahoo": "ALP", "peer_group":
             "Senior producer", "share_gold": 1.0, "share_silver": 0.0, "share_copper": 0.0, "resource_unit": "",
-            "mcap": 5000.0, "addon": 0.005, "independent_pnav": "", "royalty_band": "", "months_of_cash": "",
-            "developer_check": "", "pnav_after_raw": "", "peer_ev_ratio": "", "pnav_addon_up": 1.1, "pocf_pctile": "",
-            "pnav_pctile": "", "pnav_today": 1.0, "pnav_peer": 0.8, "pnav_low": 1.5, "net_cash_pct": 5.0,
+            "mcap": 5000.0, "addon": 0.005, "developer_check": "", "net_cash_pct": 5.0,
             "share_change_3y": 2.0, "breakeven": 2000.0, "breakeven_metal": "gold $/oz",
             "financials_through": "2026-09-30", "price_date": "2026-11-20", "us_listing": "NYSE: ALP",
             "canada_listing": "", "us_otc_symbol": "", "bucket": "", "sheet_row": 12,
@@ -30,7 +28,7 @@ def company(**k):
 
 
 def universe(*rows):
-    return SC.add_measures(pd.DataFrame(list(rows)), {"gold": 4000.0, "silver": 50.0, "copper": 5.0})
+    return SC.add_measures(pd.DataFrame(list(rows)))
 
 
 @pytest.mark.parametrize("peer,shares,unit,want", [
@@ -263,19 +261,17 @@ SIZES = {"Gold producers": {"weight": 0.06, "names": 2}, "Growth: developers": {
 
 
 def gold_universe():
-    return universe(company(holding="Alpha Gold", ticker="ALP", pnav_peer=0.5),
-                    company(holding="Beta Gold", ticker="BET CN", ticker_buy="BET", pnav_peer=0.6),
-                    company(holding="Gamma Gold", ticker="GAM", pnav_peer=0.9),
+    return universe(company(holding="Alpha Gold", ticker="ALP"),
+                    company(holding="Beta Gold", ticker="BET CN", ticker_buy="BET"),
+                    company(holding="Gamma Gold", ticker="GAM"),
                     company(holding="Delta Dev", ticker="DEL", peer_group="Developer", resource_unit="oz Au",
-                            mcap=200.0, pnav_after_raw="Fully funded", peer_ev_ratio=0.8, pnav_peer=0.4))
+                            mcap=200.0))
 
 
 def test_selection_ignores_price():
     """A22: the best business is picked even when it's expensive; it just has no buy status."""
-    U = universe(company(holding="Pricey Gold", ticker="PRC", net_cash_pct=30.0, share_change_3y=0.0,
-                         pnav_peer=3.0, pnav_today=4.0, price=120.0),
-                 company(holding="Cheap Gold", ticker="CHP", net_cash_pct=-20.0, share_change_3y=25.0,
-                         pnav_peer=0.3, pnav_today=0.4, price=20.0))
+    U = universe(company(holding="Pricey Gold", ticker="PRC", net_cash_pct=30.0, share_change_3y=0.0, price=120.0),
+                 company(holding="Cheap Gold", ticker="CHP", net_cash_pct=-20.0, share_change_3y=25.0, price=20.0))
     P = SC.plan(U, [], {"Gold producers": {"weight": 0.1, "names": 1}}, TODAY, None)
     assert [r["B"] for r in P["rows"]] == ["Pricey Gold"]
     assert P["rows"][0]["status"] == "Above fair value: review"
@@ -402,7 +398,7 @@ def test_a_level_written_by_the_screen_follows_the_rule_and_rule_levels_resets_t
 
 def test_plan_warnings():
     many = universe(*[company(holding=f"Dev {i}", ticker=f"D{i}", peer_group="Developer", resource_unit="oz Au",
-                              mcap=200.0, pnav_after_raw=0.5, peer_ev_ratio=1.0, pnav_peer=0.4) for i in range(30)])
+                              mcap=200.0) for i in range(30)])
     P = SC.plan(many, tab_rows(), {"Growth: developers": {"weight": 0.9, "names": 27}}, TODAY, state=None)
     text = " ".join(P["warnings"])
     assert "27 rows for 26" in text and "Speculation" in text and "Developers: 27 names" in text
@@ -433,7 +429,7 @@ def test_write_stops_when_a_name_or_ticker_wouldnt_look_up(tmp_path, monkeypatch
                          S["downside_tab"]: {f"{L}{S['downside_first_row']}": "ALP"},
                          S["portfolio_tab"]: {}})
     monkeypatch.setattr(SC, "load_sizes", lambda path=None: SIZES)
-    monkeypatch.setattr(SC, "read_universe", lambda sh, research=None: (gold_universe(), {}))
+    monkeypatch.setattr(SC, "read_universe", lambda sh, research=None: gold_universe())
     monkeypatch.setattr(SC, "otc_volumes", lambda U, fetch=None: {})
     from minerval import performance
     monkeypatch.setattr(performance, "add", lambda U, *a, **k: U)          # offline: no cache/fundamentals.json

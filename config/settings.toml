@@ -142,7 +142,7 @@ pnav_inputs_tab = "PNAV inputs"
 pnav_first_row = 12
 pnav_last_row = 154
 
-# New layout added by `setup-sheet` (Signals tab, PNAV inputs AR:BE, P/NAV U:V, Holdings downside R, Model portfolio W:Y).
+# New layout added by `setup-sheet` (Signals tab, PNAV inputs AR:CV, P/NAV U:W, Holdings downside R, Model portfolio W:AA).
 signals_tab = "Signals"
 signals_first_row = 5               # first signal row (headers on row 4)
 signals_last_row = 120              # how far down the code looks for keys in column A
@@ -240,11 +240,8 @@ study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 
 [sheet.pnav_tab_cols]
-holding = "B"                       # read by `screen`
+holding = "B"
 stage = "D"
-pnav_today = "L"                    # My P/NAV: medium (today's) prices
-pnav_peer = "N"                     # My P/NAV today ÷ its peer group's typical P/NAV (Model portfolio K)
-pnav_low = "O"                      # My P/NAV: Low prices
 royalty_band = "U"
 buy_below = "V"
 pnav_addon_up = "W"
@@ -418,7 +415,7 @@ royalty = { buy = 1.0, fair = 1.5 }
 developer = { buy = 0.6, fair = 1.0 }
 
 [portfolio_screen]
-# `python -m minerval screen` (roadmap 5): proposes the Model portfolio's holdings and weights (A-F), review levels
+# `python -m minerval screen` (roadmap 5): proposes the Model portfolio's holdings and weights (A-F), buy multiples
 # (S) and notes (U-V) from the framework's numbers. These are the rules, and public. Each bucket's total weight and
 # number of names are private: private/screen.toml (see config/screen.example.toml). The output never goes into
 # the repo, a log or the step summary: out/screen/ (local), the Sheet and, with --email, a private email.

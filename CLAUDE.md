@@ -60,7 +60,7 @@ Reports go to `out/<command>/report.txt`.
    - **Moved more than 25% in 5 days**: check for a split or consolidation; a split changes the share count, so run `prices --shares`.
    - **Currency not in the FX table**: add a row at the bottom of Holdings!Y:AB with the code; the next run fills the rate.
 3. Tell the user the price date, the biggest movers, today's metal prices, any Model portfolio rows
-   whose Status (column T) changed to "Review: above level", and the signals whose status changed
+   whose Status (column T) changed (to "Buy: below US$…", "Above fair value: review", "Hold" ...), and the signals whose status changed
    ("Changed since the last run" in `out/signals/report.txt`; on GitHub, the run's step summary, and an issue
    labelled `signals` once a change has held 3 trading days). If a
    line says "the Sheet's last values are kept", a download failed: say which and since when. If the report says the Sheet's and

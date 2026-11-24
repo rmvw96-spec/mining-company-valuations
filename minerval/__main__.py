@@ -111,7 +111,7 @@ def main(argv=None):
                    help="include companies with no US or Canadian listing (about $50 a trade in an IRA)")
     p.add_argument("--email", action="store_true", help="(with --write) email the changes privately")
     p.add_argument("--rule-review-levels", action="store_true",
-                   help="set every screened row's review level from the rule, replacing levels typed by hand")
+                   help="set every screened row's buy multiple (S) from the rule, replacing ones typed by hand")
     p.add_argument("--init", action="store_true", help="write private/screen.toml from the tab's current split")
     p = sub.add_parser("portfolio-file", help="write private/portfolio.csv from the Model portfolio tab")
     google(p)
