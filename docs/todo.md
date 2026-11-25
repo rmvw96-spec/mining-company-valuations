@@ -26,7 +26,19 @@ has built; this list says what's left and where to start.
     [A27](specs/model-portfolio-screen-spec.md#acceptance-criteria)
   - [minerval/performance.py](../minerval/performance.py), which computes the measures
 
-### 2. Production, reserves and royalty GEOs, 2022–2025 (roadmap 5b, A26; research, large)
+### 2. Filing research agent (roadmap 7; build, large)
+
+- **What:** tested `research` commands plus a Claude Code subagent that, given a ticker, proposes its record rows
+  (sustaining, studies, operations, production by mine, resources, financing, stage, corrections, listings,
+  coverage), every figure with its source. The user reviews each batch before `research record --write`.
+- **Why first:** item 3 is its first live job, and every earnings season needs the same loop.
+- **Spec:** [filing-research-agent-spec.md](specs/filing-research-agent-spec.md) (A1–A18). The user's decisions
+  (Nov 25, 2026): a subagent; it proposes for now, with its own write as the goal; the blind test's pass mark; it
+  covers every kind of research done so far.
+- **Built from:** the helpers in `private/session-2026-11/scratchpad/tools/` and the project skills
+  `sustaining-research-batch` and `mine-study-rebuild`.
+
+### 3. Production, reserves and royalty GEOs, 2022–2025 (roadmap 5b, A26; research, large)
 
 - **Today:** [data/research/operations.csv](../data/research/operations.csv) has only its header row. Until it's
   filled, the production, reserves, resource and GEO growth measures are left out of every score.
@@ -63,7 +75,7 @@ has built; this list says what's left and where to start.
 - **Proof:** A26 names a data-file test. Write it with the first batch: every row well formed, with a source and a
   known unit, measure and category.
 
-### 3. `refresh`, for the developers' G&A
+### 4. `refresh`, for the developers' G&A
 
 - **Why:** `cache/fundamentals.json` (Nov 22) has none of the G&A series the developer spending shares read
   (`annualGeneralAndAdministrativeExpense`, `annualSellingGeneralAndAdministration`). Until a `refresh`, those two
@@ -71,10 +83,10 @@ has built; this list says what's left and where to start.
 - **Run:** `refresh`, then `valuation`, then `financials --dry-run` and `financials`, in the
   [run order](../CLAUDE.md#commands-and-run-order).
 
-### 4. First `screen --write` (roadmap 5, A19; the user runs it)
+### 5. First `screen --write` (roadmap 5, A19; the user runs it)
 
 - **Before it:**
-  - Items 1–3.
+  - Items 1–4.
   - Fix the one Model portfolio name in column B that PNAV inputs doesn't have. The last lines of `screen`'s report
     name it, and so does the local note. The write stops while a name doesn't look up (A18).
 - **Then:**
@@ -84,7 +96,7 @@ has built; this list says what's left and where to start.
 - **Sources:** [screen spec A19](specs/model-portfolio-screen-spec.md#acceptance-criteria) and the
   [run order](../CLAUDE.md#commands-and-run-order).
 
-### 5. Producer costs (roadmap 4a; not started, 0 of 8)
+### 6. Producer costs (roadmap 4a; not started, 0 of 8)
 
 - **What it does:** replaces the cost base inferred from revenue minus cash flow with reported AISC, and turns the
   diesel signal into a cost increase for each company from its energy exposure.

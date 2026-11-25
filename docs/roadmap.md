@@ -30,6 +30,7 @@ built. **Outstanding**: not started. `tests/test_data_files.py` checks this tabl
 | 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | Built | A1–A32 | 30 of 32 | the decks with `pessimistic_cost_increase` (user); NPVs for the last three candidates (data) |
 | 6b | Valuation coverage | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | Built | A1–A7 | 7 of 7 | — |
 | 6c | Our NAV first | [own-nav-first-spec.md](specs/own-nav-first-spec.md) | Built | A1–A7 | 7 of 7 | — |
+| 7 | Filing research agent | [filing-research-agent-spec.md](specs/filing-research-agent-spec.md) | Outstanding | A1–A18 | 0 of 18 | all |
 
 ## Principles
 
@@ -102,6 +103,15 @@ bucket sizes, names and weights stay private (Sheet and email only). The decisio
 Why: on Nov 21, 2026, P/NAV at spot over 25 years with all capital spending made 36 of 97 producers' NAV negative,
 mostly companies mid-build, and ranking on spot made the list depend on the week it ran. The user wants the
 portfolio to hold the best businesses and to buy each when its own tier's valuation says it's cheap.
+
+## Phase 7: research by agent (specified Nov 25, 2026)
+
+| # | Item | Spec | Size | Depends on |
+|---|---|---|---|---|
+| 7 | **Filing research agent**: tested `research` commands (find documents on each exchange and filing site, extract rows, check a batch, record it) and a Claude Code subagent that proposes a company's record rows, every figure with its source, for the user to review; it earns its own write one kind of input at a time | [filing-research-agent-spec.md](specs/filing-research-agent-spec.md) | L | 6, 6b; its first live job is 5b's production, reserves and GEO research (A26) |
+
+Why: between Nov 21 and 25, 2026 the research inputs were gathered with about 70 one-off scripts that repeated the
+same loop for each company. The rest of 5b (A26) and every earnings season need that loop again.
 
 ## Done in November 2026 (not in the original plan)
 
