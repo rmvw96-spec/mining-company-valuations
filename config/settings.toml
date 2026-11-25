@@ -83,6 +83,19 @@ weight_tolerance = 0.02             # country_weights must sum to 1 within this 
 # the user's to download from (filing-research-agent spec, Part 4: the agent never poses as a browser).
 user_agent = "Mozilla/5.0 (research script)"
 
+[research.agent]
+# The kinds of input the filing-researcher agent may record itself (`research record --agent --write`). Empty to
+# start: the user adds a kind once its blind test passes and its last five recorded batches have no changes
+# (data/research/agent_log.csv; filing-research-agent spec, Part 4).
+write_kinds = []
+
+[research.blind_test]
+# One company for each kind and venue already in the record (spec, Part 5): sustaining from an EDGAR 10-Q (HL),
+# a 6-K MD&A (EXK), a 20-F's page images (GFI), an ASX report (RMS AU), Investegate (CAML LN) and a company site
+# (ARG CN); studies from an EDGAR exhibit (NEWP) and a company site (GMIN CN); production by mine (AEM CN);
+# developer financing (NEWP).
+companies = { "HL" = ["sustaining"], "EXK" = ["sustaining"], "GFI" = ["sustaining"], "RMS AU" = ["sustaining"], "CAML LN" = ["sustaining"], "ARG CN" = ["sustaining"], "NEWP" = ["study", "financing"], "GMIN CN" = ["study"], "AEM CN" = ["mine_production"] }
+
 [royalty_history]
 # Royalty companies against their own history (roadmap 4c). P/OCF = month-end price of the US listing x shares
 # outstanding / the latest annual operating cash flow filed with the SEC by then (data/research/royalty_ocf.csv,

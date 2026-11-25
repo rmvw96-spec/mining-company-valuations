@@ -22,6 +22,9 @@ After each quarter's filings (roadmap 6 research inputs)
                   filings T [--since DATE]: a US-listed company's EDGAR filings and their large documents
                   locate T [--match RX] [--year Y] [--site URL]: candidate documents from every venue it files on
                   rows URL RX: each matching table row in a document, with its figures and nearest period header
+                  plan T: what the record holds and lacks for a company, by kind, and where to look
+                  check FILE / record FILE [--write] [--agent]: a research batch's checks, then recording it
+                  blind T... --kinds K,K (in a worktree) / compare FILE [--ref main]: the agent's blind test
                   studies: rebuild each recorded study's NPV from its cash flows and check it (projects.csv)
 Model portfolio (before buying, or after a refresh)
   screen          propose the Model portfolio's holdings and weights from the framework (--write to apply)
@@ -119,7 +122,8 @@ def main(argv=None):
     google(p)
     sub.add_parser("royalty-ocf", help="annual operating cash flow of the royalty companies from SEC EDGAR")
     p = sub.add_parser("research", help="research inputs: sustaining spending, filing downloads and search")
-    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings", "studies", "locate", "rows"])
+    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings", "studies", "locate", "rows",
+                                           "plan", "check", "record", "blind", "compare"])
     p.add_argument("args", nargs="*", help="find: TICKER TERM...")
     p.add_argument("--ticker")
     p.add_argument("--write", action="store_true")
@@ -130,6 +134,9 @@ def main(argv=None):
     p.add_argument("--year", type=int, help="locate: the ASX year list (default this year)")
     p.add_argument("--site", help="locate: the company's WordPress site, for its media library")
     p.add_argument("--space-thousands", action="store_true", help="rows: '35 645 576' is one figure")
+    p.add_argument("--agent", action="store_true", help="record: the agent's own write ([research.agent] write_kinds)")
+    p.add_argument("--kinds", help="blind: the kinds to take out, comma-separated (sustaining,study,...)")
+    p.add_argument("--ref", default="main", help="compare: the git ref holding the record")
     sub.add_parser("fetch-history", help="download monthly price histories")
     sub.add_parser("backtest", help="backtest the portfolio")
     p = sub.add_parser("backtest-signals", help="backtest the market signals (out/backtest-signals/)")
@@ -232,6 +239,26 @@ def main(argv=None):
             from . import documents
             lines = documents.locate(a.ticker or (a.args[0] if a.args else ""), match=a.match, year=a.year,
                                      site=a.site, since=a.since)
+        elif a.what in ("plan", "check", "record", "blind", "compare"):
+            from . import research
+            if not a.args:
+                raise SystemExit(f"research {a.what} needs a {'TICKER' if a.what in ('plan', 'blind') else 'FILE'}")
+            if a.what == "plan":
+                lines = research.plan(a.args[0])
+            elif a.what == "check":
+                import json
+                errors, reviews = research.check(json.loads(Path(a.args[0]).read_text()))
+                lines = ([f"{len(errors)} errors:"] + [f"  {e}" for e in errors] if errors else ["No errors."])
+                lines += ["Review:"] + [f"  {r}" for r in reviews] if reviews else []
+            elif a.what == "record":
+                lines = research.record(a.args[0], write=a.write, agent=a.agent)
+            elif a.what == "blind":
+                lines = research.blind(a.args, [k for k in (a.kinds or "").split(",") if k])
+            else:
+                lines = research.compare(a.args[0], ref=a.ref)["lines"]
+            from .config import OUT, ensure
+            ensure(OUT / "research")
+            (OUT / "research" / "report.txt").write_text(f"research {a.what} {' '.join(a.args)}\n" + "\n".join(lines) + "\n")
         else:
             if len(a.args) < 2:
                 raise SystemExit("research find TICKER TERM [TERM...]")

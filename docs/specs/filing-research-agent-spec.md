@@ -175,18 +175,24 @@ A figure matches when it equals the record at the record's precision. The test p
   separators, unit tokens, EDGAR's split negatives. — `tests/test_tables.py::test_numbers_layout_traps`
 - [x] A6. A series of N years and a total is refused when the years don't sum to it. —
   `tests/test_tables.py::test_series_checks_the_total`
-- [ ] A7. `plan` lists, by kind, what's recorded and what's missing or due, and the venues to search. — new test
-  (tests/test_research.py)
-- [ ] A8. `check` raises each error in Part 2 and lists each review line. — new test
-- [ ] A9. The figure check finds a number as printed, in thousands or in millions, and with commas, spaces or
-  parentheses; it refuses one that isn't in the document unless it's `derived`. — new test
-- [ ] A10. `record --write` applies appends, cells and removals by column name (keeping `coverage.csv`'s CRLF), logs
-  the sources, and refuses a batch with errors or a stale `was`; the dry run writes nothing. — new test
-- [ ] A11. `record --write` adds to the track record, counting changed, added and dropped figures against
-  `proposal.json`. — new test, and a data-file test for `agent_log.csv`
-- [ ] A12. `record --agent --write` refuses a kind not in `write_kinds`. — new test
-- [ ] A13. `blind` runs only in a linked worktree and removes the named tickers' rows and cells of the named kinds;
-  `compare` counts matched, missed and extra figures. — new tests
+- [x] A7. `plan` lists, by kind, what's recorded and what's missing or due, and the venues to search. —
+  `tests/test_research.py::test_plan_lists_missing_periods_and_gaps`
+- [x] A8. `check` raises each error in Part 2 and lists each review line. —
+  `tests/test_research.py::test_check_refuses_malformed_batches`, `tests/test_research.py::test_check_lists_review_lines`
+- [x] A9. The figure check finds a number as printed, in thousands or in millions, and with commas, spaces or
+  parentheses; it refuses one that isn't in the document unless it's `derived`. —
+  `tests/test_research.py::test_figure_found_in_document_text`
+- [x] A10. `record --write` applies appends, cells and removals by column name (keeping `coverage.csv`'s CRLF), logs
+  the sources, and refuses a batch with errors or a stale `was`; the dry run writes nothing. —
+  `tests/test_research.py::test_record_appends_and_refuses_errors`
+- [x] A11. `record --write` adds to the track record, counting changed, added and dropped figures against
+  `proposal.json`. — `tests/test_research.py::test_track_record_counts_corrections`,
+  `tests/test_data_files.py::test_agent_log_is_well_formed`
+- [x] A12. `record --agent --write` refuses a kind not in `write_kinds`. —
+  `tests/test_research.py::test_agent_write_needs_the_kind_granted`
+- [x] A13. `blind` runs only in a linked worktree and removes the named tickers' rows and cells of the named kinds;
+  `compare` counts matched, missed and extra figures. — `tests/test_research.py::test_blind_only_in_a_worktree`,
+  `tests/test_research.py::test_compare_scores_matches_misses_extras`
 - [ ] A14. The agent file holds the loop, the rules and the stop, and names only `research` commands that exist. — new
   data-file test
 - [ ] A15. CLAUDE.md puts the agent, the batch and `record` in the run order. — `grep -n filing-researcher CLAUDE.md`

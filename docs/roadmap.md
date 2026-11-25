@@ -30,7 +30,7 @@ built. **Outstanding**: not started. `tests/test_data_files.py` checks this tabl
 | 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | Built | A1–A32 | 30 of 32 | the decks with `pessimistic_cost_increase` (user); NPVs for the last three candidates (data) |
 | 6b | Valuation coverage | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | Built | A1–A7 | 7 of 7 | — |
 | 6c | Our NAV first | [own-nav-first-spec.md](specs/own-nav-first-spec.md) | Built | A1–A7 | 7 of 7 | — |
-| 7 | Filing research agent | [filing-research-agent-spec.md](specs/filing-research-agent-spec.md) | In progress | A1–A18 | 6 of 18 | batch checks, record, the agent, its blind test; A26 batches and the first write grant (user) |
+| 7 | Filing research agent | [filing-research-agent-spec.md](specs/filing-research-agent-spec.md) | In progress | A1–A18 | 13 of 18 | the agent file, CLAUDE.md, the blind test; A26 batches and the first write grant (user) |
 
 ## Principles
 

@@ -315,6 +315,19 @@ def test_study_stage_holds_the_six_values_and_agrees_with_the_latest_study():
             assert r.study_stage == S.stage(mine.iloc[-1]), (r.ticker, r.study_stage, S.stage(mine.iloc[-1]))
 
 
+def test_agent_log_is_well_formed():
+    """Filing-research-agent A11: the track record, one row per recorded batch and kind, counting the figures the
+    agent proposed and how many the recorded file changed, added or dropped."""
+    from minerval import research as RS
+    L = pd.read_csv(DATA / "research" / "agent_log.csv", keep_default_na=False, dtype=str)
+    assert list(L.columns) == RS.LOG_COLS
+    assert set(L.kind) <= set(RS.KINDS)
+    assert pd.to_datetime(L.date, format="%Y-%m-%d", errors="coerce").notna().all()
+    for c in ("proposed", "changed", "added", "dropped"):
+        assert L[c].str.fullmatch(r"\d+").all(), c
+    assert (L.ticker != "").all() and L.file.str.endswith((".json", ".json (agent)")).all()
+
+
 def test_operations_record_is_well_formed():
     """Screen revision 2 (A26): annual production, reserves and resources, and royalty GEOs, one row per company, year
     end, measure, category and metal, with a source; M&I is recorded exclusive of reserves."""
