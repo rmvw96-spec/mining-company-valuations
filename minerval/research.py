@@ -12,8 +12,8 @@ The filing-researcher agent writes a batch to out/research/<TICKER>/proposal.jso
     evidence              [{figure, value, unit, url, where, weight}]: published figures behind a derived value
                           (`weight` names the country_weights place a mine's production counts towards)
 
-A figure that isn't printed in its document carries `derived` (how it was reached): checked, reported, not
-recorded. `check` lists errors (which stop `record`) and review lines (for the user). `record --write` appends
+A figure that isn't printed in its document carries `derived` (how it was reached; a map by column when only some
+of a row's figures are derived): reported for review, not recorded. `check` lists errors (which stop `record`) and review lines (for the user). `record --write` appends
 rows by column name, keeps each file's line ending, and adds the batch to data/research/agent_log.csv, counting the
 figures that differ from the agent's proposal.json beside it.
 """
@@ -359,8 +359,10 @@ def check(b: dict, base=None) -> tuple[list[str], list[str]]:
             if name in CITED:
                 u = _first_url(r.get(CITED[name])) if name == "projects" else _s(r.get(CITED[name]))
                 ok = cite(u, what)
+                der = r.get("derived")                     # a string for the whole row, or a map by column
                 for c in CHECKED.get(name, ()):
-                    if c in r and not figure(r[c], u if ok else None, f"{what} {c}", _s(r.get("derived"))):
+                    how = _s(der.get(c, "")) if isinstance(der, dict) else _s(der)
+                    if c in r and not figure(r[c], u if ok else None, f"{what} {c}", how):
                         E.append(f"{what} {c}: {r[c]} is not in {u} (if it isn't printed, say how in `derived`)")
 
     # study cash flows

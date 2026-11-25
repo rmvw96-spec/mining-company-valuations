@@ -173,6 +173,18 @@ def test_figure_found_in_document_text():
         assert not RS.found_in(v, text), v
 
 
+def test_derived_by_column_keeps_the_other_figures_checked(base):
+    """A9: `derived` given as a map by column exempts only those figures; the row's printed figures are still looked
+    for in the document (a sum of two AISC lines beside a printed growth figure)."""
+    row = capex("9M", "2026-01-01", "2026-09-30", 57.9, sustaining_leases=2.8, growth=26.5,
+                derived={"sustaining": "55.1 + 2.8"})
+    E, R = RS.check({"kinds": ["sustaining"], "append": {"capex_periods": [row]}}, base=base)
+    assert E == [] and len([r for r in R if "derived" in r]) == 1 and "sustaining = 57.9: derived: 55.1 + 2.8" in R[0]
+    row["growth"] = 99.9
+    E, _ = RS.check({"kinds": ["sustaining"], "append": {"capex_periods": [row]}}, base=base)
+    assert len(E) == 1 and "growth: 99.9 is not in" in E[0]
+
+
 def test_record_appends_and_refuses_errors(base):
     """A10: the dry run writes nothing; --write appends rows by column name, sets cells, removes rows (coverage.csv
     keeps its CRLF), and logs new documents; a batch with an error, or a `was` that is out of date, is refused."""

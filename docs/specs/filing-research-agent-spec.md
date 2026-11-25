@@ -65,7 +65,8 @@ user records the proposal as it is, or records an edited copy saved beside it.
 | `evidence` | `[{figure, value, unit, url, where}]`: the published figures a derived value comes from (each mine's production behind `country_weights`) |
 
 A figure that isn't printed in its document carries `"derived": "how"`: a sum, a gross-up, a currency conversion,
-or a value read from a page image. That key isn't a column and isn't recorded, so the row's `notes` or source
+or a value read from a page image. Where only some of a row's figures are derived, `derived` is a map by column,
+so the printed ones are still checked. The key isn't a column and isn't recorded, so the row's `notes` or source
 column must say the same thing.
 
 **Checks** (`research check`). An error stops `record`. A review line goes in the report for the user.
@@ -167,7 +168,8 @@ A figure matches when it equals the record at the record's precision. The test p
   search and a WordPress media search from recorded pages, and picks the venues from the listing. —
   `tests/test_documents.py::test_asx_announcements_from_the_year_list`,
   `tests/test_documents.py::test_investegate_results_list`, `tests/test_documents.py::test_edgar_full_text_search_hits`,
-  `tests/test_documents.py::test_wordpress_media_search`, `tests/test_documents.py::test_locate_picks_venues_from_the_listing`
+  `tests/test_documents.py::test_wordpress_media_search`, `tests/test_documents.py::test_locate_picks_venues_from_the_listing`,
+  `tests/test_documents.py::test_investegate_pages_back_to_a_year`
 - [x] A3. No test can download: `tests/conftest.py` blocks `documents._get`. —
   `tests/test_documents.py::test_documents_are_offline_in_tests`
 - [x] A4. `rows` finds a label's row and its nearest period header, both one cell per line and in `|` tables. —
@@ -182,8 +184,9 @@ A figure matches when it equals the record at the record's precision. The test p
 - [x] A8. `check` raises each error in Part 2 and lists each review line. —
   `tests/test_research.py::test_check_refuses_malformed_batches`, `tests/test_research.py::test_check_lists_review_lines`
 - [x] A9. The figure check finds a number as printed, in thousands or in millions, and with commas, spaces or
-  parentheses; it refuses one that isn't in the document unless it's `derived`. —
-  `tests/test_research.py::test_figure_found_in_document_text`
+  parentheses; it refuses one that isn't in the document unless it's `derived` (by column, where only some are). —
+  `tests/test_research.py::test_figure_found_in_document_text`,
+  `tests/test_research.py::test_derived_by_column_keeps_the_other_figures_checked`
 - [x] A10. `record --write` applies appends, cells and removals by column name (keeping `coverage.csv`'s CRLF), logs
   the sources, and refuses a batch with errors or a stale `was`; the dry run writes nothing. —
   `tests/test_research.py::test_record_appends_and_refuses_errors`

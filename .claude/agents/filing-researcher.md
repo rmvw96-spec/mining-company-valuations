@@ -47,6 +47,8 @@ Work from the repo root. Run commands as `uv run python -m minerval research <ve
      `uv run python -c "from minerval import documents as D; print(D.doc_path('URL'))"` and read only the line
      range you need. Never read a whole technical report.
    - Check each period header and each column heading. Columns wrap: a mine's name can sit on a line of its own.
+     EDGAR text drops blank cells, so a row can show fewer figures than the header has columns: read the header
+     lines to place each one.
 5. **Propose.** Write `proposal.json` (format below). Run `research check out/research/<TICKER>/proposal.json` and
    fix every error, then run it again until it says `No errors.`
 6. **Report.** Reply with the report, then stop.
@@ -80,7 +82,9 @@ The format is described in full in the docstring of `minerval/research.py`. Rows
 - **`derived`:** a figure not printed as such in its document carries `"derived": "how"`. That covers a sum, a
   gross-up, a currency conversion, M&I less reserves, and a value read from a page image. Say the same thing in the
   row's `notes` or its source column. `check` looks for every other figure in the cached text and refuses it if
-  it's missing. A cash-flow entry's `derived` can be a map by key (`{"gold": "revenue / study price"}`).
+  it's missing. When only some of a row's figures are derived, give `derived` as a map by column
+  (`{"sustaining": "underground development 54.7 + sustaining capital 9.6"}`), so the printed ones are still
+  checked; a cash-flow entry's map goes by key (`{"gold": "revenue / study price"}`).
 - **`was`:** the cell exactly as it is now. `check` refuses a `set` whose `was` is out of date.
 - **Cash flows:** give the table's life-of-mine totals in `totals`. `check` then refuses years that don't add up,
   and rebuilds the study's NPV against the published one.

@@ -88,6 +88,22 @@ def test_investegate_results_list():
                   "url": "https://www.investegate.co.uk/announcement/rns/example-mining--exm/interim-results-2026/9000002"}]
 
 
+def test_investegate_pages_back_to_a_year():
+    """A2: with `since`, Investegate's list is paged back until it reaches that date (a busy company's results for
+    last year sit several pages down)."""
+    def page(day, head, n):
+        return (f'<tr><td>{day}</td><td>07:00 AM</td><td>RNS</td><td><a class="announcement-link" '
+                f'href="https://www.investegate.co.uk/announcement/rns/exm/{n}">{head}</a></td></tr>')
+    pages = {"?page=2": page("10 Sep 2025", "Interim Results 2025", 2), "?page=3": page("19 Mar 2025", "2024 Full-Year Results", 3),
+             "?page=4": page("20 Sep 2024", "Interim Results 2024", 4), "/company/EXM": page("26 Aug 2026", "Interim Results 2026", 1)}
+    seen = []
+    get = fake(pages)
+    A = D.investegate("EXM", "result", since="2025-01-01", get=lambda u: seen.append(u) or get(u))
+    assert [a["date"] for a in A] == ["2026-08-26", "2025-09-10", "2025-03-19"]           # 2024 seen, then dropped
+    assert any("page=4" in u for u in seen) and not any("page=5" in u for u in seen)
+    assert len(D.investegate("EXM", "result", get=get)) == 3                        # three pages by default
+
+
 def test_edgar_full_text_search_hits():
     """A2: EDGAR full-text search finds exhibits the submissions list misses (technical reports, older years)."""
     seen = []

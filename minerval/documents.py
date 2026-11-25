@@ -234,17 +234,24 @@ def asx_announcements(code: str, year: int, match: str = ".", get=None) -> list[
     return out
 
 
-def investegate(code: str, match: str = ".", pages: int = 3, get=None) -> list[dict]:
-    """A company's announcements on Investegate (London Stock Exchange pages refuse scripts), newest first."""
+def investegate(code: str, match: str = ".", pages: int = 3, since: str | None = None, get=None) -> list[dict]:
+    """A company's announcements on Investegate (London Stock Exchange pages refuse scripts), newest first: `pages`
+    pages, or with `since` (YYYY-MM-DD) as many as it takes to reach that date (at most 15)."""
     pat, out = re.compile(match, re.I), []
-    for n in range(1, pages + 1):
+    for n in range(1, (15 if since else pages) + 1):
         t = _text(get, f"https://www.investegate.co.uk/company/{code.upper()}" + (f"?page={n}" if n > 1 else ""))
+        dates = []
         for r in re.findall(r"<tr>(.*?)</tr>", t, re.S):
             d = re.search(r"<td>\s*(\d{1,2} [A-Z][a-z]{2} \d{4})\s*</td>", r)
             a = re.search(r'href="(https://www\.investegate\.co\.uk/announcement/[^"]+)">([^<]*)<', r)
-            if d and a and pat.search(html.unescape(a.group(2))):
-                out.append({"date": pd.to_datetime(d.group(1), format="%d %b %Y").strftime("%Y-%m-%d"),
-                            "headline": html.unescape(a.group(2)).strip(), "url": a.group(1)})
+            if not (d and a):
+                continue
+            day = pd.to_datetime(d.group(1), format="%d %b %Y").strftime("%Y-%m-%d")
+            dates.append(day)
+            if pat.search(html.unescape(a.group(2))) and (since is None or day >= since):
+                out.append({"date": day, "headline": html.unescape(a.group(2)).strip(), "url": a.group(1)})
+        if since and (not dates or min(dates) < since):
+            break
     return out
 
 
@@ -290,8 +297,9 @@ def locate(ticker: str, match: str | None = None, year: int | None = None, site:
                 lines += [f"  ASX {code} {y}:"] + [f"    {a['date']} {a['headline'][:70]} {a['url'] or '(no PDF)'}"
                                                    for a in asx_announcements(code, y, match or ".", get)]
             elif v == "investegate":
-                lines += [f"  Investegate {code}:"] + [f"    {a['date']} {a['headline'][:70]} {a['url']}"
-                                                       for a in investegate(code, match or ".", get=get)]
+                lines += [f"  Investegate {code}:"] + [f"    {a['date']} {a['headline'][:70]} {a['url']}" for a in
+                                                       investegate(code, match or ".", since=f"{year}-01-01" if year
+                                                                   else None, get=get)]
             elif site:
                 lines += [f"  {site} media {match!r}:"] + [f"    {m['date']} {m['title'][:70]} {m['url']}"
                                                           for m in wordpress_media(site, match or "", get)]
