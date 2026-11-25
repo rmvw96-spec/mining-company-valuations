@@ -140,7 +140,7 @@ It never:
 ### Part 5: the blind test
 
 `[research.blind_test]` lists about ten companies, one for each kind and venue already in the record:
-- `sustaining` from an EDGAR 10-Q (HL), a 6-K MD&A (EXK), a 40-F's page images (GFI), an ASX report (RMS AU),
+- `sustaining` from an EDGAR 10-Q (HL), a 6-K MD&A (EXK), a 6-K's page images (GFI), an ASX report (RMS AU),
   Investegate (CAML LN) and a company site (ARG CN);
 - `study` from an EDGAR exhibit (NEWP) and a company site (GMIN CN);
 - `mine_production` (AEM CN);
@@ -193,9 +193,9 @@ A figure matches when it equals the record at the record's precision. The test p
 - [x] A13. `blind` runs only in a linked worktree and removes the named tickers' rows and cells of the named kinds;
   `compare` counts matched, missed and extra figures. — `tests/test_research.py::test_blind_only_in_a_worktree`,
   `tests/test_research.py::test_compare_scores_matches_misses_extras`
-- [ ] A14. The agent file holds the loop, the rules and the stop, and names only `research` commands that exist. — new
-  data-file test
-- [ ] A15. CLAUDE.md puts the agent, the batch and `record` in the run order. — `grep -n filing-researcher CLAUDE.md`
+- [x] A14. The agent file holds the loop, the rules and the stop, and names only `research` commands that exist. —
+  `tests/test_data_files.py::test_agent_definition_names_real_commands`
+- [x] A15. CLAUDE.md puts the agent, the batch and `record` in the run order. — `grep -n filing-researcher CLAUDE.md`
 - [ ] A16. The blind test passes across `[research.blind_test]`: at least 90% of the record's figures matched, no
   proposed figure without a source, and every miss and extra explained. — `research compare` on each company
 - [ ] A17. (user) The first `operations` batches (screen A26, royalty companies first) are reviewed and recorded.

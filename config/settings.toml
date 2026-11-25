@@ -91,7 +91,7 @@ write_kinds = []
 
 [research.blind_test]
 # One company for each kind and venue already in the record (spec, Part 5): sustaining from an EDGAR 10-Q (HL),
-# a 6-K MD&A (EXK), a 20-F's page images (GFI), an ASX report (RMS AU), Investegate (CAML LN) and a company site
+# a 6-K MD&A (EXK), a 6-K's page images (GFI), an ASX report (RMS AU), Investegate (CAML LN) and a company site
 # (ARG CN); studies from an EDGAR exhibit (NEWP) and a company site (GMIN CN); production by mine (AEM CN);
 # developer financing (NEWP).
 companies = { "HL" = ["sustaining"], "EXK" = ["sustaining"], "GFI" = ["sustaining"], "RMS AU" = ["sustaining"], "CAML LN" = ["sustaining"], "ARG CN" = ["sustaining"], "NEWP" = ["study", "financing"], "GMIN CN" = ["study"], "AEM CN" = ["mine_production"] }

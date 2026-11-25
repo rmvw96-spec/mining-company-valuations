@@ -42,6 +42,7 @@ and update the item's row in the status table at the top of `docs/roadmap.md` (a
 | After editing the Model portfolio by hand | `portfolio-file` | private/portfolio.csv (for `backtest` and `project`) |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
+| To research a company's inputs from its own documents (roadmap 7; any time, and each earnings season) | `research plan T`, then the `filing-researcher` agent for T; read `out/research/<T>/report.md` and `proposal.json` with the user; `research record out/research/<T>/proposal.json` (dry run), then `--write` (an edited copy saved beside the proposal records the user's corrections) | the batch's record files; `data/research/agent_log.csv` |
 | After each quarter's MD&As (roadmap 6) | add the new year-to-date rows to `data/research/capex_periods.csv` (`research fetch` / `research find` to locate them), then `research sustaining --write` | `pnav_companies.csv` sustaining columns; cache/research/ |
 | After the royalty companies' annual filings (10-K in February, 40-F in March) | `royalty-ocf`, then review the diff of `data/research/royalty_ocf.csv` with the user and commit it | data/research/royalty_ocf.csv |
 | When the WGC publishes a quarter's AISC (Gold Demand Trends, ~a month after quarter end) | add a row to `data/research/industry_aisc.csv` with its source and publication date | the next run writes it to Signals |
@@ -212,6 +213,15 @@ period that is fitted noise. Point to plateaus, and to statuses marked "too few 
 Lessons from the Step 0 pilot (Nov 21, 2026, `docs/specs/tier-valuation-spec.md`). Each document read and what it
 held is logged in `data/research/sources.csv`: check it before searching again, and add a row for every new one.
 
+- **The filing-researcher agent** (`.claude/agents/filing-researcher.md`, roadmap 7,
+  [spec](docs/specs/filing-research-agent-spec.md)): given a ticker, it plans (`research plan`), finds and reads the
+  documents (`research locate`, `fetch`, `rows`, `find`), writes `out/research/<T>/proposal.json` and `report.md`,
+  and stops. `research check` refuses a batch whose figures aren't in the cached text of their documents (unless
+  marked `derived`, with how), whose sources aren't logged, or whose `was` cells are out of date. Record only after
+  the user has reviewed it: `research record FILE`, then `--write`. Each write adds the batch to
+  `data/research/agent_log.csv` (figures proposed, then changed, added or dropped by the user). The agent records
+  by itself (`record --agent --write`) only the kinds in `[research.agent] write_kinds`, which the user grants
+  after the kind's blind test (`research blind` in a worktree, then `research compare`) and five clean batches.
 - **Coverage record** (`data/research/coverage.csv`, roadmap 6b): what the valuation doesn't cover yet, and what
   closes each gap. Check it before choosing what to research. When research closes a gap (sustaining built, a study's
   cash flows recorded, a growth project valued), remove its row in the same commit; when research finds a new gap

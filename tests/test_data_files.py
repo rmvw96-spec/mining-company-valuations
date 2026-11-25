@@ -328,6 +328,27 @@ def test_agent_log_is_well_formed():
     assert (L.ticker != "").all() and L.file.str.endswith((".json", ".json (agent)")).all()
 
 
+def test_agent_definition_names_real_commands():
+    """Filing-research-agent A14: the subagent file loads (name, description, tools), holds the loop, the rules and
+    the stop, covers every kind the batch knows, and names only `research` verbs the command line has."""
+    import re
+    from minerval import research as RS
+    text = (ROOT / ".claude" / "agents" / "filing-researcher.md").read_text()
+    front = text.split("---\n")[1]
+    assert "name: filing-researcher\n" in front and "\ndescription: " in front
+    tools = re.search(r"^tools: (.*)$", front, re.M)[1].split(", ")
+    assert {"Bash", "Read", "Write"} <= set(tools)
+    for section in ("## The loop", "## Rules", "## Where each kind is found", "## Stop"):
+        assert f"\n{section}\n" in text, section
+    assert "Don't run `research record`." in text and "never records" in front
+    table = text.split("## Where each kind is found", 1)[1].split("\n\n", 2)[1]
+    assert set(re.findall(r"^\| `(\w+)` \|", table, re.M)) == set(RS.KINDS)
+    main = (ROOT / "minerval" / "__main__.py").read_text()
+    verbs = set(re.findall(r'"(\w+)"', re.search(r'add_argument\("what", choices=\[(.*?)\]\)', main, re.S)[1]))
+    named = set(re.findall(r"`research (\w+)", text))
+    assert named and named <= verbs, named - verbs
+
+
 def test_operations_record_is_well_formed():
     """Screen revision 2 (A26): annual production, reserves and resources, and royalty GEOs, one row per company, year
     end, measure, category and metal, with a source; M&I is recorded exclusive of reserves."""
