@@ -20,6 +20,7 @@ After each quarter's filings (roadmap 6 research inputs)
                   fetch [--ticker T]: download the documents in sources.csv to cache/research/ as text
                   find T TERM...: search a company's downloaded documents
                   filings T [--since DATE]: a US-listed company's EDGAR filings and their large documents
+                  locate T [--match RX] [--year Y] [--site URL]: candidate documents from every venue it files on
                   studies: rebuild each recorded study's NPV from its cash flows and check it (projects.csv)
 Model portfolio (before buying, or after a refresh)
   screen          propose the Model portfolio's holdings and weights from the framework (--write to apply)
@@ -117,13 +118,16 @@ def main(argv=None):
     google(p)
     sub.add_parser("royalty-ocf", help="annual operating cash flow of the royalty companies from SEC EDGAR")
     p = sub.add_parser("research", help="research inputs: sustaining spending, filing downloads and search")
-    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings", "studies"])
+    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings", "studies", "locate"])
     p.add_argument("args", nargs="*", help="find: TICKER TERM...")
     p.add_argument("--ticker")
     p.add_argument("--write", action="store_true")
     p.add_argument("--refresh", action="store_true", help="fetch: download again")
     p.add_argument("--url", help="fetch or find: one document instead of the ticker's list")
-    p.add_argument("--since", default="2025-10-01", help="filings: EDGAR filings since this date")
+    p.add_argument("--since", default="2025-10-01", help="filings, locate: EDGAR filings since this date")
+    p.add_argument("--match", help="locate: headline regex (ASX, Investegate), EDGAR full-text or site media search")
+    p.add_argument("--year", type=int, help="locate: the ASX year list (default this year)")
+    p.add_argument("--site", help="locate: the company's WordPress site, for its media library")
     sub.add_parser("fetch-history", help="download monthly price histories")
     sub.add_parser("backtest", help="backtest the portfolio")
     p = sub.add_parser("backtest-signals", help="backtest the market signals (out/backtest-signals/)")
@@ -212,6 +216,10 @@ def main(argv=None):
             lines = SU.filings(a.ticker or (a.args[0] if a.args else ""), a.since)
         elif a.what == "fetch":
             lines = SU.fetch(a.ticker, refresh=a.refresh, url=a.url)
+        elif a.what == "locate":
+            from . import documents
+            lines = documents.locate(a.ticker or (a.args[0] if a.args else ""), match=a.match, year=a.year,
+                                     site=a.site, since=a.since)
         else:
             if len(a.args) < 2:
                 raise SystemExit("research find TICKER TERM [TERM...]")

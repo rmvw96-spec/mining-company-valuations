@@ -2,7 +2,7 @@
 import pandas as pd
 import pytest
 
-from minerval import yahoo
+from minerval import documents, yahoo
 
 
 class FakeMetals:
@@ -27,10 +27,11 @@ def metals():
 
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    """Fail loudly if a test reaches Yahoo, and run pmap serially so tests are deterministic."""
+    """Fail loudly if a test reaches Yahoo or a filing site, and run pmap serially so tests are deterministic."""
     def refuse(*a, **k):
         raise AssertionError("a test tried to reach the network")
     monkeypatch.setattr(yahoo, "session", refuse)
+    monkeypatch.setattr(documents, "_get", refuse)
     monkeypatch.setattr(yahoo, "pmap", lambda fn, items, workers=None: {i: fn(i) for i in items})
 
 

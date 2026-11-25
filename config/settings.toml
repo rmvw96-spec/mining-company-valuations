@@ -77,6 +77,12 @@ floor_score = 90.0                  # places scoring at least this get no add-on
 step = 0.25
 weight_tolerance = 0.02             # country_weights must sum to 1 within this (whole-percent shares round); they are rescaled to 1
 
+[research]
+# Downloads from filing sites other than the SEC say what they are (the SEC gets its contact User-Agent from
+# [royalty_history]). The ASX and Investegate accepted this one in the Nov 2026 research; a site that refuses it is
+# the user's to download from (filing-research-agent spec, Part 4: the agent never poses as a browser).
+user_agent = "Mozilla/5.0 (research script)"
+
 [royalty_history]
 # Royalty companies against their own history (roadmap 4c). P/OCF = month-end price of the US listing x shares
 # outstanding / the latest annual operating cash flow filed with the SEC by then (data/research/royalty_ocf.csv,

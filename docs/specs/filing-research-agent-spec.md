@@ -1,6 +1,6 @@
 # Filing research agent: a company's valuation inputs from its own documents
 
-Roadmap 7 · Status: Outstanding · Depends on: 6 and 6b (the record files and coverage record), 5b (operations.csv)
+Roadmap 7 · Status: In progress · Depends on: 6 and 6b (the record files and coverage record), 5b (operations.csv)
 
 Instructions for Claude Code. Follow CLAUDE.md; don't restate it here.
 
@@ -158,12 +158,16 @@ A figure matches when it equals the record at the record's precision. The test p
 
 ## Acceptance criteria
 
-- [ ] A1. The document code lives in `minerval/documents.py`; `research fetch`, `find` and `filings`, and the
-  `sustaining` names the skills use, behave as before. — new tests (tests/test_documents.py); the existing
-  `tests/test_sustaining.py` tests pass
-- [ ] A2. `locate` reads the ASX year list (with each PDF address), Investegate's results list, EDGAR full-text
-  search and a WordPress media search from recorded pages. — new tests (tests/test_documents.py)
-- [ ] A3. No test can download: `tests/conftest.py` blocks `documents._get`. — new test
+- [x] A1. The document code lives in `minerval/documents.py`; `research fetch`, `find` and `filings`, and the
+  `sustaining` names the skills use, behave as before. — `tests/test_documents.py::test_sustaining_names_still_work`;
+  the existing `tests/test_sustaining.py` tests pass
+- [x] A2. `locate` reads the ASX year list (with each PDF address), Investegate's results list, EDGAR full-text
+  search and a WordPress media search from recorded pages, and picks the venues from the listing. —
+  `tests/test_documents.py::test_asx_announcements_from_the_year_list`,
+  `tests/test_documents.py::test_investegate_results_list`, `tests/test_documents.py::test_edgar_full_text_search_hits`,
+  `tests/test_documents.py::test_wordpress_media_search`, `tests/test_documents.py::test_locate_picks_venues_from_the_listing`
+- [x] A3. No test can download: `tests/conftest.py` blocks `documents._get`. —
+  `tests/test_documents.py::test_documents_are_offline_in_tests`
 - [ ] A4. `rows` finds a label's row and its nearest period header, both one cell per line and in `|` tables. — new
   test (tests/test_tables.py)
 - [ ] A5. Numbers parse through the layout traps: negatives in parentheses, `-` and `--` as zero, spaces as thousands
