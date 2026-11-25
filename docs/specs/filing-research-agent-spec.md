@@ -174,7 +174,8 @@ A figure matches when it equals the record at the record's precision. The test p
   `tests/test_documents.py::test_documents_are_offline_in_tests`
 - [x] A4. `rows` finds a label's row and its nearest period header, both one cell per line and in `|` tables. —
   `tests/test_tables.py::test_rows_in_pipe_tables`, `tests/test_tables.py::test_rows_in_pdf_layout_text`,
-  `tests/test_tables.py::test_rows_with_period_header_one_cell_per_line`
+  `tests/test_tables.py::test_rows_with_period_header_one_cell_per_line`,
+  `tests/test_tables.py::test_rows_skip_prose_for_the_period_header`
 - [x] A5. Numbers parse through the layout traps: negatives in parentheses, `-` and `--` as zero, spaces as thousands
   separators, unit tokens, EDGAR's split negatives. — `tests/test_tables.py::test_numbers_layout_traps`
 - [x] A6. A series of N years and a total is refused when the years don't sum to it. —

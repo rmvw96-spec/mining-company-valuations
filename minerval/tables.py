@@ -100,7 +100,8 @@ def rows(text: str, label: str, lookback: int = 300, max_cells: int = 80,
                     break
                 vals += numbers(s, space_thousands)
                 j += 1
-        p, c = _above(L, i, PERIOD.search, lookback), _above(L, i, _years_row, lookback)
+        p = _above(L, i, lambda s: len(s.strip()) <= 150 and bool(PERIOD.search(s)), lookback)   # not prose
+        c = _above(L, i, _years_row, lookback)
         out.append({"line": i, "label": lab, "values": vals,
                     "period": L[p].strip()[:160] if p is not None else "", "period_line": p,
                     "columns": L[c].strip()[:160] if c is not None else "", "text": x.strip()[:200]})

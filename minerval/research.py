@@ -773,7 +773,8 @@ def plan(ticker: str, base=None, fin_dates: dict | None = None, today: date | No
             have = {(r["period"], r["period_end"]) for r in R}
             for p, s, e in _needed(pd.Timestamp(fin).date(), fy_month):
                 L.append(f"  {p} {s} to {e}: {'recorded' if (p, e.isoformat()) in have else 'missing'}")
-            L.append(f"  (or the four 3M quarters to {fin}, for a company that reports only quarters)")
+            L.append(f"  (where the MD&A gives quarters only: FY + this year's 3M quarters - last year's, or the four 3M "
+                     f"quarters to {fin})")
         else:
             L.append("sustaining: financials date unknown (run compute)")
         L += [f"  recorded: {r['period']} {r['period_start']} to {r['period_end']} {r['sustaining']} {r['currency']}"

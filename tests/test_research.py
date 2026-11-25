@@ -96,6 +96,7 @@ def test_plan_lists_missing_periods_and_gaps(base):
     assert "venues: edgar, site" in L
     assert "FY 2025-01-01 to 2025-12-31: recorded" in L
     assert "9M 2026-01-01 to 2026-09-30: missing" in L and "9M 2025-01-01 to 2025-09-30: missing" in L
+    assert "FY + this year's 3M quarters - last year's" in L                # Amerigo: quarters only
     assert "operations 2022: missing production" in L and "resources (reserves, mi, inferred)" in L
     assert "growth_project: waiting (due 2026-10, past due)" in L
     assert "country_weights: Canada/Ontario:1.0 (2024 production by mine: annual report)" in L

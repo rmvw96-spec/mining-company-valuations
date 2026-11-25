@@ -81,6 +81,16 @@ def test_rows_with_period_header_one_cell_per_line():
     assert T.rows(EDGAR_CELLS, r"lease payments")[0]["values"] == [6.3]
 
 
+def test_rows_skip_prose_for_the_period_header():
+    """A4: a paragraph that mentions "three months ended" is prose, not the table's period header."""
+    text = ("Three months ended | Q1-2026 | Q1-2025\n"
+            "Sustaining capital spending was higher in the three months ended March 31, 2026 than in the same period of "
+            "2025, mainly because of the plant shutdown brought forward from the second quarter and spares purchased.\n"
+            "Sustaining Capex | 5,146 | 3,651")
+    R = T.rows(text, r"^sustaining capex")
+    assert R[0]["period"] == "Three months ended | Q1-2026 | Q1-2025" and R[0]["values"] == [5146.0, 3651.0]
+
+
 def test_series_checks_the_total():
     """A6: a total and N years; refused when the count is wrong or the years don't sum to the total beyond
     rounding (half the last decimal place per figure)."""
