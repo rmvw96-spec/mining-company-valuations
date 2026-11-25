@@ -258,11 +258,12 @@ Revision 2 (to build):
   sources for every screened company that publishes them. — data-file test
 - [ ] A27. (user) The user has set the score weighting.
 - [x] A28. README and CLAUDE.md describe revision 2; the roadmap marks 5b. — `grep -n "revision 2" README.md CLAUDE.md`
-- [ ] A29. The Model portfolio ends at S: the columns nothing reads since revision 2 are gone from the tab, the
+- [x] A29. The Model portfolio ends at S: the columns nothing reads since revision 2 are gone from the tab, the
   settings and `setup-sheet`, and the write backs up the whole tab. —
   `tests/test_layout.py::test_model_portfolio_columns_revision_2_left_unread_are_gone`,
-  `tests/test_screen.py::test_write_backs_up_the_whole_tab_and_writes_only_the_inputs`, and the live tab (columns
-  deleted after a dry run shown to the user; `setup-sheet --dry-run` then changes nothing)
+  `tests/test_screen.py::test_write_backs_up_the_whole_tab_and_writes_only_the_inputs`, and the live tab (Nov 25,
+  2026: J:N and X:Z deleted after a dry run shown to the user; no error values; `setup-sheet --dry-run` changes
+  nothing; `screen`: 22 rows agree)
 
 ## Decisions
 

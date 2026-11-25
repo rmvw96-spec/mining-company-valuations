@@ -514,8 +514,8 @@ def portfolio_buy_below_formula() -> str:
     from .screen import ROYALTY_BASIS, STUDY_BASIS
     rng, look = _portfolio_refs()
     buy = settings()["valuation"]["buy"]
-    rule = (f'IF(basis="{STUDY_BASIS}",{buy["developer"]["buy"]},IF(basis="{ROYALTY_BASIS}",{buy["royalty"]["buy"]},'
-            f'{buy["producer"]["buy"]}))')
+    rule = (f'IF(basis="{STUDY_BASIS}",{buy["developer"]["buy"]:g},IF(basis="{ROYALTY_BASIS}",{buy["royalty"]["buy"]:g},'
+            f'{buy["producer"]["buy"]:g}))')                  # 1, not 1.0: as Sheets stores it
     typed = (f'IF(basis="{STUDY_BASIS}",IF(ISNUMBER(cq),cq+(lvl-rule)*base/(shares*(1+IF(ISNUMBER(dil),dil,0))),""),'
              f'IF(ISNUMBER(pess),(IF(lvl*base<pess,lvl*base,pess)+IF(ISNUMBER(nc),nc,0)-IF(ISNUMBER(mi),mi,0))'
              f'/shares,""))')

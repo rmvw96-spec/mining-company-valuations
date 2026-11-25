@@ -349,7 +349,9 @@ def test_portfolio_status_and_buy_below_columns(tmp_path):
                  "buy_below_value", "price", "mcap"):
         assert f"'PNAV inputs'!${P[name]}${A}:${P[name]}${B}" in g
     buy = settings()["valuation"]["buy"]
-    assert all(f"{buy[k]['buy']}" in g for k in buy) and "N6:N31" in g
+    assert all(f"{buy[k]['buy']:g}" in g for k in buy) and "N6:N31" in g
+    import re                                   # numbers as Sheets stores them (1, not 1.0), so a formula Sheets
+    assert not re.search(r"(?<![\d.])\d+\.0(?!\d)", f + g)    # re-saves (after a column delete) still matches
     n = len(sh.blocks)
     layout.run(sh, out_dir=tmp_path)
     assert len(sh.blocks) == n                                       # idempotent
