@@ -52,7 +52,8 @@ mining code, a tax change).
 
 ### Part 2: the batch
 
-The agent writes `out/research/<TICKER>/proposal.json` and `report.md`, and never edits the proposal afterwards. The
+The agent writes `out/research/<TICKER>/proposal.json` and returns its report, which the session that started it saves
+beside the proposal as `report.md` (subagents return findings as text). It never edits the proposal afterwards. The
 user records the proposal as it is, or records an edited copy saved beside it.
 
 | Key | Holds |
@@ -117,7 +118,7 @@ no personal data. The agent:
 1. Runs `research plan TICKER`, and reads `sources.csv` for the documents already read.
 2. Finds and reads documents with `locate`, `fetch`, `rows` and `find`. Any scripts of its own go in the scratchpad.
 3. Writes `proposal.json`, and reruns `research check` until it shows no errors.
-4. Writes `report.md`:
+4. Returns its report (saved as `report.md`):
    - what it found, with each judgment call (basis, combined lines, gross-ups);
    - what it didn't find, with the next step;
    - the documents the user must download, with links (always the case for SEDAR+).
@@ -147,9 +148,10 @@ It never:
 - `financing` (NEWP).
 
 The run:
-1. Make a worktree from `main` and run `research blind` in it.
+1. Make a worktree from the branch that holds the record and these commands (`main` once merged), and run
+   `research blind` in it.
 2. Run the agent once per company.
-3. Run `research compare` against `main`.
+3. Run `research compare` against that branch (`--ref`).
 
 A figure matches when it equals the record at the record's precision. The test passes when:
 - at least 90% of the record's figures are matched;

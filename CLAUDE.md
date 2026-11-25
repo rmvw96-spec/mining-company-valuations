@@ -215,8 +215,8 @@ held is logged in `data/research/sources.csv`: check it before searching again, 
 
 - **The filing-researcher agent** (`.claude/agents/filing-researcher.md`, roadmap 7,
   [spec](docs/specs/filing-research-agent-spec.md)): given a ticker, it plans (`research plan`), finds and reads the
-  documents (`research locate`, `fetch`, `rows`, `find`), writes `out/research/<T>/proposal.json` and `report.md`,
-  and stops. `research check` refuses a batch whose figures aren't in the cached text of their documents (unless
+  documents (`research locate`, `fetch`, `rows`, `find`), writes `out/research/<T>/proposal.json`, returns its report
+  (save it beside the proposal as `report.md`), and stops. `research check` refuses a batch whose figures aren't in the cached text of their documents (unless
   marked `derived`, with how), whose sources aren't logged, or whose `was` cells are out of date. Record only after
   the user has reviewed it: `research record FILE`, then `--write`. Each write adds the batch to
   `data/research/agent_log.csv` (figures proposed, then changed, added or dropped by the user). The agent records

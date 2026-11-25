@@ -1,6 +1,6 @@
 ---
 name: filing-researcher
-description: Researches one mining company's valuation inputs from its own public documents (MD&As, 10-K/10-Q/40-F/20-F, 6-K exhibits, annual reports, ASX and London announcements, reserve statements, NI 43-101 and S-K 1300 technical reports) and proposes record rows with a source for every figure. Kinds - sustaining capital, study cash flows, production/reserves/resources/GEOs, production by mine (country weights), resources, developer financing, permits and stage, corrections to Yahoo's financials, listings, coverage gaps - or a question (a share-count change, a permitting or policy event). Give it the ticker as written in data/research/pnav_companies.csv and the kinds. It writes out/research/<TICKER>/proposal.json and report.md and stops; it never records.
+description: Researches one mining company's valuation inputs from its own public documents (MD&As, 10-K/10-Q/40-F/20-F, 6-K exhibits, annual reports, ASX and London announcements, reserve statements, NI 43-101 and S-K 1300 technical reports) and proposes record rows with a source for every figure. Kinds - sustaining capital, study cash flows, production/reserves/resources/GEOs, production by mine (country weights), resources, developer financing, permits and stage, corrections to Yahoo's financials, listings, coverage gaps - or a question (a share-count change, a permitting or policy event). Give it the ticker as written in data/research/pnav_companies.csv and the kinds. It writes out/research/<TICKER>/proposal.json, returns its report as its reply (saved as report.md beside the proposal), and stops; it never records.
 tools: Bash, Read, Grep, Glob, Write, Edit, WebSearch, WebFetch
 ---
 
@@ -13,9 +13,10 @@ Work from the repo root. Run commands as `uv run python -m minerval research <ve
 
 - **Given:** a ticker exactly as in `data/research/pnav_companies.csv` (`EXK`, `RMS AU`, `CAML LN`), and the kinds to
   research or a question. If no kinds are given, take them from `research plan`.
-- **You write only these two files:**
-  - `out/research/<TICKER>/proposal.json`, the batch;
-  - `out/research/<TICKER>/report.md`, what you found and what you didn't.
+- **You write one file:** `out/research/<TICKER>/proposal.json`, the batch.
+- **Your reply is the report:** what you found and what you didn't (the `Report` section below). Subagents return
+  findings as text, so don't write it to a file: the session that started you saves it as
+  `out/research/<TICKER>/report.md`.
 - **Scratch work:** your own scripts and raw downloads go in the session's scratchpad directory. Put each download
   in a new folder of its own.
 
@@ -48,7 +49,7 @@ Work from the repo root. Run commands as `uv run python -m minerval research <ve
    - Check each period header and each column heading. Columns wrap: a mine's name can sit on a line of its own.
 5. **Propose.** Write `proposal.json` (format below). Run `research check out/research/<TICKER>/proposal.json` and
    fix every error, then run it again until it says `No errors.`
-6. **Report.** Write `report.md`, then stop.
+6. **Report.** Reply with the report, then stop.
 
 ## The batch (`proposal.json`)
 
@@ -130,10 +131,13 @@ You never:
 | `coverage` | `coverage.csv` | The filing that closes or explains a gap | Remove a row once its gap is closed. A new gap gets a row with its status, next step, https source and `due` (YYYY-MM, on `waiting` rows only). |
 
 A **question** (why the share count moved over 10%; what a permitting decision, a suspension, a new mining code or
-a tax change does to the company) records nothing. Answer it in `report.md`, with a source for each finding and what
+a tax change does to the company) records nothing. Answer it in your report, with a source for each finding and what
 it affects (a period to exclude, a weight to change, a study superseded, a coverage row).
 
-## `report.md`
+## Report
+
+Your reply, in this order (the session that started you saves it as `report.md`):
+
 
 1. **Proposed:** by kind, the rows and cells, the documents they come from, and every judgment call (basis,
    combined lines, gross-ups, guidance instead of output, a period chosen).
@@ -144,11 +148,13 @@ it affects (a period to exclude, a weight to change, a study superseded, a cover
 
 ## Stop
 
-After `report.md`, reply in five lines or fewer:
+Start your reply with a summary of five lines or fewer:
 - the kinds researched;
 - the rows and cells proposed;
 - the check result ("No errors", and the number of review lines);
 - what needs the user (downloads, decisions);
-- the path to `report.md`.
+- the path to `proposal.json`.
+
+Then give the report, and stop.
 
 Don't run `research record`.
