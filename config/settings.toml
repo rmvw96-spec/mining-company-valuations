@@ -142,7 +142,8 @@ pnav_inputs_tab = "PNAV inputs"
 pnav_first_row = 12
 pnav_last_row = 154
 
-# New layout added by `setup-sheet` (Signals tab, PNAV inputs AR:BE, P/NAV U:V, Holdings downside R, Model portfolio W:Y).
+# New layout added by `setup-sheet` (Signals tab, PNAV inputs AR:CV, P/NAV U:W, Holdings downside R, Model portfolio
+# N5, O, R:S).
 signals_tab = "Signals"
 signals_first_row = 5               # first signal row (headers on row 4)
 signals_last_row = 120              # how far down the code looks for keys in column A
@@ -240,11 +241,8 @@ study_value = "S"                   # existing: the published study's NPV, US$M
 yahoo = "AP"                        # existing: the Yahoo symbol C and D look up
 
 [sheet.pnav_tab_cols]
-holding = "B"                       # read by `screen`
+holding = "B"
 stage = "D"
-pnav_today = "L"                    # My P/NAV: medium (today's) prices
-pnav_peer = "N"                     # My P/NAV today ÷ its peer group's typical P/NAV (Model portfolio K)
-pnav_low = "O"                      # My P/NAV: Low prices
 royalty_band = "U"
 buy_below = "V"
 pnav_addon_up = "W"
@@ -259,23 +257,21 @@ breakeven = "I"                     # free-cash-flow breakeven price
 breakeven_metal = "J"               # "gold $/oz", ...
 
 [sheet.portfolio_cols]
+# G-M are the tab's own formulas: buy with new money; stage, jurisdiction risk, FCF breakeven, net cash, cash runway
+# and share change, looked up from the P/NAV and Holdings downside tabs.
 bucket = "A"
 holding = "B"
 metal = "E"
-timing = "W"
-ev_per_aueq_oz = "X"
-months_of_cash = "Y"
-pnav_after = "Z"                    # P/NAV after an equity raise for the funding gap, or "Fully funded"
-buy_below = "AA"                    # formula: the buy-below price (US$/share) at S (screen revision 2)
-status = "T"                        # formula: no NPV / fails downside test / buy / above fair value / hold (emailed
+review_level = "N"                  # the buy multiple ([valuation.buy] by tier; a typed value is kept)
+status = "O"                        # formula: no NPV / fails downside test / buy / above fair value / hold (emailed
                                     # when it changes, alerts)
-where = "C"                         # inputs written by `screen --write` (A-F, S, U-V)
+timing = "R"
+buy_below = "S"                     # formula: the buy-below price (US$/share) at N (screen revision 2); the last column
+where = "C"                         # inputs written by `screen --write` (A-F, N, P-Q)
 ticker = "D"
 weight = "F"
-peer_norm = "K"                     # formula: valuation vs peer norm (1.0 = in line)
-review_level = "S"                  # the buy multiple ([valuation.buy] by tier; a typed value is kept)
-why = "U"
-what_would_change = "V"
+why = "P"
+what_would_change = "Q"
 new_money_cell = "B3"
 silver_held_value_cell = "C4"       # value of the silver already held (B4 × silver price)
 
@@ -337,7 +333,7 @@ resource_weight_reserves = 1.0
 resource_weight_mi = 0.5            # measured & indicated, excluding reserves
 resource_weight_inferred = 0.2
 
-# Model portfolio column W: which signals each bucket shows (keys on the Signals tab, joined with " / ").
+# Model portfolio column R: which signals each bucket shows (keys on the Signals tab, joined with " / ").
 # "Bucket|Metal" entries win over "Bucket". "=text" shows the text itself; "@developer_check" is this row's
 # PNAV inputs developer check. Any royalty/streaming company shows its royalty band instead.
 [signals.timing]
@@ -418,8 +414,8 @@ royalty = { buy = 1.0, fair = 1.5 }
 developer = { buy = 0.6, fair = 1.0 }
 
 [portfolio_screen]
-# `python -m minerval screen` (roadmap 5): proposes the Model portfolio's holdings and weights (A-F), review levels
-# (S) and notes (U-V) from the framework's numbers. These are the rules, and public. Each bucket's total weight and
+# `python -m minerval screen` (roadmap 5): proposes the Model portfolio's holdings and weights (A-F), buy multiples
+# (N) and notes (P-Q) from the framework's numbers. These are the rules, and public. Each bucket's total weight and
 # number of names are private: private/screen.toml (see config/screen.example.toml). The output never goes into
 # the repo, a log or the step summary: out/screen/ (local), the Sheet and, with --email, a private email.
 # A name on the tab stays while it ranks within names + buffer, so the list doesn't churn on small rank changes once

@@ -37,8 +37,8 @@ and update the item's row in the status table at the top of `docs/roadmap.md` (a
 | After `refresh` and `valuation` | `financials --dry-run`, then `financials` | Holdings I–N, Q; Holdings downside D–J, M–R; PNAV inputs E–H, M–O, AX–AY, CT, P for country-table rows, and CC:CG, CM:CO, CQ:CS (valuation; skipped while valuation.csv is older than pnav.csv) |
 | After `financials` | `snapshots --dry-run`, then `snapshots` | Summary A1, A4:K9; Metal prices reference B2, B6:K11; Stress test & downside B2 and its five tables |
 | After changing `country_risk.csv` or `country_weights` | `jurisdiction` (review out/jurisdiction/comparison.csv with the user), then `compute` and `financials` | PNAV inputs P |
-| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CV; P/NAV U:W; Holdings downside K2, R; Model portfolio S5, T, W:AA |
-| After `valuation` and `financials`, before buying | `screen` (report only; show the user out/screen/report.txt: the proposal, and whether the Sheet's T and AA agree with Python), then `screen --write` (`--email` for a private summary) | Model portfolio A–F, S (buy multiples), U–V; private/portfolio.csv, private/screen_state.json |
+| Once, and after changing `[sheet]` layout settings | `setup-sheet --dry-run`, show the user, then `setup-sheet` | Signals tab; PNAV inputs H7, Z:AC, AR:CV; P/NAV U:W; Holdings downside K2, R; Model portfolio N5, O, R:S |
+| After `valuation` and `financials`, before buying | `screen` (report only; show the user out/screen/report.txt: the proposal, and whether the Sheet's O and S agree with Python), then `screen --write` (`--email` for a private summary) | Model portfolio A–F, N (buy multiples), P–Q; private/portfolio.csv, private/screen_state.json |
 | After editing the Model portfolio by hand | `portfolio-file` | private/portfolio.csv (for `backtest` and `project`) |
 | Occasionally | `fetch-history`, `backtest`, `project` | out/backtest/ |
 | After changing a signal or threshold, or yearly | `backtest-signals` (`--refresh` to download again) | out/backtest-signals/ |
@@ -60,12 +60,12 @@ Reports go to `out/<command>/report.txt`.
    - **Moved more than 25% in 5 days**: check for a split or consolidation; a split changes the share count, so run `prices --shares`.
    - **Currency not in the FX table**: add a row at the bottom of Holdings!Y:AB with the code; the next run fills the rate.
 3. Tell the user the price date, the biggest movers, today's metal prices, any Model portfolio rows
-   whose Status (column T) changed to "Review: above level", and the signals whose status changed
+   whose Status (column O) changed (to "Buy: below US$…", "Above fair value: review", "Hold" ...), and the signals whose status changed
    ("Changed since the last run" in `out/signals/report.txt`; on GitHub, the run's step summary, and an issue
    labelled `signals` once a change has held 3 trading days). If a
    line says "the Sheet's last values are kept", a download failed: say which and since when. If the report says the Sheet's and
    Python's statuses differ, a status formula or threshold on the Signals tab was edited: find out which. To read the Sheet from Python:
-   `from minerval.sheets import open_google; open_google().read("Model portfolio", "B6:T31")`.
+   `from minerval.sheets import open_google; open_google().read("Model portfolio", "B6:O31")`.
 
 ## Earnings-season refresh
 
@@ -123,12 +123,12 @@ spill and the whole column shows `#SPILL!` (or `#REF!` in Google Sheets):
   R (cost base) is written by `financials`.
 - P/NAV (tab `P_NAV`): U2:W2 (to row 144). Never write into U3:W162.
 - Model portfolio: G6 (buy with new money: B3 split over the F weights after the silver in C4 fills PSLV, then
-  the silver stocks) and H6:J6, L6:R6, T6 (to row 31). K has its own formula in each row. Never write into
-  G7:J31, L7:R31 or T7:T31. T is the buy status (no NPV, fails downside test, buy, above fair value, hold; screen
-  revision 2). W6:AA6 (timing signal, EV per ounce, months of funding, P/NAV after a raise, the buy-below price at S)
-  spill to row 31 too: never write into W7:AA31. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
-  a row added below 31 is outside every range. A–F, S and U–V are inputs that `screen --write` rewrites (physical
-  metal rows, buy multiples typed by hand in S, and notes typed by hand are kept); its output (names, weights) never goes
+  the silver stocks), H6:M6 (stage, jurisdiction risk, FCF breakeven, net cash, cash runway, share change), O6, R6
+  and S6 spill to row 31. Never write into G7:M31, O7:O31 or R7:S31. O is the buy status (no NPV, fails downside
+  test, buy, above fair value, hold; screen revision 2), R the timing signal and S, the last column, the buy-below
+  price at N. To add a holding, insert a row between 6 and 31 (Sheets stretches the ranges);
+  a row added below 31 is outside every range. A–F, N and P–Q are inputs that `screen --write` rewrites (physical
+  metal rows, buy multiples typed by hand in N, and notes typed by hand are kept); its output (names, weights) never goes
   into the repo, an issue, a log or the step summary, and it never runs on GitHub. When a company is added to
   `pnav_companies.csv`, fill its listing columns (`us_listing`, `canada_listing`, `us_otc_symbol`, `listing_source`):
   the screen proposes only US- and Canadian-listed names by default.

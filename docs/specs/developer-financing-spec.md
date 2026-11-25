@@ -29,8 +29,8 @@ holders. And EV per ounce counted an inferred ounce the same as a reserve ounce.
   rule.
 - **Raise** (gap > 0; equity, the pessimistic case, said in the header): new shares = gap ÷ (price × (1 −
   `raise_discount`)); NAV per share after = (NAV + raise) ÷ (shares + new shares), NAV from PNAV inputs R or S;
-  P/NAV after = price ÷ that; dilution = new shares ÷ shares. Formula columns on PNAV inputs, and P/NAV after on
-  the Model portfolio (Z); `pnav.compute()` mirrors them and the post-install check compares.
+  P/NAV after = price ÷ that; dilution = new shares ÷ shares. Formula columns on PNAV inputs; `pnav.compute()`
+  mirrors them and the post-install check compares.
 - **Weighted resource** = reserves × 1.0 + M&I excluding reserves × 0.5 + inferred × 0.2 (`resource_weight_*`).
   AT stays the total; a single-category total is weighted as that category, and the split columns (BP:BR) are
   needed only for "Mixed" and "Measured, indicated & inferred" rows. A missing category counts as zero, and the row
@@ -38,8 +38,8 @@ holders. And EV per ounce counted an inferred ounce the same as a reserve ounce.
   (BW).
 - **Shared inputs:** `raise_discount` and the resource weights are Signals inputs (`[signals.inputs]`, seeded on
   the Signals tab), so the Sheet and Python read the same values.
-- **Installer:** `setup-sheet` adds the columns, and upgrades BC, BE and Model portfolio Y5 in place only where they
-  still hold the first formulas and headers.
+- **Installer:** `setup-sheet` adds the columns, and upgrades BC and BE in place only where they still hold the
+  first formulas and headers.
 
 ## Acceptance criteria
 
@@ -63,7 +63,7 @@ holders. And EV per ounce counted an inferred ounce the same as a reserve ounce.
   `tests/test_layout.py::test_occupied_cell_skips_the_step`
 - [x] A8. Skeena's check reflects its arranged financing, and the first set of developers has figures with sources
   (Nov 18, 2026). — `financials` report
-- [ ] A9. (data) Every Model portfolio developer has P/NAV after a raise or a "Fully funded" label. Known gaps (data
+- [ ] A9. (data) Every Model portfolio developer has P/NAV after a raise (PNAV inputs BO) or a "Fully funded" label. Known gaps (data
   file, Nov 22, 2026): FireFly's committed funding (not confirmed); Osisko Metals (no economic study yet) and Blue
   Moon (selling Nussir; update once it closes); Viscaria's resource split (an image in its releases); Seabridge's
   gap is KSM's whole PFS capex, which a JV partner would largely fund.
@@ -71,5 +71,7 @@ holders. And EV per ounce counted an inferred ounce the same as a reserve ounce.
 
 ## Decisions
 
+- The Model portfolio no longer shows P/NAV after a raise or months of funding: the screen's revision 2 doesn't
+  score them (the user, 2026-11-25). They stay on PNAV inputs (BO, BC).
 - The funding gap leaves out corporate costs, and a company's "funded to production" statement is used rather than
   an estimated cost-to-complete (2026-11-18).

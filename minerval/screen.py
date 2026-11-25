@@ -1,8 +1,8 @@
 """Model portfolio from a screen (roadmap 5 and 5b).
 
 Ranks the companies on PNAV inputs within each bucket on business performance (never on price) and proposes the
-Model portfolio's holdings and target weights (A-F), buy multiples (S) and notes (U-V). Value only sets each row's
-buy signal: the buy-below price at S and the status in T (tier-valuation spec, Part 5). Physical metal rows are the
+Model portfolio's holdings and target weights (A-F), buy multiples (N) and notes (P-Q). Value only sets each row's
+buy signal: the buy-below price at N (S) and the status in O (tier-valuation spec, Part 5). Physical metal rows are the
 user's and are kept as typed.
 
 - The rules are public: [portfolio_screen] in config/settings.toml (buckets, markets, filters, score, sizing limits)
@@ -13,7 +13,7 @@ user's and are kept as typed.
   listing also needs a median daily dollar volume over 3 months of at least `otc_adr_min_dollar_volume`.
 - Holding names, weights and statuses never go into the repo, a log or the step summary: the report is
   out/screen/ (local), the Sheet and, with --email, a private email. The command never runs on GitHub.
-- A buy multiple the user typed in S is kept: private/screen_state.json records the levels the screen wrote.
+- A buy multiple the user typed in N is kept: private/screen_state.json records the levels the screen wrote.
 
 `portfolio-file` (Part 3) writes private/portfolio.csv from the tab for `backtest` and `project`.
 """
@@ -57,6 +57,16 @@ PORTFOLIO_COLS = ["key", "label", "group", "metal", "amount_usd", "already_held"
 
 def cfg() -> dict:
     return settings()["portfolio_screen"]
+
+
+def cols() -> dict:
+    """Model portfolio's columns ([sheet.portfolio_cols])."""
+    return settings()["sheet"]["portfolio_cols"]
+
+
+def last_col() -> str:
+    """The tab's last column: the right-most letter in [sheet.portfolio_cols] (the cells such as B3 left out)."""
+    return max((v for k, v in cols().items() if not k.endswith("_cell")), key=col_to_num)
 
 
 def num(v) -> float:
@@ -175,8 +185,8 @@ def where(r) -> str:
     return f"{home} only" + (f" (US OTC: {otc})" if otc else "") + ": about $50 a trade in an IRA"
 
 
-def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataFrame, dict]:
-    """Every PNAV inputs company with the screen's raw fields and measures, and today's metal prices."""
+def read_universe(sheet, research: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Every PNAV inputs company with the screen's raw fields and measures."""
     S = settings()["sheet"]
     P, a, b, tab = S["pnav_inputs"], S["pnav_first_row"], S["pnav_last_row"], S["pnav_inputs_tab"]
     D = S["downside_cols"]
@@ -237,12 +247,10 @@ def read_universe(sheet, research: pd.DataFrame | None = None) -> tuple[pd.DataF
     U["_us"] = U.ticker.map(lambda t: " " not in _text(t))
     U = U.sort_values(["_us", "sheet_row"], ascending=[False, True]).drop_duplicates("holding").drop(columns="_us")
     U = U.sort_values("sheet_row").reset_index(drop=True)
-    mc = S["metal_cells"]
-    metals = {m: num((sheet.read(S["metals_tab"], cell) or [[""]])[0][0]) for m, cell in mc.items()}
-    return add_measures(U, metals), metals
+    return add_measures(U)
 
 
-def add_measures(U: pd.DataFrame, metals: dict | None = None) -> pd.DataFrame:
+def add_measures(U: pd.DataFrame) -> pd.DataFrame:
     U = U.copy()
     for c in ("mcap", "net_cash_pct", "share_change_3y", "breakeven", "price", "net_cash", "npv_pess", "npv_base",
               "dilution_30", "buy_below_value", "fair_value_price", "minority", "fx_buy", "history_years",
@@ -276,7 +284,7 @@ def tier(r) -> str:
 
 
 def buy_multiple(r) -> float:
-    """S from the rule: the tier's buy multiple in [valuation.buy]."""
+    """N from the rule: the tier's buy multiple in [valuation.buy]."""
     return float(settings()["valuation"]["buy"][tier(r)]["buy"])
 
 
@@ -307,7 +315,7 @@ def buy_below_at(r, level: float) -> float | None:
 
 
 def status(r, level: float) -> str:
-    """Model portfolio T, in order: "No NPV: <why>"; "Fails downside test"; "Buy: below US$<price>" (price at or
+    """Model portfolio O, in order: "No NPV: <why>"; "Fails downside test"; "Buy: below US$<price>" (price at or
     below); "Above fair value: review" (at or above the fair value price); "Hold"."""
     bb = buy_below_at(r, level)
     if bb is None:
@@ -446,10 +454,10 @@ def load_state(path=None) -> dict | None:
 # ---------- the tab ----------
 
 def read_tab(sheet) -> list[dict]:
-    """Model portfolio rows 6-31 as dicts of A to the buy-below column (values), with their row number."""
+    """Model portfolio rows 6-31 as dicts of A to the last column (values), with their row number."""
     S = settings()["sheet"]
     a, b = S["portfolio_first_row"], S["portfolio_last_row"]
-    n = col_to_num(S["portfolio_cols"]["buy_below"])
+    n = col_to_num(last_col())
     grid = sheet.read(S["portfolio_tab"], f"A{a}:{num_to_col(n)}{b}")
     out = []
     for i in range(b - a + 1):
@@ -460,9 +468,9 @@ def read_tab(sheet) -> list[dict]:
 
 
 def sheet_check(U: pd.DataFrame, tab: list[dict]) -> list[str]:
-    """Model portfolio T (status) and AA (buy-below at S) against the same rule in Python, for the rows with a buy
-    multiple in S: a difference means the Sheet's formula or a column it reads has changed."""
-    C = settings()["sheet"]["portfolio_cols"]
+    """Model portfolio's status and buy-below price at the buy multiple against the same rule in Python, for the rows
+    with a buy multiple: a difference means the Sheet's formula or a column it reads has changed."""
+    C = cols()
     T, AA, S_ = C["status"], C["buy_below"], C["review_level"]
     rows, bad, names = 0, [], []
     for row in tab:
@@ -505,7 +513,8 @@ def plan(U: pd.DataFrame, tab: list[dict], sizes: dict, today: date, state: dict
          all_markets: bool = False, rule_levels: bool = False, c: dict | None = None) -> dict:
     """The proposal: rows to write, the ranked buckets, drops, warnings. Pure (no Sheet)."""
     c = c or cfg()
-    L = c["limits"]
+    L, C = c["limits"], cols()
+    LV, WHY, CHG = C["review_level"], C["why"], C["what_would_change"]
     physical = [r for r in tab if _text(r["A"]) == PHYSICAL]
     existing = {resolve(r, U): r for r in tab if _text(r["B"]) and _text(r["A"]) != PHYSICAL}   # by holding name
     phys_w = sum(num(r["F"]) for r in physical if num(r["F"]) == num(r["F"]))
@@ -519,7 +528,7 @@ def plan(U: pd.DataFrame, tab: list[dict], sizes: dict, today: date, state: dict
     typed = {}
     recorded = (state or {}).get("review", {})
     for name, r in existing.items():
-        s, t = num(r["S"]), _text(r["D"])
+        s, t = num(r[LV]), _text(r["D"])
         if s == s and not rule_levels and (state is None or t not in recorded or abs(recorded[t] - s) > 1e-9):
             typed[name] = s
     rows, ranked_out, drops, fails, ranks = [], {}, [], {}, {}
@@ -542,12 +551,12 @@ def plan(U: pd.DataFrame, tab: list[dict], sizes: dict, today: date, state: dict
             rank = ranked.index(t) + 1
             level = typed.get(t, buy_multiple(r))
             old = existing.get(t)
-            why = _text(old["U"]) if old and _text(old["U"]) and not _text(old["U"]).startswith("Screen:") \
+            why = _text(old[WHY]) if old and _text(old[WHY]) and not _text(old[WHY]).startswith("Screen:") \
                 else why_text(r, k, rank, len(ranked))
-            change = _text(old["V"]) if old else "Screen: review above fair value, or if it fails a filter"
+            change = _text(old[CHG]) if old else "Screen: review above fair value, or if it fails a filter"
             rows.append({"A": b, "B": t, "C": r["where"], "D": _text(old["D"]) if old else r.ticker_buy,
                          "E": (r.metal or "").capitalize(),
-                         "F": round(w, 6), "S": level, "U": why, "V": change, "typed_level": t in typed,
+                         "F": round(w, 6), LV: level, WHY: why, CHG: change, "typed_level": t in typed,
                          "rank": rank, "score": r.score, "new": old is None,
                          "buy_below": buy_below_at(r, level), "status": status(r, level)})
         pc = [f"p_{m}" for m, _ in MEASURES[k] if f"p_{m}" in E]
@@ -591,7 +600,7 @@ def plan(U: pd.DataFrame, tab: list[dict], sizes: dict, today: date, state: dict
 
 
 def why_text(r, k: str, rank: int, of: int) -> str:
-    """Model portfolio U for a screened row: its rank and the performance measures it was scored on."""
+    """Model portfolio P for a screened row: its rank and the performance measures it was scored on."""
     def f(v, fmt):
         v = num(v)
         return format(v, fmt) if v == v else "—"
@@ -606,7 +615,7 @@ def why_text(r, k: str, rank: int, of: int) -> str:
             f"of {len(MEASURES[k])} measures); " + "; ".join(parts))
 
 
-DESCRIBE = {      # measure: (label, format, after) for Model portfolio U
+DESCRIBE = {      # measure: (label, format, after) for Model portfolio P
     "cf_ps_growth": ("cash flow per share growth", "+.0%", " a year"),
     "ocf_ps_growth": ("OCF per share growth", "+.0%", " a year"),
     "production_ps_growth": ("production per share growth", "+.0%", " a year"),
@@ -666,7 +675,7 @@ def report(P: dict, all_markets: bool, V: pd.DataFrame | None = None) -> list[st
         L.append(f"  {r['A']}: {r['B']} (kept as typed), {num(r['F']):.1%}")
     for r in P["rows"]:
         tag = "new to the tab" if r["new"] else "already on the tab"
-        lvl = f"{r['S']:g}" + (" (typed, kept)" if r["typed_level"] else "")
+        lvl = f"{r[cols()['review_level']]:g}" + (" (typed, kept)" if r["typed_level"] else "")
         L.append(f"  {r['A']}: {r['B']} [{r['D']}; {r['C']}] {r['F']:.1%}, buy multiple {lvl}, rank {r['rank']} "
                  f"({tag}): {r.get('status', '')}")
     total = sum(num(r["F"]) for r in P["physical"] if num(r["F"]) == num(r["F"])) + sum(r["F"] for r in P["rows"])
@@ -700,10 +709,14 @@ def ranking_table(P: dict) -> pd.DataFrame:
 
 
 def write_rows(sheet, P: dict) -> list[tuple]:
-    """Blocks for Model portfolio A-F, S and U-V, rows 6-31 (physical rows first, then the proposal)."""
-    S = settings()["sheet"]
+    """Blocks for Model portfolio A-F, the buy multiple (N) and the notes (P-Q), rows 6-31 (physical rows first, then
+    the proposal)."""
+    S, C = settings()["sheet"], cols()
     tab, a, b = S["portfolio_tab"], S["portfolio_first_row"], S["portfolio_last_row"]
-    rows = [{k: r[k] for k in ("A", "B", "C", "D", "E", "F", "S", "U", "V")} for r in P["physical"]] + P["rows"]
+    LV, WHY, CHG = C["review_level"], C["why"], C["what_would_change"]
+    if col_to_num(CHG) != col_to_num(WHY) + 1:
+        raise ValueError(f"[sheet.portfolio_cols] why ({WHY}) and what_would_change ({CHG}) must be adjacent.")
+    rows = [{k: r[k] for k in ("A", "B", "C", "D", "E", "F", LV, WHY, CHG)} for r in P["physical"]] + P["rows"]
     if len(rows) > b - a + 1:
         raise ValueError(f"{len(rows)} rows proposed; the tab has {b - a + 1} (rows can't be added below {b}).")
 
@@ -713,9 +726,9 @@ def write_rows(sheet, P: dict) -> list[tuple]:
     for i in range(b - a + 1):
         r = rows[i] if i < len(rows) else {}
         af.append([cell(r.get(k)) for k in "ABCDEF"])
-        s.append([cell(r.get("S"))])
-        uv.append([cell(r.get("U")), cell(r.get("V"))])
-    return [(tab, f"A{a}", af), (tab, f"S{a}", s), (tab, f"U{a}", uv)]
+        s.append([cell(r.get(LV))])
+        uv.append([cell(r.get(WHY)), cell(r.get(CHG))])
+    return [(tab, f"A{a}", af), (tab, f"{LV}{a}", s), (tab, f"{WHY}{a}", uv)]
 
 
 def check_lookups(sheet, P: dict) -> list[str]:
@@ -772,7 +785,7 @@ def run(sheet, write: bool = False, all_markets: bool = False, email: bool = Fal
     if not sizes:
         return [f"No {PRIVATE_CFG}: run `screen --init` (writes it from the tab), then set the sizes."]
     from . import performance
-    U, _ = read_universe(sheet)
+    U = read_universe(sheet)
     U = add_measures(performance.add(U))
     U, liq_warn = apply_liquidity(U, otc_volumes(U, fetch_volume))
     tab = read_tab(sheet)
@@ -795,19 +808,20 @@ def run(sheet, write: bool = False, all_markets: bool = False, email: bool = Fal
             S = settings()["sheet"]
             a, b = S["portfolio_first_row"], S["portfolio_last_row"]
             backup = out_dir / f"backup-{time.strftime('%Y%m%d-%H%M%S')}.json"
-            backup.write_text(json.dumps(sheet.read(S["portfolio_tab"], f"A{a}:V{b}", formulas=True), default=str))
+            backup.write_text(json.dumps(sheet.read(S["portfolio_tab"], f"A{a}:{last_col()}{b}", formulas=True),
+                                         default=str))
             blocks = write_rows(sheet, P)
             sheet.write(blocks)
             rec = (state or {}).get("review", {})
             for r in P["rows"]:
                 if not r["typed_level"]:
-                    rec[r["D"]] = r["S"]
+                    rec[r["D"]] = r[cols()["review_level"]]
             ensure(STATE.parent)
             STATE.write_text(json.dumps({"review": rec, "written": today.isoformat()}, indent=1))
-            back = sheet.read(S["portfolio_tab"], f"H{a}:T{b}")
+            back = sheet.read(S["portfolio_tab"], f"H{a}:H{b}")      # H (stage) looks B up on the P/NAV tab
             n_phys = len(P["physical"])
             failed = [r["B"] for i, r in enumerate(P["rows"])
-                      if not _text((list(back[n_phys + i]) + [""] * 13)[0] if n_phys + i < len(back) else "")]
+                      if not (n_phys + i < len(back) and back[n_phys + i] and _text(back[n_phys + i][0]))]
             rep += ["", f"Written. Backup: {backup}."]
             if failed:
                 rep += ["Lookups showing blank after the write:"] + [f"  {x}" for x in failed]

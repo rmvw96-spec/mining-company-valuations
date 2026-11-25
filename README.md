@@ -179,7 +179,7 @@ tab (column P), about 100 symbols, into `cache/signals/breadth/`, and reports th
 it covers (holdings with no symbol, a short history or no trade in 10 days are left out of both sides). Its
 60%/30% thresholds are provisional: the backtest has only about four years for it, using today's holdings.
 
-These are signals from a framework, not advice. The Model portfolio's column W shows the ones that apply
+These are signals from a framework, not advice. The Model portfolio's column R shows the ones that apply
 to each bucket (set in `[signals.timing]`), and a royalty company's valuation band where there is one.
 
 ### Signal history and Company history
@@ -261,7 +261,7 @@ The daily run on GitHub tells you when something changes, without you reading th
   issues (Settings > Notifications to change that). The repo is public, so these issues are too: they hold
   market data only. A 3-day hold keeps a signal sitting on its threshold from alerting every other day; every
   change, confirmed or not, is still in `out/signals/report.txt`. One issue per day at most.
-- **Model portfolio (private):** when a row's Status (column T) changes during the run, it's emailed to you,
+- **Model portfolio (private):** when a row's Status (column O) changes during the run, it's emailed to you,
   and only emailed: holding names never go into an issue, the log or the run summary (which only says how many
   changed). This needs two repository secrets; without them nothing is sent:
   1. In your Google account, turn on 2-Step Verification, then create an app password (Google Account >
@@ -301,7 +301,7 @@ every day). A second view asks whether a company is cheap *for itself*:
 
 CB reads "Cheap for itself" in the bottom quarter, "Expensive for itself" in the top quarter (thresholds on the
 `royalty_own_pctile_median` Signals row, which shows the companies' median), with the basis and percentile in
-brackets. Model portfolio W shows the framework band, then this one. Caveats: annual cash flow lags, so when it is
+brackets. Model portfolio R shows the framework band, then this one. Caveats: annual cash flow lags, so when it is
 rising fast (as in 2026) P/OCF on the latest annual figure looks higher than it will once the next annual report
 is filed; and an acquisition paid in shares adds the shares at once but only part of a year's cash flow (Royal
 Gold after Sandstorm, October 2025), so the percentile reads high until the next annual report.
@@ -323,8 +323,7 @@ or lb CuEq), its category and source, seeded from `data/research/pnav_companies.
 AX:AY: EV (AZ, adding the minority interest in CT: partners' stakes in consolidated mines), EV per unit (BA), EV per gold-equivalent ounce (BB; silver ounces converted at the live
 gold/silver ratio, copper shown per pound in BA only), months of cash (BC), cash as a share of market
 value (BD), and a check (BE): "Short of cash: financing likely" under 12 months, "Watch" under 18, plus
-"trading near cash" when cash is at least half the market value. Model portfolio X:Z show EV per ounce,
-months of funding and P/NAV after a raise for the developers.
+"trading near cash" when cash is at least half the market value.
 
 **Financing** (inputs BF:BI, seeded from the research file with a source for every figure; blank where
 unknown, never estimated):
@@ -409,12 +408,12 @@ cross-check; ranking on spot made the answer depend on the week it ran. (Spec: `
 ## Model portfolio from a screen
 
 `python -m minerval screen` proposes the Model portfolio's holdings, target weights, buy multiples and notes
-(A–F, S, U–V). It picks each bucket's best businesses by performance per share at constant metal prices, never by
+(A–F, N, P–Q). It picks each bucket's best businesses by performance per share at constant metal prices, never by
 price; value only sets each row's buy signal (revision 2, spec: `docs/specs/model-portfolio-screen-spec.md`).
 Physical metal rows are yours and are kept as typed. Run it after `refresh`, `valuation` and `financials`: `screen`
 writes a ranked, explained proposal to `out/screen/report.txt`; read it, then `screen --write` (add `--email` for a
 private summary of the changes). The report also says how many candidates have an NPV at all three decks, and checks
-the Sheet's T and AA against the same rule in Python, naming any row whose name won't look up.
+the Sheet's O and S against the same rule in Python, naming any row whose name won't look up.
 
 - **Buckets**: Royalty (royalty and streaming companies), Gold producers, Growth: expanding producers, Copper
   producers, Silver and polymetallic producers, Growth: developers, by peer group and main metal. A wrong call can be
@@ -441,8 +440,8 @@ the Sheet's T and AA against the same rule in Python, naming any row whose name 
   the tab stays while it ranks within the names + 2. The report warns when speculation (developers and expanding
   producers) is above 25%, developers are fewer than 6 or more than 15, or royalty names are outside 2–4: limits from
   Rick Rule's, Doug Casey's and newsletter sizing, noted in `[portfolio_screen.limits]`.
-- **Buy signal**: S is the buy multiple from `[valuation.buy]` (0.6 for producers and developers, 1.0 for royalty).
-  AA is the buy-below price at S (PNAV inputs CQ at the rule's multiple, re-priced for a typed one), and T the status:
+- **Buy signal**: N is the buy multiple from `[valuation.buy]` (0.6 for producers and developers, 1.0 for royalty).
+  S is the buy-below price at N (PNAV inputs CQ at the rule's multiple, re-priced for a typed one), and O the status:
   "No NPV: why", "Fails downside test", "Buy: below US$…" (with the listing currency's price), "Above fair value:
   review" or "Hold"; a change is emailed privately by `prices`. A multiple you type is kept:
   `private/screen_state.json` records the ones the screen wrote. `--rule-review-levels` resets them all to the rule.

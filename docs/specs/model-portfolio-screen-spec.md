@@ -8,7 +8,7 @@ statuses) never goes into the repo, an issue, a log or the step summary.
 
 ## Goal
 
-The Model portfolio tab's inputs (holdings and weights A–F, levels S, notes U–V) were typed by hand. The user holds
+The Model portfolio tab's inputs (holdings and weights A–F, buy multiples N, notes P–Q) were typed by hand. The user holds
 no miners yet and is building the portfolio from scratch. The screen holds each bucket's **best businesses**, judged
 by performance per share at constant metal prices, not by price. Each row gets a **buy signal** when its price is at
 good value by its tier's valuation (roadmap 6). A great company that is expensive stays on the list with no buy
@@ -25,9 +25,12 @@ signal.
 
 - **Remove:** the valuation filters (peer norm above the review level; developers' `max_peer_ev_ratio`;
   royalties' `royalty_excluded_bands`) and the valuation score measures (`peer_norm`, `pnav_low`, `breakeven_gap`,
-  `addon`, `addon_reliance`, `pnav_after`, `peer_ev_ratio`, `months_of_cash`, `pnav_used`, `own_pctile`).
-- **Replace:** the score with the performance measures below; S's peer-norm level (`[portfolio_screen.review]`)
-  with the buy multiple; T's status with the buy-signal order; the generated U and V lines.
+  `addon`, `addon_reliance`, `pnav_after`, `peer_ev_ratio`, `months_of_cash`, `pnav_used`, `own_pctile`), and the
+  Model portfolio columns that showed them, which nothing reads: the P/NAV columns and peer norm (J:N) and the
+  developers' EV per ounce, months of funding and P/NAV after a raise (X:Z). The columns are deleted, so the later
+  ones move left and the tab ends at S.
+- **Replace:** the score with the performance measures below; the peer-norm review level (`[portfolio_screen.review]`)
+  with the buy multiple (N); the old status with the buy-signal order (O); the generated notes (P and Q).
 - **Keep:** markets, the data, size, dilution and developer-cash filters, bucket sizes, limits, selection, weights,
   the write and `portfolio-file`.
 
@@ -131,19 +134,19 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
 ### Buy signal and fair value (revision 2)
 
 - **Levels:** `[valuation.buy]` by tier (tier-valuation spec, Part 5).
-- **S:** the row's buy multiple from the rule. A level typed by hand is kept (it differs from
+- **N:** the row's buy multiple from the rule. A level typed by hand is kept (it differs from
   `private/screen_state.json`); `--rule-review-levels` resets typed levels to the rule.
-- **Buy-below price:** AA, after Z (placed by `setup-sheet`), US$ per share at S, a formula over PNAV inputs, so it
+- **Buy-below price:** S, the tab's last column (placed by `setup-sheet`), US$ per share at N, a formula over PNAV inputs, so it
   moves with financials and decks: the valuation's own price (CQ) at the rule's multiple; a typed multiple
-  re-priced the same way (producers and royalties (min(S × base NPV, pessimistic NPV) + net cash − minority) ÷
+  re-priced the same way (producers and royalties (min(N × base NPV, pessimistic NPV) + net cash − minority) ÷
   shares; developers the +30% overrun case, spread over the shares after the raise). The valuation prices only
-  the companies it can (roadmap 6): where PNAV inputs CQ is blank, AA is blank and T says why (no NPV, with the
+  the companies it can (roadmap 6): where PNAV inputs CQ is blank, S is blank and O says why (no NPV, with the
   reason, or the downside test).
-- **Check:** `screen`'s report compares T and AA with the same rule in Python, row by row, and names rows whose B
+- **Check:** `screen`'s report compares O and S with the same rule in Python, row by row, and names rows whose B
   doesn't look up on PNAV inputs.
-- **T (formula), in order:** "No NPV: <why>"; "Fails downside test"; "Buy: below US$<price>" (with the price in
-  the listing's currency); "Above fair value: review"; "Hold". Physical metal rows (no S) stay blank.
-- **Alerts:** a change in T is emailed privately by `prices` (`alerts.notify_portfolio`).
+- **O (formula), in order:** "No NPV: <why>"; "Fails downside test"; "Buy: below US$<price>" (with the price in
+  the listing's currency); "Above fair value: review"; "Hold". Physical metal rows (no N) stay blank.
+- **Alerts:** a change in O is emailed privately by `prices` (`alerts.notify_portfolio`).
 - **Review on performance:** a row whose score falls below its bucket's cut is listed by the next `screen` run.
 
 ### The command
@@ -156,13 +159,14 @@ the valuation's price adjustment), over the last 3 fiscal years with data:
 - **`--init`:** writes `private/screen.toml` from the tab (never overwrites).
 - **`--write`:** Model portfolio rows 6–31, Physical metal rows first, then buckets in `bucket_order`:
   - A–F: bucket, holding (the P/NAV tab's name exactly), where it trades (from the listing columns), Sprott ticker
-    (Holdings downside L; a kept holding keeps its tab ticker), main metal, weight. S as above.
-  - U: a generated line starting "Screen:", from the measures; V: for a new row, "Screen: review above fair value,
+    (Holdings downside L; a kept holding keeps its tab ticker), main metal, weight. N as above.
+  - P: a generated line starting "Screen:", from the measures; Q: for a new row, "Screen: review above fair value,
     or if it fails a filter". Text the user typed (not starting "Screen:") is kept.
-  - More than 26 rows stops the write (rows can't be added below 31). Leftover rows are cleared. G–R, T and W–Z are
+  - More than 26 rows stops the write (rows can't be added below 31). Leftover rows are cleared. G–M, O and R:S are
     never written.
-  - Before: save A6:V31 with formulas to `out/screen/backup-<time>.json`; stop if any B isn't on the P/NAV tab or any
-    D isn't on Holdings downside L. After: read back H, K and T and report lookups that failed.
+  - Before: save A6:S31 (the whole tab) with formulas to `out/screen/backup-<time>.json`; stop if any B isn't on the P/NAV tab or any
+    D isn't on Holdings downside L. After: read back H (it looks B up on the P/NAV tab) and report lookups that
+    failed.
   - Then runs `portfolio-file`. `--email` sends the summary of changes privately.
 
 ### `portfolio-file`
@@ -200,11 +204,11 @@ Revision 1 (built Nov 20, 2026):
   `tests/test_screen.py::test_weights_equal_cap_and_unallocated`
 - [x] A9. The plan keeps physical rows and typed U and V, scales weights so F sums to 1, and reports drops. —
   `tests/test_screen.py::test_plan_keeps_physical_scales_weights_and_keeps_typed_levels`
-- [x] A10. A typed S is kept, a screen-written S follows the rule, and `--rule-review-levels` resets typed ones. —
+- [x] A10. A typed N is kept, a screen-written N follows the rule, and `--rule-review-levels` resets typed ones. —
   `tests/test_screen.py::test_a_level_written_by_the_screen_follows_the_rule_and_rule_levels_resets_typed_ones`
 - [x] A11. Warnings for more than 26 rows, speculation, developer count and too few eligible names. —
   `tests/test_screen.py::test_plan_warnings`
-- [x] A12. The write touches only A–F, S and U–V, clears leftover rows, and stops past 26 rows. —
+- [x] A12. The write touches only A–F, N and P–Q, clears leftover rows, and stops past 26 rows. —
   `tests/test_screen.py::test_write_rows_touches_only_the_inputs_and_clears_the_rest`
 - [x] A13. `portfolio-file` rows and columns match what the backtest reads. —
   `tests/test_screen.py::test_portfolio_rows`,
@@ -242,18 +246,24 @@ Revision 2 (to build):
 - [x] A23. The valuation filters and valuation score measures are gone from code and settings. —
   `tests/test_screen.py::test_valuation_filters_and_measures_are_gone`,
   `tests/test_screen.py::test_no_filter_on_price_or_valuation`
-- [x] A24. T's status at each edge (no NPV, downside test, buy, above fair value, hold) and the buy-below price at
-  each binding condition; a typed S is kept. — `tests/test_screen.py::test_status_at_each_edge`,
+- [x] A24. O's status at each edge (no NPV, downside test, buy, above fair value, hold) and the buy-below price at
+  each binding condition; a typed N is kept. — `tests/test_screen.py::test_status_at_each_edge`,
   `tests/test_screen.py::test_buy_below_at_each_binding_condition`,
   `tests/test_screen.py::test_a_typed_level_is_kept_and_sets_the_status`,
   `tests/test_layout.py::test_portfolio_status_and_buy_below_columns`,
   `tests/test_screen.py::test_sheet_statuses_are_checked_against_python` (Nov 24, 2026: 22 rows on the Sheet agree)
-- [x] A25. `setup-sheet --dry-run` places the buy-below column after Z, and the user has seen it. — command (user;
-  seen and installed Nov 24, 2026, with S reset to the rule's multiples)
+- [x] A25. `setup-sheet --dry-run` places the buy-below column last, and the user has seen it. — command (user;
+  seen and installed Nov 24, 2026, with the buy multiples reset to the rule's)
 - [ ] A26. Annual production, reserves plus M&I resources, and royalty GEOs for 2022–2025 are recorded with
   sources for every screened company that publishes them. — data-file test
 - [ ] A27. (user) The user has set the score weighting.
 - [x] A28. README and CLAUDE.md describe revision 2; the roadmap marks 5b. — `grep -n "revision 2" README.md CLAUDE.md`
+- [x] A29. The Model portfolio ends at S: the columns nothing reads since revision 2 are gone from the tab, the
+  settings and `setup-sheet`, and the write backs up the whole tab. —
+  `tests/test_layout.py::test_model_portfolio_columns_revision_2_left_unread_are_gone`,
+  `tests/test_screen.py::test_write_backs_up_the_whole_tab_and_writes_only_the_inputs`, and the live tab (Nov 25,
+  2026: J:N and X:Z deleted after a dry run shown to the user; no error values; `setup-sheet --dry-run` changes
+  nothing; `screen`: 22 rows agree)
 
 ## Decisions
 
@@ -267,6 +277,8 @@ Revision 2 (to build):
 - Production and reserves are researched from the start; reserves plus M&I resources, since juniors publish
   resources more often than reserves (the user, 2026-11-21).
 - Developers' measures: everything Rule states that can be quantified (the user, 2026-11-21).
+- Delete the Model portfolio columns nothing reads since revision 2 (J:N and X:Z), moving the later columns left,
+  rather than clear them (the user, 2026-11-25).
 
 ## Open questions
 

@@ -26,7 +26,7 @@ built. **Outstanding**: not started. `tests/test_data_files.py` checks this tabl
 | 4b | Jurisdiction risk | [jurisdiction-risk-spec.md](specs/jurisdiction-risk-spec.md) | Built | A1–A8 | 7 of 8 | the user's review of the comparison before `financials` writes it (user) |
 | 4c | Royalty history | [royalty-history-spec.md](specs/royalty-history-spec.md) | Built | A1–A10 | 10 of 10 | — |
 | 5 | Model portfolio screen, revision 1 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | Built | A1–A19 | 18 of 19 | the first `screen --write` (user) |
-| 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | In progress | A20–A28 | 7 of 9 | the production, reserves and GEO research (A26); the score weighting (user) |
+| 5b | Model portfolio screen, revision 2 | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | In progress | A20–A29 | 8 of 10 | the production, reserves and GEO research (A26); the score weighting (user) |
 | 6 | Valuation by tier | [tier-valuation-spec.md](specs/tier-valuation-spec.md) | Built | A1–A32 | 30 of 32 | the decks with `pessimistic_cost_increase` (user); NPVs for the last three candidates (data) |
 | 6b | Valuation coverage | [valuation-coverage-spec.md](specs/valuation-coverage-spec.md) | Built | A1–A7 | 7 of 7 | — |
 | 6c | Our NAV first | [own-nav-first-spec.md](specs/own-nav-first-spec.md) | Built | A1–A7 | 7 of 7 | — |
@@ -85,7 +85,7 @@ of cash" checks drive the junior timing column, so they need to be right before 
 
 | # | Item | Spec | Size | Depends on |
 |---|---|---|---|---|
-| 5 | **Model portfolio from a screen**: rank PNAV inputs companies within each bucket (a new Royalty bucket included) and propose the holdings and target weights (Model portfolio A–F), only names buyable on US or Canadian markets by default (`--all-markets` for the rest: about $50 a trade in a Fidelity IRA), set the review levels (S) from a rule while keeping levels typed by hand, and write `private/portfolio.csv` from the tab so the backtest tests what the Sheet shows | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | M | — (4a later improves the breakeven measure) |
+| 5 | **Model portfolio from a screen**: rank PNAV inputs companies within each bucket (a new Royalty bucket included) and propose the holdings and target weights (Model portfolio A–F), only names buyable on US or Canadian markets by default (`--all-markets` for the rest: about $50 a trade in a Fidelity IRA), set the buy multiples (N) from a rule while keeping ones typed by hand, and write `private/portfolio.csv` from the tab so the backtest tests what the Sheet shows | [model-portfolio-screen-spec.md](specs/model-portfolio-screen-spec.md) | M | — (4a later improves the breakeven measure) |
 
 Why: the user holds no miners yet, so the holdings needn't be a fixed hand-picked list. The rules are committed;
 bucket sizes, names and weights stay private (Sheet and email only). The decisions are in the spec.

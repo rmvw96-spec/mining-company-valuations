@@ -31,7 +31,7 @@ Add a second view: each company against its own past valuation.
   formulas are read back); CB the band, a formula: "Cheap for itself" at or below the 25th percentile, "Expensive
   for itself" at or above the 75th, else "Normal for itself".
 - **Signals:** `royalty_own_pctile_median` (a formula; thresholds 25 and 75).
-- **Model portfolio W** (royalty rows): "framework band / own-history band"; `setup-sheet` upgrades the old formula.
+- **Model portfolio R** (royalty rows): "framework band / own-history band"; `setup-sheet` upgrades the old formula.
 - **Known distortions** (README): a fast rise in cash flow and acquisitions paid in shares (Royal Gold after
   Sandstorm) make the latest annual P/OCF read high until the next annual report.
 
