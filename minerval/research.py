@@ -590,11 +590,11 @@ def figures(b: dict) -> dict:
         cols = RECORDS[name][1]
         return _key(r, [c for c in cols if not (name in ("projects", "cashflows") and c == "project")])
 
-    for name, rows in (b.get("append") or {}).items():
+    for name, rows in (b.get("append") or {}).items():          # a new row is one kind, as `check` treats it
         for r in rows if name in COMPARED else []:
             for c in COMPARED[name]:
                 if _s(r.get(c, "")).strip():
-                    out[(_set_kind(name, c), name, ident(name, r), c)] = _s(r[c])
+                    out[(APPEND_KIND[name], name, ident(name, r), c)] = _s(r[c])
     for c in b.get("cashflows", []) or []:
         for r in _cash_rows(c):
             for col in COMPARED["cashflows"]:

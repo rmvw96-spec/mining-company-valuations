@@ -279,3 +279,20 @@ def test_compare_scores_matches_misses_extras(base):
     assert (S["matched"], S["missed"], S["extra"], S["unsourced"]) == (1, 2, 1, 1)
     assert S["record"] == 3 and abs(S["share"] - 1 / 3) < 1e-9
     assert any("sustaining_leases 2.7, record 2.8" in x for x in S["lines"])
+
+
+def test_compare_scores_a_new_study_row_as_one_kind(base):
+    """A13: a new projects row's permits and dates belong to the `study` kind it was appended under (as `check`
+    treats them), so they're scored against the record, not counted as extras."""
+    study = {"ticker": "DEV CN", "project": "Dev", "attributable_pct": "100", "study_type": "FS",
+             "study_date": "2025-04-28", "study_npv_usd_m": "2163", "permits": "yes",
+             "construction_start": "2025-10-01", "first_production": "2027-12-31", "source": DEV_FS}
+    add(base, "projects", [study])
+    git(base, "init", "-q", "-b", "main")
+    git(base, "add", "data", "config")
+    git(base, "commit", "-q", "-m", "record")
+    prop = {"kinds": ["study"], "append": {"projects": [{**study, "project": "Dev Gold Project",
+                                                         "first_production": "2028-01-31"}]}}
+    S = RS.compare(batch(base, prop, ticker="DEV CN"), ref="main", base=base)
+    assert (S["matched"], S["missed"], S["extra"]) == (5, 1, 0)
+    assert any("first_production 2028-01-31, record 2027-12-31" in x for x in S["lines"])

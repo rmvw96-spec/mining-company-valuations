@@ -198,7 +198,8 @@ A figure matches when it equals the record at the record's precision. The test p
   `tests/test_research.py::test_agent_write_needs_the_kind_granted`
 - [x] A13. `blind` runs only in a linked worktree and removes the named tickers' rows and cells of the named kinds;
   `compare` counts matched, missed and extra figures. — `tests/test_research.py::test_blind_only_in_a_worktree`,
-  `tests/test_research.py::test_compare_scores_matches_misses_extras`
+  `tests/test_research.py::test_compare_scores_matches_misses_extras`,
+  `tests/test_research.py::test_compare_scores_a_new_study_row_as_one_kind`
 - [x] A14. The agent file holds the loop, the rules and the stop, and names only `research` commands that exist. —
   `tests/test_data_files.py::test_agent_definition_names_real_commands`
 - [x] A15. CLAUDE.md puts the agent, the batch and `record` in the run order. — `grep -n filing-researcher CLAUDE.md`
