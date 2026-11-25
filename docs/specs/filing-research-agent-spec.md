@@ -168,11 +168,13 @@ A figure matches when it equals the record at the record's precision. The test p
   `tests/test_documents.py::test_wordpress_media_search`, `tests/test_documents.py::test_locate_picks_venues_from_the_listing`
 - [x] A3. No test can download: `tests/conftest.py` blocks `documents._get`. —
   `tests/test_documents.py::test_documents_are_offline_in_tests`
-- [ ] A4. `rows` finds a label's row and its nearest period header, both one cell per line and in `|` tables. — new
-  test (tests/test_tables.py)
-- [ ] A5. Numbers parse through the layout traps: negatives in parentheses, `-` and `--` as zero, spaces as thousands
-  separators, unit tokens, EDGAR's split negatives. — new test
-- [ ] A6. A series of N years and a total is refused when the years don't sum to it. — new test
+- [x] A4. `rows` finds a label's row and its nearest period header, both one cell per line and in `|` tables. —
+  `tests/test_tables.py::test_rows_in_pipe_tables`, `tests/test_tables.py::test_rows_in_pdf_layout_text`,
+  `tests/test_tables.py::test_rows_with_period_header_one_cell_per_line`
+- [x] A5. Numbers parse through the layout traps: negatives in parentheses, `-` and `--` as zero, spaces as thousands
+  separators, unit tokens, EDGAR's split negatives. — `tests/test_tables.py::test_numbers_layout_traps`
+- [x] A6. A series of N years and a total is refused when the years don't sum to it. —
+  `tests/test_tables.py::test_series_checks_the_total`
 - [ ] A7. `plan` lists, by kind, what's recorded and what's missing or due, and the venues to search. — new test
   (tests/test_research.py)
 - [ ] A8. `check` raises each error in Part 2 and lists each review line. — new test

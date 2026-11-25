@@ -21,6 +21,7 @@ After each quarter's filings (roadmap 6 research inputs)
                   find T TERM...: search a company's downloaded documents
                   filings T [--since DATE]: a US-listed company's EDGAR filings and their large documents
                   locate T [--match RX] [--year Y] [--site URL]: candidate documents from every venue it files on
+                  rows URL RX: each matching table row in a document, with its figures and nearest period header
                   studies: rebuild each recorded study's NPV from its cash flows and check it (projects.csv)
 Model portfolio (before buying, or after a refresh)
   screen          propose the Model portfolio's holdings and weights from the framework (--write to apply)
@@ -118,7 +119,7 @@ def main(argv=None):
     google(p)
     sub.add_parser("royalty-ocf", help="annual operating cash flow of the royalty companies from SEC EDGAR")
     p = sub.add_parser("research", help="research inputs: sustaining spending, filing downloads and search")
-    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings", "studies", "locate"])
+    p.add_argument("what", choices=["sustaining", "fetch", "find", "filings", "studies", "locate", "rows"])
     p.add_argument("args", nargs="*", help="find: TICKER TERM...")
     p.add_argument("--ticker")
     p.add_argument("--write", action="store_true")
@@ -128,6 +129,7 @@ def main(argv=None):
     p.add_argument("--match", help="locate: headline regex (ASX, Investegate), EDGAR full-text or site media search")
     p.add_argument("--year", type=int, help="locate: the ASX year list (default this year)")
     p.add_argument("--site", help="locate: the company's WordPress site, for its media library")
+    p.add_argument("--space-thousands", action="store_true", help="rows: '35 645 576' is one figure")
     sub.add_parser("fetch-history", help="download monthly price histories")
     sub.add_parser("backtest", help="backtest the portfolio")
     p = sub.add_parser("backtest-signals", help="backtest the market signals (out/backtest-signals/)")
@@ -216,6 +218,16 @@ def main(argv=None):
             lines = SU.filings(a.ticker or (a.args[0] if a.args else ""), a.since)
         elif a.what == "fetch":
             lines = SU.fetch(a.ticker, refresh=a.refresh, url=a.url)
+        elif a.what == "rows":
+            from . import documents, tables
+            if len(a.args) != 2:
+                raise SystemExit("research rows URL REGEX")
+            u, rx = a.args
+            lines = [x for x in documents.fetch(url=u) if "failed" in x]
+            if documents.doc_path(u).exists():
+                R = tables.rows(documents.doc_path(u).read_text(), rx, space_thousands=a.space_thousands)
+                lines += [f"{r['line']:6d} [{r['period'][:70]}] {r['label'][:60]} :: "
+                          + " | ".join(f"{v:g}" for v in r["values"][:40]) for r in R] or ["No matching rows."]
         elif a.what == "locate":
             from . import documents
             lines = documents.locate(a.ticker or (a.args[0] if a.args else ""), match=a.match, year=a.year,
