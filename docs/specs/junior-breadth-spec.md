@@ -26,7 +26,7 @@ weight, in holdings trading above their own 200-day average.**
   that fail, are short or stale are left out of both sides; the report gives the covered weight.
 - **Thresholds** `[0.6, 0.3]` (provisional; settings comment): "Broad uptrend" at 60%+, "Narrow: most juniors
   still falling" under 30%, "Mixed" between.
-- **Model portfolio W:** "Growth: developers" adds `breadth_sgdj`; copper developers (`Growth: developers|Copper`)
+- **Model portfolio R:** "Growth: developers" adds `breadth_sgdj`; copper developers (`Growth: developers|Copper`)
   `breadth_copj`; silver developers use SGDJ's (there's no junior silver fund).
 - **Sheet:** `setup-sheet` inserts the two rows (it inserts any missing signal row by key).
 - **History and backtest:** computed with today's holdings, so survivorship bias applies and the backtest report

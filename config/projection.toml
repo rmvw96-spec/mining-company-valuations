@@ -18,7 +18,7 @@ trust_fee = 0.005               # yearly fee drag on the physical trusts
 # Valuation catch-up: a stock trading at x times its peer norm drifts toward 1.0 at this speed
 # (log gap closes by 1 - exp(-kappa x years)). 0 turns it off.
 kappa = 0.15
-# Valuation vs peer norm on Nov 16, 2026 (Model portfolio tab, column K).
+# Valuation vs peer norm on Nov 16, 2026 (P/NAV tab N; the Model portfolio showed it in K then).
 valuation = { NEM = 0.64, KGC = 0.74, OGC = 0.78, DPM = 1.00, IAG = 0.51, GFI = 0.74, LUN = 0.57, TECK = 0.72, TGB = 0.67, BVN = 0.83 }
 
 # Interest-rate regimes: probability, then yearly median price growth for (gold, silver, copper)

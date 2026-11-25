@@ -7,7 +7,7 @@ Instructions for Claude Code. Follow CLAUDE.md.
 ## Goal
 
 The scheduled run lists "Changed since the last run" in `out/signals/report.txt` and the step summary, but nobody
-reads those daily. Notify when a market signal's status (Signals I) or a Model portfolio row's status (T) changes.
+reads those daily. Notify when a market signal's status (Signals I) or a Model portfolio row's status (O) changes.
 
 ## Scope
 
@@ -26,7 +26,7 @@ reads those daily. Notify when a market signal's status (Signals I) or a Model p
     write, contents: read`), label `signals`, title `Signals changed: <date> (<n>)`, body built in Python
     (`minerval/alerts.py`). A day that already has a `signals` issue is skipped (reruns). GitHub emails the owner.
 - **Model portfolio: private email.**
-  - `alerts.notify_portfolio` compares Model portfolio B and T before and after the price write, and emails the
+  - `alerts.notify_portfolio` compares Model portfolio B and O before and after the price write, and emails the
     changed rows when `ALERT_SMTP_URL` and `ALERT_EMAIL_TO` are set. No hold (there's no private place to keep past
     statuses). The log says only how many changed; a failure never prints names.
   - The workflow passes the two secrets when present; README explains a Gmail app password.

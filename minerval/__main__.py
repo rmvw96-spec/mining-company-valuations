@@ -106,7 +106,7 @@ def main(argv=None):
     p.add_argument("--as-of", help="(with --build) its publication month, e.g. 2026-02")
     p = sub.add_parser("screen", help="propose the Model portfolio from a screen (report only unless --write)")
     google(p)
-    p.add_argument("--write", action="store_true", help="write the proposal to Model portfolio A-F, S, U-V")
+    p.add_argument("--write", action="store_true", help="write the proposal to Model portfolio A-F, N, P-Q")
     p.add_argument("--all-markets", action="store_true",
                    help="include companies with no US or Canadian listing (about $50 a trade in an IRA)")
     p.add_argument("--email", action="store_true", help="(with --write) email the changes privately")

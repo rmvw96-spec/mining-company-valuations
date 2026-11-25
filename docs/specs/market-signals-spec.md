@@ -16,7 +16,7 @@ holding's relevant signal.
 ## Scope
 
 - **In:** the Signals tab and `signals` command; PNAV inputs AR:AS and AT:BE; P/NAV U:V; the cost-increase input
-  through P/NAV, stress and Holdings downside; Model portfolio W:Y; the `setup-sheet` installer.
+  through P/NAV, stress and Holdings downside; Model portfolio R (the timing signal); the `setup-sheet` installer.
 - **Out:** advice. Statuses are plain text from a framework, for an investor, with no jargon and no "BUY" commands.
 
 ## Design
@@ -85,10 +85,10 @@ holding's relevant signal.
 
 ### Model portfolio and installer
 
-- W: the timing signal for each row's bucket and metal, from `[signals.timing]` (the record); X: EV per
-  gold-equivalent ounce; Y: months of cash (developers).
+- R: the timing signal for each row's bucket and metal, from `[signals.timing]` (the record). EV per
+  gold-equivalent ounce and months of cash stay on PNAV inputs (BB, BC).
 - `setup-sheet [--dry-run]` snapshots every range it touches to `out/layout/`, then installs the Signals tab, PNAV
-  inputs H7 and columns, the Z:AC rewrite, P/NAV U:V, Holdings downside R and K2, and Model portfolio W:Y. Each step
+  inputs H7 and columns, the Z:AC rewrite, P/NAV U:V, Holdings downside R and K2, and Model portfolio R. Each step
   reports "added", "already in place" or "conflict: <cell> holds <x> (skipped)"; a cell is rewritten only when it
   holds exactly the old formula. A second run changes nothing. Formula text comes from `[sheet]` addresses.
 
@@ -152,6 +152,8 @@ holding's relevant signal.
 
 ## Decisions
 
+- The Model portfolio no longer shows EV per ounce or months of cash: the screen's revision 2 doesn't score
+  them (the user, 2026-11-25).
 - Thresholds are defaults matching the framework's wording, editable on the Sheet (G:H) with `[signals.thresholds]`
   as the record; changing one changes both (2026-11-17).
 - The real yield and the dollar are context only; the two-year yield's 3-month change is the rate signal for

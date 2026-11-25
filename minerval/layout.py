@@ -142,18 +142,11 @@ def sensitivity_headers() -> tuple[str, str]:
 
 
 DOWNSIDE_COST_HEADER = "Helper: cost base $M (revenue − FCF)"
-PORTFOLIO_HEADERS = {"timing": "Timing signal (framework)",
-                     "ev_per_aueq_oz": "EV per gold-equivalent oz (developers)",
-                     "months_of_cash": "Months of funding (developers; cash + committed)",
-                     "pnav_after": "P/NAV after an equity raise for the funding gap (developers)"}
-PORTFOLIO_HEADERS_V1 = {"months_of_cash": "Months of cash (developers)", "review_level": "Review if valuation above"}
+PORTFOLIO_HEADERS = {"timing": "Timing signal (framework)"}
 PORTFOLIO_HEADERS["review_level"] = ("Buy multiple: buy below this × the base-deck NPV ([valuation.buy]: producers and "
                                      "developers 0.6, royalties 1.0); a typed value is kept")
-PORTFOLIO_HEADERS["buy_below"] = ("Buy below US$/share at S (producers and royalties: (min(S × base NPV, pessimistic "
+PORTFOLIO_HEADERS["buy_below"] = ("Buy below US$/share at N (producers and royalties: (min(N × base NPV, pessimistic "
                                   "NPV) + net cash − minority) ÷ shares; developers: after a +30% overrun's financing)")
-# The status formula typed on the Sheet before revision 2 (valuation vs peer norm against S), which setup-sheet replaces
-PORTFOLIO_STATUS_V1 = ('=ARRAY_CONSTRAIN(ARRAYFORMULA(IF(S6:S31="","",IF(ISNUMBER(K6:K31),IF(K6:K31>S6:S31,'
-                       '"Review: above level","OK"),"Check by hand"))), 26, 1)')
 SIGNALS_HEADERS = ["Key (code uses it to find rows; can be hidden)", "Tier", "Signal", "Unit", "Value", "As of",
                    "Threshold 1", "Threshold 2", "Status", "What the framework says", "Source"]
 INPUTS = [  # key, label, default (None = left blank), number format
@@ -462,7 +455,7 @@ def downside_new() -> str:
 
 
 def timing_formula(own: bool = True) -> str:
-    """Model portfolio W. Royalty rows show the framework band, then (own=True) their own-history band."""
+    """Model portfolio R. Royalty rows show the framework band, then (own=True) their own-history band."""
     S = _S()
     a, b = S["portfolio_first_row"], S["portfolio_last_row"]
     C = S["portfolio_cols"]
@@ -500,19 +493,6 @@ def timing_formula(own: bool = True) -> str:
             f'IF({B}="","",IF(band<>"",band&IF(own<>""," / "&own,""),{expr}))))')
 
 
-def portfolio_lookup(name) -> str:
-    S = _S()
-    a, b = S["portfolio_first_row"], S["portfolio_last_row"]
-    P = S["pnav_inputs"]
-    tab, pa, pb = S["pnav_inputs_tab"], S["pnav_first_row"], S["pnav_last_row"]
-    B = f"{S['portfolio_cols']['holding']}{a}:{S['portfolio_cols']['holding']}{b}"
-
-    def pcol(n):
-        return f"'{tab}'!${P[n]}${pa}:${P[n]}${pb}"
-    return (f'=ARRAYFORMULA(IF({B}="","",IF(XLOOKUP({B},{pcol("holding")},{pcol("peer_group")},"")="Developer",'
-            f'XLOOKUP({B},{pcol("holding")},{pcol(name)},""),"")))')
-
-
 def _portfolio_refs():
     S = _S()
     a, b, C, P = S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"], S["pnav_inputs"]
@@ -528,7 +508,7 @@ def _portfolio_refs():
 
 
 def portfolio_buy_below_formula() -> str:
-    """Model portfolio AA: the buy-below price (US$/share) at the row's buy multiple S, as screen.buy_below_at: the
+    """Model portfolio S: the buy-below price (US$/share) at the row's buy multiple N, as screen.buy_below_at: the
     valuation's own price (PNAV inputs CQ) at the rule's multiple; a typed multiple re-priced from CC:CE, E, CT and
     CN (shares = market cap ÷ price). Blank without an NPV, a price or a positive value."""
     from .screen import ROYALTY_BASIS, STUDY_BASIS
@@ -547,8 +527,8 @@ def portfolio_buy_below_formula() -> str:
 
 
 def portfolio_status_formula() -> str:
-    """Model portfolio T, as screen.status: "No NPV: <why>"; "Fails downside test"; "Buy: below US$<AA>" (with the
-    listing currency's price from Holdings S and V); "Above fair value: review"; "Hold". Blank where S is blank
+    """Model portfolio O, as screen.status: "No NPV: <why>"; "Fails downside test"; "Buy: below US$<S>" (with the
+    listing currency's price from Holdings S and V); "Above fair value: review"; "Hold". Blank where N is blank
     (physical metal rows)."""
     from .screen import DOWNSIDE_FAILS
     S = _S()
@@ -888,48 +868,25 @@ def step_downside() -> Step:
 def step_portfolio() -> Step:
     S = _S()
     tab, a, b, C = S["portfolio_tab"], S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"]
-    st = Step(f"{tab}: columns {C['timing']}:{C['months_of_cash']}")
-    for name, f in (("timing", timing_formula()), ("ev_per_aueq_oz", portfolio_lookup("ev_per_aueq_oz")),
-                    ("months_of_cash", portfolio_lookup("months_of_cash"))):
-        if name in PORTFOLIO_HEADERS_V1:
-            st.add(tab, f"{C[name]}{a - 1}", PORTFOLIO_HEADERS[name], "upgrade", PORTFOLIO_HEADERS_V1[name])
-        else:
-            st.add(tab, f"{C[name]}{a - 1}", PORTFOLIO_HEADERS[name])
-        _spill(st, tab, C[name], a, b, f)
-        if name == "timing":
-            st.cells[-(b - a + 1)] = Cell(tab, f"{C[name]}{a}", f, "upgrade", timing_formula(own=False))
-    st.formats.append((tab, f"{C['ev_per_aueq_oz']}{a}:{C['ev_per_aueq_oz']}{b}", "#,##0"))
-    st.formats.append((tab, f"{C['months_of_cash']}{a}:{C['months_of_cash']}{b}", "0.0"))
+    st = Step(f"{tab}: column {C['timing']} (timing signal)")
+    st.add(tab, f"{C['timing']}{a - 1}", PORTFOLIO_HEADERS["timing"])
+    _spill(st, tab, C["timing"], a, b, timing_formula())
+    st.cells[-(b - a + 1)] = Cell(tab, f"{C['timing']}{a}", timing_formula(), "upgrade", timing_formula(own=False))
     return st
 
 
 def step_portfolio_status() -> Step:
-    """Screen revision 2: S's header (the buy multiple), T the status and AA the buy-below price at S."""
+    """Screen revision 2: the buy multiple's header (N), the status (O) and the buy-below price at N (S)."""
     S = _S()
     tab, a, b, C = S["portfolio_tab"], S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"]
     st = Step(f"{tab}: {C['review_level']} buy multiple, {C['status']} status, {C['buy_below']} buy-below price")
-    st.add(tab, f"{C['review_level']}{a - 1}", PORTFOLIO_HEADERS["review_level"], "upgrade",
-           PORTFOLIO_HEADERS_V1["review_level"])
+    st.add(tab, f"{C['review_level']}{a - 1}", PORTFOLIO_HEADERS["review_level"])
     _spill(st, tab, C["status"], a, b, portfolio_status_formula())
-    st.cells[-(b - a + 1)] = Cell(tab, f"{C['status']}{a}", portfolio_status_formula(), "upgrade",
-                                  PORTFOLIO_STATUS_V1)
     st.add(tab, f"{C['buy_below']}{a - 1}", PORTFOLIO_HEADERS["buy_below"])
     _spill(st, tab, C["buy_below"], a, b, portfolio_buy_below_formula())
     st.formats.append((tab, f"{C['buy_below']}{a}:{C['buy_below']}{b}", "0.00"))
     return st
 
-
-def step_portfolio_after() -> Step:
-    S = _S()
-    tab, a, b, C = S["portfolio_tab"], S["portfolio_first_row"], S["portfolio_last_row"], S["portfolio_cols"]
-    st = Step(f"{tab}: column {C['pnav_after']} (P/NAV after a raise)")
-    st.add(tab, f"{C['pnav_after']}{a - 1}", PORTFOLIO_HEADERS["pnav_after"])
-    _spill(st, tab, C["pnav_after"], a, b, portfolio_lookup("pnav_after"))
-    st.formats.append((tab, f"{C['pnav_after']}{a}:{C['pnav_after']}{b}", "0.00"))
-    return st
-
-
-# ---------- running ----------
 
 def _read_cells(sheet, cells) -> dict:
     """{(tab, ref): current contents (formula text where there is one)}; cells beyond the grid read as ""."""
@@ -986,7 +943,7 @@ def _short(v, n=70):
 def steps(sheet) -> list[Step]:
     return [step_signals(sheet), step_pnav(sheet), step_financing(), step_cash_flow_change(), step_pnav_tab(),
             step_sensitivity(), step_own_history(), step_valuation(), step_minority(), step_nav_used(), step_downside(), step_portfolio(),
-            step_portfolio_after(), step_portfolio_status()]
+            step_portfolio_status()]
 
 
 def run(sheet, dry_run=False, out_dir=None) -> list[str]:

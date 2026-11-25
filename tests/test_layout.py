@@ -42,13 +42,13 @@ def test_fresh_install(tmp_path):
     assert p["H7"].startswith('=XLOOKUP("producer_cost_increase"')
     assert p["AR12"].startswith("=ARRAYFORMULA(") and p["BE12"].startswith("=ARRAYFORMULA(")
     assert p["BE12"] == layout.pnav_formulas()["developer_check"] and p["BW12"].startswith("=MAP(")
-    assert p["BK11"].startswith("Funding gap") and sh.cells["Model portfolio"]["Z6"].startswith("=ARRAYFORMULA(")
+    assert p["BK11"].startswith("Funding gap")
     assert p["Z12"] == cash_flow_change_new("Z", 12) and p[f"AC{B}"] == cash_flow_change_new("AC", B)
     assert sh.cells["Holdings downside"]["K2"] == downside_new()
     assert sh.cells["P_NAV"]["U2"] == "=ARRAYFORMULA('PNAV inputs'!AS12:AS154)"
     assert p["BX12"] == layout.sensitivity_formula() and p["BX11"].startswith("P/NAV: Medium, add-on +2 points")
     assert sh.cells["P_NAV"]["W2"] == "=ARRAYFORMULA('PNAV inputs'!BX12:BX154)"
-    assert sh.cells["Model portfolio"]["W6"].startswith("=ARRAYFORMULA(LET(band,")
+    assert sh.cells["Model portfolio"]["R6"].startswith("=ARRAYFORMULA(LET(band,")
     assert any(f[0] == "Signals" for f in sh.formats)
     assert list(tmp_path.glob("backup-*.json"))
     assert "\nCheck: " in text            # MemorySheet doesn't calculate, so K2's "value" is its new formula text
@@ -85,13 +85,13 @@ def test_dry_run_writes_nothing(tmp_path):
 
 
 def test_occupied_cell_skips_the_step(tmp_path):
-    sh = existing_sheet(**{"Model portfolio": {"X20": "my note"}, "P_NAV": {"U150": "note"}})
+    sh = existing_sheet(**{"Model portfolio": {"R20": "my note"}, "P_NAV": {"U150": "note"}})
     rep = layout.run(sh, out_dir=tmp_path)
-    assert any(line.startswith("Model portfolio") and "conflict" in line and "X20" in line for line in rep)
+    assert any(line.startswith("Model portfolio") and "conflict" in line and "R20" in line for line in rep)
     assert any(line.startswith("P_NAV") and "U150" in line for line in rep)
     mp = sh.cells["Model portfolio"]
-    assert not any(k[0] in "WXY" for k in mp if k != "X20")                # nothing written in the W:Y step
-    assert mp["X20"] == "my note" and "Z6" in mp                           # column Z is a step of its own
+    assert not any(layout.split_cell(k)[0] == "R" for k in mp if k != "R20")   # nothing written in the timing step
+    assert mp["R20"] == "my note" and "S6" in mp                           # the buy-below is a step of its own
     assert "U2" not in sh.cells["P_NAV"]
 
 
@@ -174,11 +174,11 @@ def test_new_signals_get_rows_inserted_in_their_tier(tmp_path):
 
 
 def test_first_install_is_upgraded_in_place(tmp_path):
-    """A Sheet set up before the financing columns: BC and BE (and Model portfolio Y5) hold the first formulas and
-    headers, the Signals tab lacks the new inputs. setup-sheet replaces those exact cells and adds the rest."""
+    """A Sheet set up before the financing columns: BC and BE hold the first formulas and headers, the Signals tab
+    lacks the new inputs. setup-sheet replaces those exact cells and adds the rest."""
     sh = existing_sheet()
     layout.run(sh, out_dir=tmp_path)
-    p, mp, sig = sh.cells["PNAV inputs"], sh.cells["Model portfolio"], sh.cells["Signals"]
+    p, sig = sh.cells["PNAV inputs"], sh.cells["Signals"]
     P = S["pnav_inputs"]
     v1 = layout.pnav_formulas_v1()
     for name in layout.UPGRADED:
@@ -186,9 +186,6 @@ def test_first_install_is_upgraded_in_place(tmp_path):
     for name in layout.FINANCING_HEADERS:
         for r in range(A - 1, B + 1):
             p.pop(f"{P[name]}{r}", None)
-    mp["Y5"] = layout.PORTFOLIO_HEADERS_V1["months_of_cash"]
-    for r in range(5, 32):
-        mp.pop(f"Z{r}", None)
     keys = {v: int(k[1:]) for k, v in sig.items() if k.startswith("A") and k[1:].isdigit()}
     for key in ("raise_discount", "resource_weight_reserves", "resource_weight_mi", "resource_weight_inferred"):
         r = keys[key]
@@ -202,7 +199,6 @@ def test_first_install_is_upgraded_in_place(tmp_path):
     assert p[f"{P['developer_check']}{A}"] == layout.pnav_formulas()["developer_check"]
     assert p[f"{P['months_of_cash']}{A - 1}"] == layout.PNAV_HEADERS["months_of_cash"]
     assert p[f"{P['funding_gap']}{A}"] == layout.financing_formulas()["funding_gap"]
-    assert mp["Y5"] == layout.PORTFOLIO_HEADERS["months_of_cash"] and mp["Z6"].startswith("=ARRAYFORMULA(")
     now = {v: int(k[1:]) for k, v in sh.cells["Signals"].items() if k.startswith("A") and k[1:].isdigit() and v}
     assert now["raise_discount"] == now["runway_ok_months"] + 1
     assert sh.cells["Signals"][f"E{now['raise_discount']}"] == 0.15
@@ -332,40 +328,54 @@ def test_valuation_headers_describe_each_tier():
 
 
 def test_portfolio_status_and_buy_below_columns(tmp_path):
-    """Screen revision 2 (A24, A25): S's header names the buy multiple, T is the status formula (replacing the
-    hand-built "Review: above level" one) and AA, after Z, the buy-below price at S. Both read PNAV inputs."""
+    """Screen revision 2 (A24, A25): N's header names the buy multiple, O is the status formula and S, the last
+    column, the buy-below price at N. Both read PNAV inputs."""
     from minerval import screen as SC
-    sh = existing_sheet(**{"Model portfolio": {"S5": layout.PORTFOLIO_HEADERS_V1["review_level"], "T5": "Status",
-                                               "T6": layout.PORTFOLIO_STATUS_V1}})
+    sh = existing_sheet(**{"Model portfolio": {"O5": "Status"}})
     rep = layout.run(sh, out_dir=tmp_path)
     assert "conflict" not in "\n".join(rep)
     mp = sh.cells["Model portfolio"]
-    assert sh.sizes["Model portfolio"][1] == col_to_num("AA")
-    assert mp["S5"] == layout.PORTFOLIO_HEADERS["review_level"] and "buy multiple" in mp["S5"].lower()
-    assert mp["T6"] == layout.portfolio_status_formula() and mp["AA6"] == layout.portfolio_buy_below_formula()
-    assert mp["AA5"].startswith("Buy below US$/share")
+    assert mp["N5"] == layout.PORTFOLIO_HEADERS["review_level"] and "buy multiple" in mp["N5"].lower()
+    assert mp["O6"] == layout.portfolio_status_formula() and mp["S6"] == layout.portfolio_buy_below_formula()
+    assert mp["S5"].startswith("Buy below US$/share")
     f = layout.portfolio_status_formula()
     i = {s: f.index(s) for s in ("No NPV: ", "Fails downside test", "Buy: below US$", "Above fair value: review")}
     assert max(i["No NPV: "], i["Fails downside test"]) < i["Buy: below US$"] < i["Above fair value: review"] \
         < f.rindex('"Hold"')                                         # the precedence of screen.status
-    assert all(f'"{why}"' in f for why in SC.DOWNSIDE_FAILS) and "AA6:AA31" in f
+    assert all(f'"{why}"' in f for why in SC.DOWNSIDE_FAILS) and "S6:S31" in f
     g = layout.portfolio_buy_below_formula()
     P = S["pnav_inputs"]
     for name in ("valuation_basis", "npv_pessimistic", "npv_base", "net_cash", "minority", "dilution_30",
                  "buy_below_value", "price", "mcap"):
         assert f"'PNAV inputs'!${P[name]}${A}:${P[name]}${B}" in g
     buy = settings()["valuation"]["buy"]
-    assert all(f"{buy[k]['buy']}" in g for k in buy) and "S6:S31" in g
+    assert all(f"{buy[k]['buy']}" in g for k in buy) and "N6:N31" in g
     n = len(sh.blocks)
     layout.run(sh, out_dir=tmp_path)
     assert len(sh.blocks) == n                                       # idempotent
 
 
 def test_a_status_formula_typed_by_hand_is_left_alone(tmp_path):
-    sh = existing_sheet(**{"Model portfolio": {"T6": '=ARRAYFORMULA(IF(S6:S31="","","mine"))'}})
+    sh = existing_sheet(**{"Model portfolio": {"O6": '=ARRAYFORMULA(IF(N6:N31="","","mine"))'}})
     rep = layout.run(sh, out_dir=tmp_path)
-    assert any("conflict" in line and "T6" in line for line in rep)
-    assert sh.cells["Model portfolio"]["T6"] == '=ARRAYFORMULA(IF(S6:S31="","","mine"))'
+    assert any("conflict" in line and "O6" in line for line in rep)
+    assert sh.cells["Model portfolio"]["O6"] == '=ARRAYFORMULA(IF(N6:N31="","","mine"))'
+
+
+def test_model_portfolio_columns_revision_2_left_unread_are_gone(tmp_path):
+    """After screen revision 2: the tab ends at S (the buy-below price), without the peer norm, the P/NAV columns or
+    the developer measures (EV per oz, months of funding, P/NAV after a raise), and nothing is installed past S."""
+    C = S["portfolio_cols"]
+    assert not {"peer_norm", "ev_per_aueq_oz", "months_of_cash", "pnav_after"} & set(C)
+    cols = [v for k, v in C.items() if not k.endswith("_cell")]
+    assert max(map(col_to_num, cols)) == col_to_num(C["buy_below"]) == col_to_num("S")
+    assert [C[k] for k in ("review_level", "status", "why", "what_would_change", "timing")] == [*"NOPQR"]
+    for gone in ("portfolio_lookup", "step_portfolio_after", "PORTFOLIO_STATUS_V1", "PORTFOLIO_HEADERS_V1"):
+        assert not hasattr(layout, gone), gone
+    assert set(layout.PORTFOLIO_HEADERS) == {"timing", "review_level", "buy_below"}
+    sh = existing_sheet()
+    layout.run(sh, out_dir=tmp_path)
+    assert max(col_to_num(layout.split_cell(k)[0]) for k in sh.cells["Model portfolio"]) == col_to_num("S")
 
 
 def _let_names(formula: str) -> list[str]:

@@ -80,16 +80,16 @@ def test_write_issue(tmp_path):
 
 
 def portfolio_sheet(statuses):
-    cells = {}
+    C, cells = settings()["sheet"]["portfolio_cols"], {}
     for i, (name, st) in enumerate(statuses.items(), start=6):
-        cells[f"B{i}"], cells[f"T{i}"] = name, st
+        cells[f"{C['holding']}{i}"], cells[f"{C['status']}{i}"] = name, st
     return MemorySheet({"Model portfolio": cells})
 
 
 def test_portfolio_email_only_when_set_up_and_never_logged(monkeypatch):
     before = {"Alpha Gold": "Hold", "Beta Silver": "Hold"}
-    sh = portfolio_sheet({"Alpha Gold": "Review: above level", "Beta Silver": "Hold"})
-    assert alerts.portfolio_statuses(sh) == {"Alpha Gold": "Review: above level", "Beta Silver": "Hold"}
+    sh = portfolio_sheet({"Alpha Gold": "Above fair value: review", "Beta Silver": "Hold"})
+    assert alerts.portfolio_statuses(sh) == {"Alpha Gold": "Above fair value: review", "Beta Silver": "Hold"}
     sent = []
 
     class FakeSMTP:
@@ -120,13 +120,13 @@ def test_portfolio_email_only_when_set_up_and_never_logged(monkeypatch):
     assert sent[1] == ("login", "me@example.com", "app pw")
     msg = sent[2]
     assert msg[1] == "me@example.com" and msg[2] == "Model portfolio: 1 status change (2026-11-18)"
-    assert "Alpha Gold: Hold -> Review: above level" in msg[3] and "Beta Silver" not in msg[3]
+    assert "Alpha Gold: Hold -> Above fair value: review" in msg[3] and "Beta Silver" not in msg[3]
     assert alerts.notify_portfolio(sh, alerts.portfolio_statuses(sh), "2026-11-18", env=env) == \
         ["Model portfolio: no status changed."]
 
 
 def test_portfolio_alert_failure_doesnt_leak_names(monkeypatch):
-    sh = portfolio_sheet({"Alpha Gold": "Review: above level"})
+    sh = portfolio_sheet({"Alpha Gold": "Above fair value: review"})
 
     def boom(*a, **k):
         raise RuntimeError("Alpha Gold failed")

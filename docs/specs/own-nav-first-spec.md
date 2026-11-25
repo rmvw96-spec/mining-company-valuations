@@ -50,7 +50,7 @@ conflict, left alone):
 | PNAV inputs BN, NAV per share after a raise | R × shares, else S + net cash | CU × shares, else S + net cash |
 | Signals E, `royalty_pnav_median` | median AJ of royalty rows with R | median CV of royalty rows with CU |
 
-The NAV per share after a raise feeds BO (P/NAV after a raise) and Model portfolio Z, so they follow. The Python median (`signals.royalty_pnavs_from_sheet`) reads CV and CU as the Sheet does.
+The NAV per share after a raise feeds BO (P/NAV after a raise), so it follows. The Python median (`signals.royalty_pnavs_from_sheet`) reads CV and CU as the Sheet does.
 Without the Sheet (`royalty_pnavs_from_derived`), it uses price ÷ `valuation.csv` `nav_per_share` for royalties we
 value, and the independent P/NAV for any we don't.
 

@@ -8,7 +8,7 @@ import pytest
 
 from minerval import screen as SC
 from minerval.config import settings
-from minerval.sheets import CLEAR, MemorySheet
+from minerval.sheets import CLEAR, MemorySheet, col_to_num
 
 TODAY = date(2026, 11, 20)
 
@@ -253,7 +253,7 @@ def tab_rows(*rows):
     out = []
     for i in range(26):
         r = rows[i] if i < len(rows) else {}
-        out.append({"row": 6 + i, **{k: "" for k in [*"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "AA"]}, **r})
+        out.append({"row": 6 + i, **{k: "" for k in [*"ABCDEFGHIJKLMNOPQRS"]}, **r})
     return out
 
 
@@ -321,11 +321,11 @@ def test_buy_below_at_each_binding_condition():
 
 
 def test_a_typed_level_is_kept_and_sets_the_status():
-    """A24: a level typed in S is kept by the plan and used for the row's buy-below price."""
+    """A24: a level typed in N is kept by the plan and used for the row's buy-below price."""
     U = universe(company(holding="Beta Gold", ticker="BET", price=36.0, mcap=3600.0, buy_below_value=41.0))
-    tab = tab_rows({"A": "Gold producers", "B": "Beta Gold", "D": "BET", "F": 0.1, "S": 0.5})
+    tab = tab_rows({"A": "Gold producers", "B": "Beta Gold", "D": "BET", "F": 0.1, "N": 0.5})
     row = SC.plan(U, tab, {"Gold producers": {"weight": 0.1, "names": 1}}, TODAY, None)["rows"][0]
-    assert row["S"] == 0.5 and row["typed_level"]
+    assert row["N"] == 0.5 and row["typed_level"]
     assert row["buy_below"] == pytest.approx(35.0) and row["status"] == "Hold"
 
 
@@ -337,63 +337,64 @@ def test_a_buy_status_gives_the_listing_currency_price_too():
 
 
 def test_sheet_statuses_are_checked_against_python():
-    """A24: the screen's report compares Model portfolio T and AA with the same rule computed in Python."""
+    """A24: the screen's report compares Model portfolio O (status) and S (buy-below) with the same rule computed in
+    Python."""
     U = universe(company(holding="Alpha Gold", ticker="ALP", price=40.0, mcap=4000.0, buy_below_value=41.0))
-    row = {"A": "Gold producers", "B": "Alpha Gold", "D": "ALP", "S": 0.6, "T": "Buy: below US$41.00", "AA": 41.0}
-    phys = {"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "S": ""}
+    row = {"A": "Gold producers", "B": "Alpha Gold", "D": "ALP", "N": 0.6, "O": "Buy: below US$41.00", "S": 41.0}
+    phys = {"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "N": ""}
     assert SC.sheet_check(U, tab_rows(phys, row)) == \
-        ["Model portfolio T and AA agree with the screen's rule (1 rows)."]
-    out = SC.sheet_check(U, tab_rows({**row, "T": "Hold", "AA": 41.004}))
-    assert out[0].startswith("Model portfolio T or AA differ from the screen's rule in 1 rows")
+        ["Model portfolio O and S agree with the screen's rule (1 rows)."]
+    out = SC.sheet_check(U, tab_rows({**row, "O": "Hold", "S": 41.004}))
+    assert out[0].startswith("Model portfolio O or S differ from the screen's rule in 1 rows")
     assert "Alpha Gold" in out[1] and "'Hold'" in out[1] and "Buy: below US$41.00" in out[1]
 
 
 def test_sheet_check_names_rows_whose_name_wont_look_up():
-    """The Sheet's T and AA look B up on PNAV inputs by name; a name that differs (found only by its ticker) is
+    """The Sheet's O and S look B up on PNAV inputs by name; a name that differs (found only by its ticker) is
     reported as a lookup to fix, not as a formula difference."""
     U = universe(company(holding="Alpha Gold", ticker="ALP", price=40.0, mcap=4000.0, buy_below_value=41.0))
-    row = {"A": "Gold producers", "B": "Alpha Gold (formerly Alfa)", "D": "ALP", "S": 0.6,
-           "T": "No NPV: not valued", "AA": ""}
+    row = {"A": "Gold producers", "B": "Alpha Gold (formerly Alfa)", "D": "ALP", "N": 0.6,
+           "O": "No NPV: not valued", "S": ""}
     out = SC.sheet_check(U, tab_rows(row))
-    assert out[0] == "Model portfolio T and AA agree with the screen's rule (0 rows)."
-    assert out[1].startswith("Names in B that PNAV inputs doesn't have (T, AA and the other lookups stay blank")
+    assert out[0] == "Model portfolio O and S agree with the screen's rule (0 rows)."
+    assert out[1].startswith("Names in B that PNAV inputs doesn't have (O, S and the other lookups stay blank")
     assert "Alpha Gold (formerly Alfa)" in out[2] and "Alpha Gold" in out[2]
-    same = {**row, "B": "ALPHA GOLD", "T": "Buy: below US$41.00", "AA": 41.0}        # XLOOKUP ignores case
-    assert SC.sheet_check(U, tab_rows(same)) == ["Model portfolio T and AA agree with the screen's rule (1 rows)."]
+    same = {**row, "B": "ALPHA GOLD", "O": "Buy: below US$41.00", "S": 41.0}        # XLOOKUP ignores case
+    assert SC.sheet_check(U, tab_rows(same)) == ["Model portfolio O and S agree with the screen's rule (1 rows)."]
 
 
 def test_plan_keeps_physical_scales_weights_and_keeps_typed_levels():
-    tab = tab_rows({"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "F": 0.88, "S": ""},
-                   {"A": "Gold producers", "B": "beta gold", "D": "BET", "F": 0.1, "S": 0.5, "U": "my reason",
-                    "V": "my view"},
-                   {"A": "Gold producers", "B": "Old Gold", "D": "OLD", "F": 0.1, "S": 0.6})
+    tab = tab_rows({"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "F": 0.88, "N": ""},
+                   {"A": "Gold producers", "B": "beta gold", "D": "BET", "F": 0.1, "N": 0.5, "P": "my reason",
+                    "Q": "my view"},
+                   {"A": "Gold producers", "B": "Old Gold", "D": "OLD", "F": 0.1, "N": 0.6})
     P = SC.plan(gold_universe(), tab, SIZES, TODAY, state=None)
     rows = {r["B"]: r for r in P["rows"]}
     assert set(rows) == {"Alpha Gold", "Beta Gold", "Delta Dev"}
     assert sum(r["F"] for r in P["rows"]) == pytest.approx(0.12)      # 12% left after physical: 7.5% scaled ×1.6
     assert any("scaled ×1.600" in n for n in P["notes"])
     beta = rows["Beta Gold"]
-    assert beta["D"] == "BET" and beta["S"] == 0.5 and beta["typed_level"] and not beta["new"]
-    assert beta["U"] == "my reason" and beta["V"] == "my view"
+    assert beta["D"] == "BET" and beta["N"] == 0.5 and beta["typed_level"] and not beta["new"]
+    assert beta["P"] == "my reason" and beta["Q"] == "my view"
     alpha = rows["Alpha Gold"]
-    assert alpha["S"] == 0.6 and alpha["new"] and alpha["U"].startswith("Screen: rank ")
-    assert alpha["V"] == "Screen: review above fair value, or if it fails a filter"
-    assert rows["Delta Dev"]["S"] == 0.6                               # the developers' buy multiple
+    assert alpha["N"] == 0.6 and alpha["new"] and alpha["P"].startswith("Screen: rank ")
+    assert alpha["Q"] == "Screen: review above fair value, or if it fails a filter"
+    assert rows["Delta Dev"]["N"] == 0.6                               # the developers' buy multiple
     roy = SC.plan(universe(company(holding="Roy", peer_group="Royalty/streaming", valuation_basis="OCF (royalty)")), [],
                   {"Royalty": {"weight": 0.05, "names": 1}}, TODAY, None)["rows"][0]
-    assert roy["S"] == 1.0
+    assert roy["N"] == 1.0
     assert [d[1] for d in P["drops"]] == ["Old Gold"]
     assert P["physical"][0]["B"] == "Gold trust"
 
 
 def test_a_level_written_by_the_screen_follows_the_rule_and_rule_levels_resets_typed_ones():
-    tab = tab_rows({"A": "Gold producers", "B": "Beta Gold", "D": "BET", "F": 0.1, "S": 0.55})
+    tab = tab_rows({"A": "Gold producers", "B": "Beta Gold", "D": "BET", "F": 0.1, "N": 0.55})
     P = SC.plan(gold_universe(), tab, SIZES, TODAY, state={"review": {"BET": 0.55}})
-    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 0.6          # recorded: the screen's own
+    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["N"] == 0.6          # recorded: the screen's own
     P = SC.plan(gold_universe(), tab, SIZES, TODAY, state={"review": {"BET": 0.5}})
-    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 0.55         # changed since: typed
+    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["N"] == 0.55         # changed since: typed
     P = SC.plan(gold_universe(), tab, SIZES, TODAY, state=None, rule_levels=True)
-    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["S"] == 0.6
+    assert next(r for r in P["rows"] if r["B"] == "Beta Gold")["N"] == 0.6
 
 
 def test_plan_warnings():
@@ -410,9 +411,9 @@ def test_plan_warnings():
 
 def test_write_rows_touches_only_the_inputs_and_clears_the_rest():
     P = SC.plan(gold_universe(), tab_rows({"A": "Physical metal", "B": "Gold trust", "D": "PHYS", "F": 0.5,
-                                           "S": "", "U": "core", "V": ""}), SIZES, TODAY, state=None)
+                                           "N": "", "P": "core", "Q": ""}), SIZES, TODAY, state=None)
     blocks = SC.write_rows(MemorySheet(), P)
-    assert [b[1] for b in blocks] == ["A6", "S6", "U6"]
+    assert [b[1] for b in blocks] == ["A6", "N6", "P6"]
     af, s, uv = (b[2] for b in blocks)
     assert len(af) == len(s) == len(uv) == 26 and all(len(r) == 6 for r in af)
     assert af[0][:2] == ["Physical metal", "Gold trust"] and s[0] == [CLEAR] and uv[0] == ["core", CLEAR]
@@ -445,6 +446,33 @@ def test_write_stops_when_a_name_or_ticker_wouldnt_look_up(tmp_path, monkeypatch
     assert any(x.startswith("Not written:") for x in lines)
     assert sheet.cells[S["portfolio_tab"]] == {}                        # nothing written to the tab
     assert not list(tmp_path.glob("backup-*.json"))
+
+
+def test_write_backs_up_the_whole_tab_and_writes_only_the_inputs(tmp_path, monkeypatch):
+    """--write: the backup holds A:S with formulas (the whole tab) and the write touches only A–F, N (buy multiple)
+    and P:Q (notes); the status (O), timing (R) and buy-below (S) formulas stay."""
+    S = settings()["sheet"]
+    L, tab = S["downside_cols"]["ticker"], S["portfolio_tab"]
+    names, ticks = ["Alpha Gold", "Beta Gold", "Gamma Gold", "Delta Dev"], ["ALP", "BET", "GAM", "DEL"]
+    sheet = MemorySheet({S["pnav_tab"]: {f"B{S['pnav_tab_first_row'] + i}": n for i, n in enumerate(names)},
+                         S["downside_tab"]: {f"{L}{S['downside_first_row'] + i}": t for i, t in enumerate(ticks)},
+                         tab: {"A6": "Physical metal", "B6": "Gold trust", "D6": "PHYS", "F6": 0.5, "P6": "core",
+                               "O6": "=status", "R6": "=timing", "S6": "=buy below"}})
+    monkeypatch.setattr(SC, "load_sizes", lambda path=None: SIZES)
+    monkeypatch.setattr(SC, "read_universe", lambda sh, research=None: gold_universe())
+    monkeypatch.setattr(SC, "otc_volumes", lambda U, fetch=None: {})
+    from minerval import performance
+    monkeypatch.setattr(performance, "add", lambda U, *a, **k: U)
+    monkeypatch.setattr(SC, "load_state", lambda path=None: None)
+    monkeypatch.setattr(SC, "STATE", tmp_path / "screen_state.json")
+    monkeypatch.setattr(SC, "PORTFOLIO_FILE", tmp_path / "portfolio.csv")
+    SC.run(sheet, write=True, today=TODAY, out_dir=tmp_path)
+    import json
+    backup = json.loads(next(tmp_path.glob("backup-*.json")).read_text())
+    assert len(backup[0]) == col_to_num("S") and backup[0][col_to_num("S") - 1] == "=buy below"
+    assert [b[1] for b in sheet.blocks] == ["A6", "N6", "P6"]
+    mp = sheet.cells[tab]
+    assert (mp["O6"], mp["R6"], mp["S6"]) == ("=status", "=timing", "=buy below") and mp["P6"] == "core"
 
 
 def test_portfolio_rows():
