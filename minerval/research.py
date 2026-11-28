@@ -806,7 +806,7 @@ def plan(ticker: str, base=None, fin_dates: dict | None = None, today: date | No
                     miss.append(m)
             L.append(f"operations {y}: " + (f"missing {', '.join(miss)}" if miss else "recorded"))
 
-    if tier in ("producer", "royalty") or _s(c.get("country_weights")).strip():
+    if tier in ("producer", "royalty", "developer") or _s(c.get("country_weights")).strip():
         cw = _s(c.get("country_weights")).strip()
         L.append(f"country_weights: {cw} ({_s(c.get('country_weights_source'))})" if cw else "country_weights: blank")
     if tier in ("developer", "explorer"):

@@ -37,6 +37,15 @@ has built; this list says what's left and where to start.
   covers every kind of research done so far.
 - **Built from:** the helpers in `private/session-2026-11/scratchpad/tools/` and the project skills
   `sustaining-research-batch` and `mine-study-rebuild`.
+- **Status (Nov 28, 2026):** built, 15 of 18. The blind test (A16) scored 189 of 236 record figures (80%, under the
+  90% bar), with none unsourced and every miss explained. By company:
+  - 100%: HL, EXK, CAML LN, ARG CN, AEM CN;
+  - GMIN CN 97%;
+  - NEWP 71% (38 of its 40 misses are one choice: how lead and zinc payables are converted);
+  - GFI 56% (Damang);
+  - RMS AU 0 of 1 (a split with the same total).
+- **Next step:** the user decides the seven judgment calls (spec open question 3). Then the rules go into the
+  skills, and the affected companies are rerun.
 
 ### 3. Production, reserves and royalty GEOs, 2022–2025 (roadmap 5b, A26; research, large)
 

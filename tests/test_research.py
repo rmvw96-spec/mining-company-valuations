@@ -104,6 +104,7 @@ def test_plan_lists_missing_periods_and_gaps(base):
     D_ = "\n".join(RS.plan("DEV CN", base=base, fin_dates={}, today=date(2026, 11, 26)))
     assert "study: none recorded" in D_ and "financing: blank committed_funding_usd_m" in D_
     assert "resources: blank resource_amount" in D_ and "sustaining" not in D_
+    assert "country_weights: blank" in D_                    # a developer's discount rate needs its add-on
 
 
 def test_check_refuses_malformed_batches(base):

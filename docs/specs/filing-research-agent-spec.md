@@ -224,3 +224,15 @@ A figure matches when it equals the record at the record's precision. The test p
    batch's evidence), or add a mine-level record (mine, country, year, metal, amount, attributable share) that
    `jurisdiction` computes the weights from?
 2. Is five clean batches per kind enough before the agent records by itself?
+3. The blind test's misses (A16, Nov 28, 2026) are seven judgment calls where the agent and the record chose
+   differently, not misread figures. For each, which is right? Where the agent is, the record changes; either way
+   the rule goes into the skill or CLAUDE.md, and the company's blind test is rerun.
+   - GFI: Damang, discontinued from Apr 2026, taken out of FY 2025 and H1 2025 (the skill's rule) or kept in (the
+     record, as Gold Fields' cash flow includes it). 4 figures.
+   - RMS AU: open-pit development as `capitalized_stripping` (agent: 64.3 + 5.9) or inside `sustaining` (record:
+     70.2). The same total. 1 figure.
+   - NEWP: lead and zinc payables from revenue ÷ study price (agent) or printed kt × 2.20462 (record). 38 figures.
+   - NEWP: `attributable_pct` 98 (the 98% economic interest, agent) or 100 (record).
+   - NEWP: `net_revenue_share` 0.948 (1 − royalties ÷ revenue, Table 22-4) or 0.94 (record).
+   - GMIN CN: `initial_capex_usd_m` 1,041 (Table 22.5, agent) or 1,041.4 (record).
+   - GMIN CN: `first_production` at commercial production, 2028-01-31 (agent), or first gold, 2027-12-31 (record).
